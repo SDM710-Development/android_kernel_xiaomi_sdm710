@@ -3332,6 +3332,7 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	}
 
 	panel->panel_of_node = of_node;
+	panel->power_mode = SDE_MODE_DPMS_OFF;
 	drm_panel_init(&panel->drm_panel);
 	mutex_init(&panel->panel_lock);
 	panel->parent = parent;

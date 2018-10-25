@@ -215,6 +215,7 @@ struct dsi_panel {
 	enum dsi_dms_mode dms_mode;
 
 	bool sync_broadcast_en;
+	int power_mode;
 
 	struct dsi_panel_exd_config exd_config;
 };
