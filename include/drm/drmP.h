@@ -907,6 +907,7 @@ struct drm_device {
 	int state;
 	int pre_state;
 	int doze_brightness;
+	int hbm_status;
 };
 
 #include <drm/drm_irq.h>
