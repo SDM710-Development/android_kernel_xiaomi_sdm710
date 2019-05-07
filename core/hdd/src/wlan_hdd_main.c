@@ -136,6 +136,7 @@
 #include "wlan_hdd_apf.h"
 #include "wlan_hdd_twt.h"
 #include "wlan_mlme_ucfg_api.h"
+#include <wlan_hdd_debugfs_coex.h>
 
 #ifdef CNSS_GENL
 #include <net/cnss_nl.h>
@@ -285,6 +286,7 @@ static const struct category_info cinfo[MAX_SUPPORTED_CATEGORY] = {
 	[QDF_MODULE_ID_MGMT_TXRX] = {QDF_TRACE_LEVEL_ALL},
 	[QDF_MODULE_ID_PMO] = {QDF_TRACE_LEVEL_ALL},
 	[QDF_MODULE_ID_SCAN] = {QDF_TRACE_LEVEL_ALL},
+	[QDF_MODULE_ID_MLME] = {QDF_TRACE_LEVEL_ALL},
 	[QDF_MODULE_ID_POLICY_MGR] = {QDF_TRACE_LEVEL_ALL},
 	[QDF_MODULE_ID_P2P] = {QDF_TRACE_LEVEL_ALL},
 	[QDF_MODULE_ID_TDLS] = {QDF_TRACE_LEVEL_ALL},
@@ -7601,6 +7603,7 @@ static void hdd_wlan_exit(struct hdd_context *hdd_ctx)
 
 	hdd_enter();
 
+	hdd_debugfs_mws_coex_info_deinit(hdd_ctx);
 	qdf_cancel_delayed_work(&hdd_ctx->iface_idle_work);
 
 	hdd_unregister_notifiers(hdd_ctx);
@@ -11474,6 +11477,10 @@ int hdd_configure_cds(struct hdd_context *hdd_ctx)
 	sme_cli_set_command(0, (int)WMI_PDEV_PARAM_ABG_MODE_TX_CHAIN_NUM,
 			    num_abg_tx_chains, PDEV_CMD);
 
+	if (!ucfg_reg_is_regdb_offloaded(hdd_ctx->psoc))
+		ucfg_reg_program_default_cc(hdd_ctx->pdev,
+					    hdd_ctx->reg.reg_domain);
+
 	ret = hdd_pre_enable_configure(hdd_ctx);
 	if (ret) {
 		hdd_err("Failed to pre-configure cds");
@@ -12106,6 +12113,7 @@ int hdd_wlan_startup(struct device *dev)
 			WIFI_POWER_EVENT_WAKELOCK_IFACE_CHANGE_TIMER);
 	}
 
+	hdd_debugfs_mws_coex_info_init(hdd_ctx);
 	goto success;
 
 err_close_adapters:

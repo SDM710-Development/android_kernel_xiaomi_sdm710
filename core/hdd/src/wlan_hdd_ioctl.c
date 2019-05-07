@@ -54,6 +54,13 @@
 #define SIZE_OF_GETROAMMODE             11      /* size of GETROAMMODE */
 
 /*
+ * Size of GETCOUNTRYREV output = (sizeof("GETCOUNTRYREV") = 14) + one (space) +
+ *				  (sizeof("country_code") = 3) +
+ *                                one (NULL terminating character)
+ */
+#define SIZE_OF_GETCOUNTRYREV_OUTPUT 20
+
+/*
  * Ibss prop IE from command will be of size:
  * size  = sizeof(oui) + sizeof(oui_data) + 1(Element ID) + 1(EID Length)
  * OUI_DATA should be at least 3 bytes long
@@ -3156,6 +3163,40 @@ static inline int drv_cmd_country(struct hdd_adapter *adapter,
 		return -EINVAL;
 
 	return hdd_reg_set_country(hdd_ctx, country_code);
+}
+
+/**
+ * drv_cmd_get_country() - Helper function to get current county code
+ * @adapter: pointer to adapter on which request is received
+ * @hdd_ctx: pointer to hdd context
+ * @command: command name
+ * @command_len: command buffer length
+ * @priv_data: output pointer to hold current country code
+ *
+ * Return: On success 0, negative value on error.
+ */
+static int drv_cmd_get_country(struct hdd_adapter *adapter,
+			       struct hdd_context *hdd_ctx,
+			       uint8_t *command, uint8_t command_len,
+			       struct hdd_priv_data *priv_data)
+{
+	uint8_t buf[SIZE_OF_GETCOUNTRYREV_OUTPUT] = {0};
+	uint8_t cc[REG_ALPHA2_LEN + 1];
+	int ret = 0, len;
+
+	qdf_mem_copy(cc, hdd_ctx->reg.alpha2, REG_ALPHA2_LEN);
+	cc[REG_ALPHA2_LEN] = '\0';
+
+	len = scnprintf(buf, sizeof(buf), "%s %s",
+			"GETCOUNTRYREV", cc);
+	hdd_debug("buf = %s", buf);
+	len = QDF_MIN(priv_data->total_len, len + 1);
+	if (copy_to_user(priv_data->buf, buf, len)) {
+		hdd_err("failed to copy data to user buffer");
+		ret = -EFAULT;
+	}
+
+	return ret;
 }
 
 static int drv_cmd_set_roam_trigger(struct hdd_adapter *adapter,
@@ -6957,10 +6998,10 @@ static int drv_cmd_invalid(struct hdd_adapter *adapter,
 }
 
 /**
- * drv_cmd_set_fcc_channel() - handle fcc constraint request
+ * drv_cmd_set_fcc_channel() - Handle fcc constraint request
  * @adapter: HDD adapter
  * @hdd_ctx: HDD context
- * @command: command ptr, SET_FCC_CHANNEL 0/1 is the command
+ * @command: command ptr, SET_FCC_CHANNEL 0/-1 is the command
  * @command_len: command len
  * @priv_data: private data
  *
@@ -6973,30 +7014,34 @@ static int drv_cmd_set_fcc_channel(struct hdd_adapter *adapter,
 				   struct hdd_priv_data *priv_data)
 {
 	QDF_STATUS status;
-	uint8_t fcc_constraint;
+	int8_t input_value;
+	bool fcc_constraint;
 	int err;
 
 	/*
-	 * this command would be called by user-space when it detects WLAN
+	 * This command would be called by user-space when it detects WLAN
 	 * ON after airplane mode is set. When APM is set, WLAN turns off.
 	 * But it can be turned back on. Otherwise; when APM is turned back
 	 * off, WLAN would turn back on. So at that point the command is
-	 * expected to come down. 0 means disable, 1 means enable. The
-	 * constraint is removed when parameter 1 is set or different
-	 * country code is set
+	 * expected to come down. 0 means reduce power as per fcc constraint
+	 * and -1 means remove constraint.
 	 */
 
-	err = kstrtou8(command + command_len + 1, 10, &fcc_constraint);
+	err = kstrtos8(command + command_len + 1, 10, &input_value);
 	if (err) {
 		hdd_err("error %d parsing userspace fcc parameter", err);
 		return err;
 	}
 
+	fcc_constraint = input_value ? false : true;
+	hdd_debug("input_value = %d && fcc_constraint = %u",
+		  input_value, fcc_constraint);
+
 	status = ucfg_reg_set_fcc_constraint(hdd_ctx->pdev, fcc_constraint);
 
 	if (QDF_IS_STATUS_ERROR(status))
 		hdd_err("Failed to %s tx power for channels 12/13",
-			fcc_constraint ? "reduce" : "restore");
+			fcc_constraint ? "restore" : "reduce");
 
 	return qdf_status_to_os_return(status);
 }
@@ -7463,6 +7508,8 @@ static const struct hdd_drv_cmd hdd_drv_cmds[] = {
 	{"SETBAND",                   drv_cmd_set_band, true},
 	{"SETWMMPS",                  drv_cmd_set_wmmps, true},
 	{"COUNTRY",                   drv_cmd_country, true},
+	{"SETCOUNTRYREV",             drv_cmd_country, true},
+	{"GETCOUNTRYREV",             drv_cmd_get_country, false},
 	{"SETSUSPENDMODE",            drv_cmd_dummy, false},
 	{"SET_AP_WPS_P2P_IE",         drv_cmd_dummy, false},
 	{"SETROAMTRIGGER",            drv_cmd_set_roam_trigger, true},

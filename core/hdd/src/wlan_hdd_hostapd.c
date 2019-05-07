@@ -107,6 +107,13 @@
 #define SAP_24GHZ_CH_COUNT (14)
 #define ACS_SCAN_EXPIRY_TIMEOUT_S 4
 
+/* Defines the BIT position of HT caps is support mode field of stainfo */
+#define HDD_HT_CAPS_PRESENT 0
+/* Defines the BIT position of VHT caps is support mode field of stainfo */
+#define HDD_VHT_CAPS_PRESENT 1
+/* Defines the BIT position of HE caps is support mode field of stainfo */
+#define HDD_HE_CAPS_PRESENT 2
+
 /*
  * 11B, 11G Rate table include Basic rate and Extended rate
  * The IDX field is the rate index
@@ -1496,11 +1503,17 @@ static void hdd_fill_station_info(struct hdd_adapter *adapter,
 	if (event->vht_caps.present) {
 		stainfo->vht_present = true;
 		hdd_copy_vht_caps(&stainfo->vht_caps, &event->vht_caps);
+		stainfo->support_mode |=
+				(stainfo->vht_present << HDD_VHT_CAPS_PRESENT);
 	}
 	if (event->ht_caps.present) {
 		stainfo->ht_present = true;
 		hdd_copy_ht_caps(&stainfo->ht_caps, &event->ht_caps);
+		stainfo->support_mode |=
+				(stainfo->ht_present << HDD_HT_CAPS_PRESENT);
 	}
+	stainfo->support_mode |=
+			(event->he_caps_present << HDD_HE_CAPS_PRESENT);
 
 	/* Initialize DHCP info */
 	stainfo->dhcp_phase = DHCP_PHASE_ACK;
@@ -7175,10 +7188,6 @@ int wlan_hdd_cfg80211_update_apies(struct hdd_adapter *adapter)
 
 	wlan_hdd_add_extra_ie(adapter, genie, &total_ielen,
 			      WLAN_EID_INTERWORKING);
-
-	if (test_bit(SOFTAP_BSS_STARTED, &adapter->event_flags))
-		wlan_hdd_add_extra_ie(adapter, genie, &total_ielen,
-				      WLAN_EID_RSN);
 
 #ifdef FEATURE_WLAN_WAPI
 	if (QDF_SAP_MODE == adapter->device_mode) {

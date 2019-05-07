@@ -1038,6 +1038,15 @@ QDF_STATUS wlan_ipa_uc_disable_pipes(struct wlan_ipa_priv *ipa_ctx)
 		goto end;
 	}
 
+	qdf_spin_lock_bh(&ipa_ctx->pipes_down_lock);
+	if (ipa_ctx->pipes_down_in_progress || ipa_ctx->ipa_pipes_down) {
+		ipa_warn("IPA WDI Pipes down already in progress");
+		qdf_spin_unlock_bh(&ipa_ctx->pipes_down_lock);
+		return QDF_STATUS_E_ALREADY;
+	}
+	ipa_ctx->pipes_down_in_progress = true;
+	qdf_spin_unlock_bh(&ipa_ctx->pipes_down_lock);
+
 	cdp_ipa_disable_autonomy(ipa_ctx->dp_soc,
 				 ipa_ctx->dp_pdev);
 
@@ -1045,10 +1054,12 @@ QDF_STATUS wlan_ipa_uc_disable_pipes(struct wlan_ipa_priv *ipa_ctx)
 				       ipa_ctx->dp_pdev);
 	if (result) {
 		ipa_err("Disable IPA WDI PIPE failed: ret=%d", result);
+		ipa_ctx->pipes_down_in_progress = false;
 		return QDF_STATUS_E_FAILURE;
 	}
 
 	ipa_ctx->ipa_pipes_down = true;
+	ipa_ctx->pipes_down_in_progress = false;
 
 end:
 	ipa_debug("exit: ipa_pipes_down=%d", ipa_ctx->ipa_pipes_down);
@@ -1423,9 +1434,12 @@ static QDF_STATUS __wlan_ipa_wlan_evt(qdf_netdev_t net_dev, uint8_t device_mode,
 	psoc = wlan_pdev_get_psoc(pdev);
 	vdev = wlan_objmgr_get_vdev_by_id_from_psoc(psoc, session_id,
 						    WLAN_IPA_ID);
-	QDF_BUG((session_id < WLAN_IPA_MAX_SESSION) && vdev);
+	QDF_BUG(session_id < WLAN_IPA_MAX_SESSION);
+
 	if (vdev)
 		wlan_objmgr_vdev_release_ref(vdev, WLAN_IPA_ID);
+	else
+		ipa_err("vdev is NULL, session_id: %u", session_id);
 
 	if (ipa_ctx->sta_connected) {
 		iface_ctx = wlan_ipa_get_iface(ipa_ctx, QDF_STA_MODE);
@@ -2368,6 +2382,7 @@ QDF_STATUS wlan_ipa_setup(struct wlan_ipa_priv *ipa_ctx,
 	qdf_create_work(0, &ipa_ctx->pm_work, wlan_ipa_pm_flush, ipa_ctx);
 	qdf_spinlock_create(&ipa_ctx->pm_lock);
 	qdf_spinlock_create(&ipa_ctx->q_lock);
+	qdf_spinlock_create(&ipa_ctx->pipes_down_lock);
 	qdf_nbuf_queue_init(&ipa_ctx->pm_queue_head);
 	qdf_list_create(&ipa_ctx->pending_event, 1000);
 	qdf_mutex_create(&ipa_ctx->event_lock);
@@ -2392,6 +2407,7 @@ QDF_STATUS wlan_ipa_setup(struct wlan_ipa_priv *ipa_ctx,
 		ipa_ctx->resource_unloading = false;
 		ipa_ctx->sta_connected = 0;
 		ipa_ctx->ipa_pipes_down = true;
+		ipa_ctx->pipes_down_in_progress = false;
 		ipa_ctx->wdi_enabled = false;
 		/* Setup IPA system pipes */
 		if (wlan_ipa_uc_sta_is_enabled(ipa_ctx->config)) {
@@ -2428,6 +2444,7 @@ fail_create_sys_pipe:
 fail_setup_rm:
 	qdf_spinlock_destroy(&ipa_ctx->pm_lock);
 	qdf_spinlock_destroy(&ipa_ctx->q_lock);
+	qdf_spinlock_destroy(&ipa_ctx->pipes_down_lock);
 	for (i = 0; i < WLAN_IPA_MAX_IFACE; i++) {
 		iface_context = &ipa_ctx->iface_context[i];
 		qdf_spinlock_destroy(&iface_context->interface_lock);
@@ -2491,6 +2508,7 @@ QDF_STATUS wlan_ipa_cleanup(struct wlan_ipa_priv *ipa_ctx)
 
 	qdf_spinlock_destroy(&ipa_ctx->pm_lock);
 	qdf_spinlock_destroy(&ipa_ctx->q_lock);
+	qdf_spinlock_destroy(&ipa_ctx->pipes_down_lock);
 
 	/* destroy the interface lock */
 	for (i = 0; i < WLAN_IPA_MAX_IFACE; i++) {
