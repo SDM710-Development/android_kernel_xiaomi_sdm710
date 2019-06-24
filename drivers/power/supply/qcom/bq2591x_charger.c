@@ -72,7 +72,6 @@ struct bq2591x {
 	int revision;
 
 	struct bq2591x_config cfg;
-	struct delayed_work monitor_work;
 	struct delayed_work icl_softstart_work;
 	struct delayed_work fcc_softstart_work;
 
@@ -172,25 +171,6 @@ static int bq2591x_read_byte(struct bq2591x *bq, u8 *data, u8 reg)
 
 	return ret;
 }
-
-
-static int bq2591x_write_byte(struct bq2591x *bq, u8 reg, u8 data)
-{
-	int ret;
-
-	if (bq->skip_writes)
-		return 0;
-
-	mutex_lock(&bq->i2c_rw_lock);
-	ret = __bq2591x_write_reg(bq, reg, data);
-	mutex_unlock(&bq->i2c_rw_lock);
-
-	if (ret)
-		pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
-
-	return ret;
-}
-
 
 static int bq2591x_update_bits(struct bq2591x *bq, u8 reg,
 					u8 mask, u8 data)
@@ -426,58 +406,6 @@ int bq2591x_set_vbatlow_volt(struct bq2591x *bq, int volt)
 
 	return ret;
 }
-
-static ssize_t bq2591x_show_registers(struct device *dev,
-				struct device_attribute *attr, char *buf)
-{
-	struct bq2591x *bq = dev_get_drvdata(dev);
-	u8 addr;
-	u8 val;
-	u8 tmpbuf[200];
-	int len;
-	int idx = 0;
-	int ret;
-
-	idx = snprintf(buf, PAGE_SIZE, "%s:\n", "bq2591x Reg");
-	for (addr = 0x0; addr <= 0x0D; addr++) {
-		ret = bq2591x_read_byte(bq, &val, addr);
-		if (ret == 0) {
-			len = snprintf(tmpbuf, PAGE_SIZE - idx,
-					"Reg[%02X] = 0x%02X\n",	addr, val);
-			memcpy(&buf[idx], tmpbuf, len);
-			idx += len;
-		}
-	}
-
-	return idx;
-}
-
-static ssize_t bq2591x_store_registers(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct bq2591x *bq = dev_get_drvdata(dev);
-	int ret;
-	unsigned int reg;
-	unsigned int val;
-
-	ret = sscanf(buf, "%x %x", &reg, &val);
-	if (ret == 2 && reg <= 0x0D)
-		bq2591x_write_byte(bq, (unsigned char)reg, (unsigned char)val);
-
-	return count;
-}
-
-static DEVICE_ATTR(registers, S_IRUGO | S_IWUSR, bq2591x_show_registers,
-						bq2591x_store_registers);
-
-static struct attribute *bq2591x_attributes[] = {
-	&dev_attr_registers.attr,
-	NULL,
-};
-
-static const struct attribute_group bq2591x_attr_group = {
-	.attrs = bq2591x_attributes,
-};
 
 static int show_registers(struct seq_file *m, void *data)
 {
@@ -1075,24 +1003,6 @@ static int bq2591x_init_device(struct bq2591x *bq)
 	return 0;
 }
 
-static void bq2591x_dump_regs(struct bq2591x *bq)
-{
-	int ret;
-	u8 addr;
-	u8 val;
-	char regs_val[48];
-
-	for (addr = 0x00; addr <= 0x0D; addr++) {
-		msleep(2);
-		ret = bq2591x_read_byte(bq, &val, addr);
-		if (!ret)
-			snprintf(regs_val+addr*3, 4, "%02X ", val);
-	}
-
-	pr_err("%s\n", regs_val);
-
-}
-
 static void bq2591x_stat_handler(struct bq2591x *bq)
 {
 	if (bq->prev_stat_flag == bq->reg_stat_flag)
@@ -1116,14 +1026,11 @@ static void bq2591x_stat_handler(struct bq2591x *bq)
 
 	bq->charge_state = (bq->reg_stat & BQ2591X_CHRG_STAT_MASK)
 					>> BQ2591X_CHRG_STAT_SHIFT;
-	if (bq->charge_state == BQ2591X_CHRG_STAT_NCHG) {
+	if (bq->charge_state == BQ2591X_CHRG_STAT_NCHG)
 		pr_info("Not Charging\n");
-		cancel_delayed_work_sync(&bq->monitor_work);
-	} else if (bq->charge_state == BQ2591X_CHRG_STAT_FCHG) {
+	else if (bq->charge_state == BQ2591X_CHRG_STAT_FCHG)
 		pr_info("Fast Charging\n");
-		if (!delayed_work_pending(&bq->monitor_work))
-			schedule_delayed_work(&bq->monitor_work, 0);
-	}else if (bq->charge_state == BQ2591X_CHRG_STAT_TCHG)
+	else if (bq->charge_state == BQ2591X_CHRG_STAT_TCHG)
 		pr_info("Taper Charging\n");
 
 }
@@ -1190,18 +1097,7 @@ static irqreturn_t bq2591x_charger_interrupt(int irq, void *data)
 	bq2591x_stat_handler(bq);
 	bq2591x_fault_handler(bq);
 
-	bq2591x_dump_regs(bq);
-
 	return IRQ_HANDLED;
-}
-
-static void bq2591x_monitor_workfunc(struct work_struct *work)
-{
-	struct bq2591x *bq = container_of(work, struct bq2591x, monitor_work.work);
-
-	bq2591x_dump_regs(bq);
-
-	schedule_delayed_work(&bq->monitor_work, 5 * HZ);
 }
 
 static int bq2591x_charger_probe(struct i2c_client *client,
@@ -1253,7 +1149,6 @@ static int bq2591x_charger_probe(struct i2c_client *client,
 	bq->max_fcc = INT_MAX;
 	bq->c_health = -EINVAL;
 
-	INIT_DELAYED_WORK(&bq->monitor_work, bq2591x_monitor_workfunc);
 	INIT_DELAYED_WORK(&bq->icl_softstart_work, bq2591x_icl_softstart_workfunc);
 	INIT_DELAYED_WORK(&bq->fcc_softstart_work, bq2591x_fcc_softstart_workfunc);
 
@@ -1291,10 +1186,6 @@ static int bq2591x_charger_probe(struct i2c_client *client,
 
 	create_debugfs_entries(bq);
 
-	ret = sysfs_create_group(&bq->dev->kobj, &bq2591x_attr_group);
-	if (ret)
-		dev_err(bq->dev, "failed to register sysfs. err: %d\n", ret);
-
 	pr_info("BQ2591X PARALLEL charger driver probe successfully\n");
 
 	return 0;
@@ -1310,14 +1201,11 @@ static int bq2591x_charger_remove(struct i2c_client *client)
 
 	devm_free_irq(&client->dev, client->irq, bq);
 
-	cancel_delayed_work_sync(&bq->monitor_work);
-
 	power_supply_unregister(bq->parallel_psy);
 
 	mutex_destroy(&bq->i2c_rw_lock);
 
 	debugfs_remove_recursive(bq->debug_root);
-	sysfs_remove_group(&bq->dev->kobj, &bq2591x_attr_group);
 
 	return 0;
 }
@@ -1329,13 +1217,10 @@ static void bq2591x_charger_shutdown(struct i2c_client *client)
 
 	devm_free_irq(&client->dev, client->irq, bq);
 
-	cancel_delayed_work_sync(&bq->monitor_work);
-
 	bq2591x_usb_suspend(bq, true);
 
 	mutex_destroy(&bq->i2c_rw_lock);
 	debugfs_remove_recursive(bq->debug_root);
-	sysfs_remove_group(&bq->dev->kobj, &bq2591x_attr_group);
 
 	pr_info("shutdown\n");
 
