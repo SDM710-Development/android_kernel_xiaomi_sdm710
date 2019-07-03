@@ -338,6 +338,7 @@ struct cam_req_mgr_core_link {
 	int32_t                              open_req_cnt;
 	uint32_t                             last_flush_id;
 	atomic_t                             is_used;
+	int64_t                              sync_trigger_frame_id;
 };
 
 /**
