@@ -117,6 +117,8 @@ struct dsi_backlight_config {
 	/* WLED params */
 	struct led_trigger *wled;
 	struct backlight_device *bd;
+
+	bool dcs_type_ss;
 };
 
 struct dsi_reset_seq {
