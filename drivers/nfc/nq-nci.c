@@ -21,6 +21,7 @@
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
+#include <linux/jiffies.h>
 
 struct nqx_platform_data {
 	unsigned int irq_gpio;
@@ -48,6 +49,7 @@ MODULE_DEVICE_TABLE(of, msm_match_table);
 #define NCI_RESET_NTF_LEN		13
 #define NCI_GET_VERSION_CMD_LEN		8
 #define NCI_GET_VERSION_RSP_LEN		12
+#define MAX_IRQ_WAIT_TIME		(90)	//in ms
 
 struct nqx_dev {
 	wait_queue_head_t	read_wq;
@@ -156,7 +158,8 @@ static int is_data_available_for_read(struct nqx_dev *nqx_dev)
 	int ret;
 
 	nqx_enable_irq(nqx_dev);
-	ret = wait_event_interruptible(nqx_dev->read_wq, !nqx_dev->irq_enabled);
+	ret = wait_event_interruptible_timeout(nqx_dev->read_wq,
+		!nqx_dev->irq_enabled, msecs_to_jiffies(MAX_IRQ_WAIT_TIME));
 	return ret;
 }
 
@@ -872,8 +875,9 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 		}
 		goto err_nfcc_reset_failed;
 	}
+
 	ret = is_data_available_for_read(nqx_dev);
-	if (ret < 0) {
+	if (ret <= 0) {
 		nqx_disable_irq(nqx_dev);
 		goto err_nfcc_hw_check;
 	}
@@ -887,7 +891,7 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 	}
 
 	ret = is_data_available_for_read(nqx_dev);
-	if (ret < 0) {
+	if (ret <= 0) {
 		nqx_disable_irq(nqx_dev);
 		goto err_nfcc_hw_check;
 	}
