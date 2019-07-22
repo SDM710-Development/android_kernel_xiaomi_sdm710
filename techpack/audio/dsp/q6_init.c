@@ -32,6 +32,7 @@ static int __init audio_q6_init(void)
 	msm_audio_ion_init();
 	audio_slimslave_init();
 	avtimer_init();
+	elliptic_driver_init();
 	return 0;
 }
 
@@ -51,6 +52,7 @@ static void __exit audio_q6_exit(void)
 	audio_cal_exit();
 #endif
 	adsp_err_exit();
+	elliptic_driver_exit();
 }
 
 module_init(audio_q6_init);
