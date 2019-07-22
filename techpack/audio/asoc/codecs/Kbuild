@@ -155,6 +155,10 @@ ifdef CONFIG_SND_SOC_MSM_HDMI_CODEC_RX
 	HDMICODEC_OBJS += msm_hdmi_codec_rx.o
 endif
 
+ifdef CONFIG_SPK_ID
+	SPK_OBJS += spk-id.o
+endif
+
 LINUX_INC +=	-Iinclude/linux
 
 INCS +=		$(COMMON_INC) \
@@ -218,3 +222,6 @@ ifeq ($(CONFIG_MSM_EXT_DISPLAY),y)
 obj-$(CONFIG_SND_SOC_MSM_HDMI_CODEC_RX) += hdmi_dlkm.o
 hdmi_dlkm-y := $(HDMICODEC_OBJS)
 endif
+
+obj-$(CONFIG_SPK_ID) += spk_id_dlkm.o
+spk_id_dlkm-y := $(SPK_OBJS)
