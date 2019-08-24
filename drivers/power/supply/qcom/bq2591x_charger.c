@@ -34,11 +34,6 @@
 #include "bq25910_reg.h"
 #include <linux/qpnp/qpnp-adc.h>
 
-#ifdef pr_debug
-#undef pr_debug
-#define pr_debug pr_err
-#endif
-
 enum bq2591x_part_no {
 	BQ25910 = 0x01,
 };
