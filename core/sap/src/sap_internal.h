@@ -134,6 +134,7 @@ struct sap_context {
 	uint32_t channel;
 	uint32_t secondary_ch;
 
+	qdf_mutex_t *acs_ch_list_protect;
 	/* Include the SME(CSR) sessionId here */
 	uint8_t sessionId;
 
@@ -159,6 +160,7 @@ struct sap_context {
 	 * track of state machine
 	 */
 	enum sap_fsm_state fsm_state;
+	enum sap_csa_reason_code csa_reason;
 
 	/* Actual storage for AP and self (STA) SSID */
 	tCsrSSIDInfo SSIDList[2];

@@ -36,6 +36,7 @@
 #include "wlan_hdd_debugfs_llstat.h"
 #include "wlan_reg_services_api.h"
 #include <wlan_cfg80211_mc_cp_stats.h>
+#include "wlan_cp_stats_mc_ucfg_api.h"
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)) && !defined(WITH_BACKPORTS)
 #define HDD_INFO_SIGNAL                 STATION_INFO_SIGNAL
@@ -3960,7 +3961,7 @@ static bool hdd_report_max_rate(mac_handle_t mac_handle,
 	uint16_t max_rate = 0;
 	uint32_t vht_mcs_map;
 	uint16_t current_rate = 0;
-	uint8_t or_leng = CSR_DOT11_SUPPORTED_RATES_MAX;
+	uint32_t or_leng = CSR_DOT11_SUPPORTED_RATES_MAX;
 	uint8_t operational_rates[CSR_DOT11_SUPPORTED_RATES_MAX];
 	uint8_t extended_rates[CSR_DOT11_EXTENDED_SUPPORTED_RATES_MAX];
 	uint32_t er_leng = CSR_DOT11_EXTENDED_SUPPORTED_RATES_MAX;
@@ -4007,7 +4008,7 @@ static bool hdd_report_max_rate(mac_handle_t mac_handle,
 	if (0 != sme_cfg_get_str(mac_handle,
 				 WNI_CFG_OPERATIONAL_RATE_SET,
 				 operational_rates,
-				 (uint32_t *)&or_leng)) {
+				 &or_leng)) {
 		hdd_err("cfg get returned failure");
 		/*To keep GUI happy */
 		return false;
@@ -6207,3 +6208,56 @@ void wlan_hdd_display_txrx_stats(struct hdd_context *ctx)
 			  total_rx_refused);
 	}
 }
+
+#ifdef QCA_SUPPORT_CP_STATS
+/**
+ * hdd_lost_link_cp_stats_info_cb() - callback function to get lost
+ * link information
+ * @stats_ev: Stats event pointer
+ * FW sends vdev stats on vdev down, this callback is registered
+ * with cp_stats component to get the last available vdev stats
+ * From the FW.
+ *
+ * Return: None
+ */
+
+static void hdd_lost_link_cp_stats_info_cb(void *stats_ev)
+{
+	struct hdd_context *hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
+	struct hdd_adapter *adapter;
+	struct stats_event *ev = stats_ev;
+	uint8_t i;
+	struct hdd_station_ctx *sta_ctx;
+
+	if (wlan_hdd_validate_context(hdd_ctx))
+		return;
+
+	for (i = 0; i < ev->num_summary_stats; i++) {
+		adapter = hdd_get_adapter_by_vdev(
+					hdd_ctx,
+					ev->vdev_summary_stats[i].vdev_id);
+		if (!adapter) {
+			hdd_debug("invalid adapter");
+			continue;
+		}
+		sta_ctx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
+		if ((sta_ctx) &&
+		    (eConnectionState_Associated !=
+					sta_ctx->conn_info.connState)) {
+			adapter->rssi_on_disconnect =
+					ev->vdev_summary_stats[i].stats.rssi;
+			hdd_debug("rssi on disconnect %d for " QDF_MAC_ADDR_STR,
+				  adapter->rssi_on_disconnect,
+				  QDF_MAC_ADDR_ARRAY(adapter->mac_addr.bytes));
+		}
+	}
+}
+
+void wlan_hdd_register_cp_stats_cb(struct hdd_context *hdd_ctx)
+{
+	ucfg_mc_cp_stats_register_lost_link_info_cb(
+					hdd_ctx->psoc,
+					hdd_lost_link_cp_stats_info_cb);
+}
+#endif
+

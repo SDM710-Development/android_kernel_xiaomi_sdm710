@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -291,7 +291,7 @@ void ipa_uc_stat_query(struct wlan_objmgr_pdev *pdev,
 	return wlan_ipa_uc_stat_query(ipa_obj, ipa_tx_diff, ipa_rx_diff);
 }
 
-void ipa_reg_sap_xmit_cb(struct wlan_objmgr_pdev *pdev, void *cb)
+void ipa_reg_sap_xmit_cb(struct wlan_objmgr_pdev *pdev, wlan_ipa_softap_xmit cb)
 {
 	struct wlan_ipa_priv *ipa_obj;
 
@@ -309,7 +309,8 @@ void ipa_reg_sap_xmit_cb(struct wlan_objmgr_pdev *pdev, void *cb)
 	return wlan_ipa_reg_sap_xmit_cb(ipa_obj, cb);
 }
 
-void ipa_reg_send_to_nw_cb(struct wlan_objmgr_pdev *pdev, void *cb)
+void ipa_reg_send_to_nw_cb(struct wlan_objmgr_pdev *pdev,
+			   wlan_ipa_send_to_nw cb)
 {
 	struct wlan_ipa_priv *ipa_obj;
 
@@ -547,6 +548,20 @@ bool ipa_is_fw_wdi_activated(struct wlan_objmgr_pdev *pdev)
 	}
 
 	return wlan_ipa_is_fw_wdi_activated(ipa_obj);
+}
+
+void ipa_uc_cleanup_sta(struct wlan_objmgr_pdev *pdev,
+			qdf_netdev_t net_dev)
+{
+	struct wlan_ipa_priv *ipa_obj;
+
+	ipa_obj = ipa_pdev_get_priv_obj(pdev);
+	if (!ipa_obj) {
+		ipa_err("IPA object is NULL");
+		return;
+	}
+
+	return wlan_ipa_uc_cleanup_sta(ipa_obj, net_dev);
 }
 
 QDF_STATUS ipa_uc_disconnect_ap(struct wlan_objmgr_pdev *pdev,

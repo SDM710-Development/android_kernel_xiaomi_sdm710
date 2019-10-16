@@ -203,6 +203,34 @@ typedef void (*lost_link_info_cb)(hdd_handle_t hdd_handle,
 typedef void (*hidden_ssid_cb)(hdd_handle_t hdd_handle,
 				uint8_t vdev_id);
 
+/**
+ * typedef sme_get_isolation_cb - get isolation callback fun
+ * @param: isolation result reported by firmware
+ * @pcontext: Opaque context that the client can use to associate the
+ *    callback with the request
+ */
+typedef void (*sme_get_isolation_cb)(struct sir_isolation_resp *param,
+				     void *pcontext);
+/**
+ * typedef bcn_report_cb - recv bcn callback fun
+ * @hdd_handle: HDD handle registered with SME
+ * @beacon_report: Beacon report structure
+ */
+typedef void (*beacon_report_cb)(hdd_handle_t hdd_handle,
+				 struct wlan_beacon_report *beacon_report);
+
+/**
+ * beacon_pause_cb : scan start callback fun
+ * @hdd_handler: HDD handler
+ * @vdev_id: vdev id
+ * @type: scan event type
+ * @is_disconnected: Driver is in dis connected state or not
+ */
+typedef void (*beacon_pause_cb)(hdd_handle_t hdd_handle,
+				uint8_t vdev_id,
+				enum scan_event_type type,
+				bool is_disconnected);
+
 typedef struct tagSmeStruct {
 	eSmeState state;
 	qdf_mutex_t lkSmeGlobalLock;
@@ -251,6 +279,8 @@ typedef struct tagSmeStruct {
 	void (*pget_peer_info_ext_ind_cb)(struct sir_peer_info_ext_resp *param,
 		void *pcontext);
 	void *pget_peer_info_ext_cb_context;
+	sme_get_isolation_cb get_isolation_cb;
+	void *get_isolation_cb_context;
 #ifdef FEATURE_WLAN_EXTSCAN
 	void (*pExtScanIndCb)(void *, const uint16_t, void *);
 #endif /* FEATURE_WLAN_EXTSCAN */
@@ -311,6 +341,11 @@ typedef struct tagSmeStruct {
 						  void *context,
 						  wmi_mws_coex_cmd_id cmd_id);
 #endif /* WLAN_MWS_INFO_DEBUGFS */
+
+#ifdef WLAN_BCN_RECV_FEATURE
+	beacon_report_cb beacon_report_cb;
+	beacon_pause_cb beacon_pause_cb;
+#endif
 } tSmeStruct, *tpSmeStruct;
 
 #endif /* #if !defined( __SMEINTERNAL_H ) */

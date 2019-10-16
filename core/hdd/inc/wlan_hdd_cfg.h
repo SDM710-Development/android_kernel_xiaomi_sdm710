@@ -299,7 +299,7 @@ enum hdd_dot11_mode {
  * gChannelBondingMode24GHz - Configures Channel Bonding in 24 GHz
  * @Min: 0
  * @Max: 10
- * @Default: 0
+ * @Default: 1
  *
  * This ini is used to set default channel bonding mode 24GHZ
  *
@@ -534,7 +534,7 @@ enum hdd_dot11_mode {
  * gNeighborScanChannelMaxTime - Set neighbor scan channel max time
  * @Min: 3
  * @Max: 300
- * @Default: 30
+ * @Default: 40
  *
  * This ini is used to set the maximum time in secs spent on each
  * channel in LFR scan inside firmware.
@@ -550,7 +550,7 @@ enum hdd_dot11_mode {
 #define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_NAME                  "gNeighborScanChannelMaxTime"
 #define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_MIN                   (3)
 #define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_MAX                   (300)
-#define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_DEFAULT               (30)
+#define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_DEFAULT               (40)
 
 /*
  * <ini>
@@ -615,12 +615,48 @@ enum hdd_dot11_mode {
 
 /*
  * <ini>
- * wake_lock_in_user_scan - use wake lock during user scan
+ * honour_nl_scan_policy_flags - Whether to honour NL80211 scan policy flags
+ * @Min: 0
+ * @Max: 1
+ * @Default: 1
+ *
+ * This parameter will decide whether to honour scan flags such as
+ * NL80211_SCAN_FLAG_HIGH_ACCURACY , NL80211_SCAN_FLAG_LOW_SPAN,
+ * NL80211_SCAN_FLAG_LOW_POWER.
+ * Acceptable values for this:
+ * 0: Config is disabled
+ * 1: Config is enabled
+ *
+ * Related: None
+ *
+ * Supported Feature: Scan
+ *
+ * Usage: Internal
+ *
+ * </ini>
+ */
+#define CFG_HONOUR_NL_SCAN_POLICY_FLAGS           "honour_nl_scan_policy_flags"
+#define CFG_HONOUR_NL_SCAN_POLICY_FLAGS_MIN       (0)
+#define CFG_HONOUR_NL_SCAN_POLICY_FLAGS_MAX       (1)
+#define CFG_HONOUR_NL_SCAN_POLICY_FLAGS_DEFAULT   (1)
+
+/*
+ * <ini>
+ * wake_lock_in_user_scan - use to acquire wake lock during user scan
  * @Min: 0
  * @Max: 1
  * @Default: 0
  *
  * This ini is used to define if wake lock is held used during user scan req
+ * This INI is added for a specific OEM on their request, who don’t want to
+ * use PNO offload scan (sched scans). This is useful only if PNO scan offload
+ * is disabled. If PNO scan is enabled this INI should be disabled and its
+ * by default disabled intentionally.
+ * This is used to acquire wake lock to handle the case where PNO scan offload
+ * is disabled so that wlan is not suspended during scan before connect and
+ * thus scan is not aborted in between. In case PNO scan is offloaded, the FW
+ * will take care of connect scans and will wake up host when candidate is found
+ *
  *
  * Related: Scan
  *
@@ -1820,11 +1856,15 @@ enum hdd_dot11_mode {
  * <ini>
  * gForce1x1Exception - force 1x1 when connecting to certain peer
  * @Min: 0
- * @Max: 1
- * @Default: 0
+ * @Max: 2
+ * @Default: 2
  *
  * This INI when enabled will force 1x1 connection with certain peer.
- *
+ * The implementation for this ini would be as follows:-
+ * Value 0: Even if the AP is present in OUI, 1x1 will not be forced
+ * Value 1: If antenna sharing supported, then only do 1x1.
+ * Value 2: If AP present in OUI, force 1x1 connection.
+
  *
  * Related: None
  *
@@ -1836,8 +1876,8 @@ enum hdd_dot11_mode {
  */
 #define CFG_FORCE_1X1_NAME      "gForce1x1Exception"
 #define CFG_FORCE_1X1_MIN       (0)
-#define CFG_FORCE_1X1_MAX       (1)
-#define CFG_FORCE_1X1_DEFAULT   (1)
+#define CFG_FORCE_1X1_MAX       (2)
+#define CFG_FORCE_1X1_DEFAULT   (2)
 
 /*
  * <ini>
@@ -7268,6 +7308,11 @@ enum hdd_link_speed_rpt_type {
 #define CFG_IPA_LOW_BANDWIDTH_MBPS_MAX           (100)
 #define CFG_IPA_LOW_BANDWIDTH_MBPS_DEFAULT       (100)
 
+#define CFG_IPA_FORCE_VOTING_ENABLE              "gIPAForceVotingEnable"
+#define CFG_IPA_FORCE_VOTING_ENABLE_MIN          (0)
+#define CFG_IPA_FORCE_VOTING_ENABLE_MAX          (1)
+#define CFG_IPA_FORCE_VOTING_ENABLE_DEFAULT      (0)
+
 /*
  * Firmware uart print
  */
@@ -8209,6 +8254,63 @@ enum hdd_link_speed_rpt_type {
 #define CFG_WLAN_LOGGING_CONSOLE_SUPPORT_ENABLE  (1)
 #define CFG_WLAN_LOGGING_CONSOLE_SUPPORT_DISABLE (0)
 #define CFG_WLAN_LOGGING_CONSOLE_SUPPORT_DEFAULT (1)
+
+/*
+ * <ini>
+ * host_log_custom_nl_proto - Host log netlink protocol
+ * @Min: 0
+ * @Max: 32
+ * @Default: 2
+ *
+ * This ini is used to set host log netlink protocol. The default
+ * value is 2 (NETLINK_USERSOCK), customer should avoid selecting the
+ * netlink protocol that already used on their platform by other
+ * applications or services. By choosing the non-default value(2),
+ * Customer need to change the netlink protocol of application receive
+ * tool(cnss_diag) accordingly. Available values could be:
+ *
+ * host_log_custom_nl_proto = 0 -	NETLINK_ROUTE, Routing/device hook
+ * host_log_custom_nl_proto = 1 -	NETLINK_UNUSED, Unused number
+ * host_log_custom_nl_proto = 2 -	NETLINK_USERSOCK, Reserved for user
+ *					mode socket protocols
+ * host_log_custom_nl_proto = 3 -	NETLINK_FIREWALL, Unused number,
+ *					formerly ip_queue
+ * host_log_custom_nl_proto = 4 -	NETLINK_SOCK_DIAG, socket monitoring
+ * host_log_custom_nl_proto = 5 -	NETLINK_NFLOG, netfilter/iptables ULOG
+ * host_log_custom_nl_proto = 6 -	NETLINK_XFRM, ipsec
+ * host_log_custom_nl_proto = 7 -	NETLINK_SELINUX, SELinux event
+ *					notifications
+ * host_log_custom_nl_proto = 8 -	NETLINK_ISCSI, Open-iSCSI
+ * host_log_custom_nl_proto = 9 -	NETLINK_AUDIT, auditing
+ * host_log_custom_nl_proto = 10 -	NETLINK_FIB_LOOKUP
+ * host_log_custom_nl_proto = 11 -	NETLINK_CONNECTOR
+ * host_log_custom_nl_proto = 12 -	NETLINK_NETFILTER, netfilter subsystem
+ * host_log_custom_nl_proto = 13 -	NETLINK_IP6_FW
+ * host_log_custom_nl_proto = 14 -	NETLINK_DNRTMSG, DECnet routing messages
+ * host_log_custom_nl_proto = 15 -	NETLINK_KOBJECT_UEVENT, Kernel
+ *					messages to userspace
+ * host_log_custom_nl_proto = 16 -	NETLINK_GENERIC, leave room for
+ *					NETLINK_DM (DM Events)
+ * host_log_custom_nl_proto = 18 -	NETLINK_SCSITRANSPORT, SCSI Transports
+ * host_log_custom_nl_proto = 19 -	NETLINK_ECRYPTFS
+ * host_log_custom_nl_proto = 20 -	NETLINK_RDMA
+ * host_log_custom_nl_proto = 21 -	NETLINK_CRYPTO, Crypto layer
+ * host_log_custom_nl_proto = 22 -	NETLINK_SMC, SMC monitoring
+ *
+ * The max value is: MAX_LINKS which is 32
+ *
+ * Related: None
+ *
+ * Supported Feature: STA
+ *
+ * Usage: Internal/External
+ *
+ * </ini>
+ */
+#define CFG_HOST_LOG_CUSTOM_NETLINK_PROTO    "host_log_custom_nl_proto"
+#define CFG_HOST_LOG_CUSTOM_NETLINK_PROTO_MIN           (0)
+#define CFG_HOST_LOG_CUSTOM_NETLINK_PROTO_MAX           (32)
+#define CFG_HOST_LOG_CUSTOM_NETLINK_PROTO_DEFAULT       (2)
 #endif /* WLAN_LOGGING_SOCK_SVC_ENABLE */
 
 #ifdef WLAN_FEATURE_LPSS
@@ -9993,6 +10095,31 @@ enum dot11p_mode {
 #endif
 
 /*
+ * <ini>
+ * gThreeWayCoexConfigLegacyEnable - Enable coex config legacy feature
+ * @Min: 0
+ * @Max: 1
+ * @Default: 0
+ *
+ * This ini is used to enable or disable three way coex config legacy feature.
+ * This feature is designed only for non-mobile solution.
+ * When the feature is disabled, Firmware use the default configuration to
+ * set the coex priority of three antenna(WLAN, BT, ZIGBEE).
+ * when enable this feature, customer can use the vendor command to set antenna
+ * coex priority dynamically.
+ *
+ * Supported Feature: three way coex config
+ *
+ * Usage: External
+ *
+ * </ini>
+ */
+#define CFG_ENABLE_TW_COEX_LEGACY_NAME  "gThreeWayCoexConfigLegacyEnable"
+#define CFG_ENABLE_TW_COEX_LEGACY_MIN     (0)
+#define CFG_ENABLE_TW_COEX_LEGACY_MAX     (1)
+#define CFG_ENABLE_TW_COEX_LEGACY_DEFAULT (0)
+
+/*
  * Dense traffic threshold
  * traffic threshold required for dense roam scan
  * Measured in kbps
@@ -11373,8 +11500,8 @@ enum hdd_wext_control {
  * <ini>
  * gAutoBmpsTimerValue - Set Auto BMPS Timer value
  * @Min: 0
- * @Max: 120
- * @Default: 90
+ * @Max: 1000
+ * @Default: 600
  *
  * This ini is used to set Auto BMPS Timer value in seconds
  *
@@ -11388,8 +11515,8 @@ enum hdd_wext_control {
  */
 #define CFG_AUTO_PS_ENABLE_TIMER_NAME          "gAutoBmpsTimerValue"
 #define CFG_AUTO_PS_ENABLE_TIMER_MIN           (0)
-#define CFG_AUTO_PS_ENABLE_TIMER_MAX           (120)
-#define CFG_AUTO_PS_ENABLE_TIMER_DEFAULT       (90)
+#define CFG_AUTO_PS_ENABLE_TIMER_MAX           (1000)
+#define CFG_AUTO_PS_ENABLE_TIMER_DEFAULT       (600)
 
 #ifdef WLAN_ICMP_DISABLE_PS
 /*
@@ -14456,7 +14583,7 @@ enum hdd_external_acs_policy {
  * enable_esp_for_roam - Enable/disable esp feature
  * @Min: 0
  * @Max: 1
- * @Default: 0
+ * @Default: 1
  *
  * This ini is used to enable/disable ESP(Estimated service parameters) IE
  * parsing and decides whether firmware will include this in its scoring algo.
@@ -15271,7 +15398,7 @@ enum hdd_external_acs_policy {
  * </ini>
  */
 #define CFG_ACTION_OUI_SWITCH_TO_11N_MODE_NAME    "gActionOUISwitchTo11nMode"
-#define CFG_ACTION_OUI_SWITCH_TO_11N_MODE_DEFAULT "00904C 03 0418BF E0 21 40"
+#define CFG_ACTION_OUI_SWITCH_TO_11N_MODE_DEFAULT "00904C 05 0418BF0CB2 F8 21 40"
 
 /*
  * <ini>
@@ -16359,6 +16486,7 @@ struct hdd_config {
 	uint8_t enableBypass11d;
 	uint8_t enableDFSChnlScan;
 	bool wake_lock_in_user_scan;
+	bool honour_nl_scan_policy_flags;
 	uint8_t enable_dfs_pno_chnl_scan;
 	uint8_t enableDynamicDTIM;
 	uint8_t ShortGI40MhzEnable;
@@ -16507,6 +16635,7 @@ struct hdd_config {
 	uint32_t IpaHighBandwidthMbps;
 	uint32_t IpaMediumBandwidthMbps;
 	uint32_t IpaLowBandwidthMbps;
+	bool IpaForceVoting;
 #ifdef FEATURE_WLAN_MCC_TO_SCC_SWITCH
 	uint32_t WlanMccToSccSwitchMode;
 #endif
@@ -16621,6 +16750,7 @@ struct hdd_config {
 	/* WLAN Logging */
 	bool wlan_logging_enable;
 	bool wlan_logging_to_console;
+	uint8_t host_log_custom_nl_proto;
 #endif /* WLAN_LOGGING_SOCK_SVC_ENABLE */
 
 #ifdef WLAN_FEATURE_LPSS
@@ -16742,6 +16872,7 @@ struct hdd_config {
 	uint8_t tsf_ptp_options;
 #endif /* WLAN_FEATURE_TSF_PLUS */
 #endif
+	bool enable_three_way_coex_config_legacy;
 	uint32_t roam_dense_traffic_thresh;
 	uint32_t roam_dense_rssi_thresh_offset;
 	bool ignore_peer_ht_opmode;
@@ -16899,7 +17030,7 @@ struct hdd_config {
 	enum hdd_external_acs_policy external_acs_policy;
 	/* threshold of packet drops at which FW initiates disconnect */
 	uint16_t pkt_err_disconn_th;
-	bool is_force_1x1;
+	enum force_1x1_type is_force_1x1_enable;
 	uint8_t enable_rts_sifsbursting;
 	uint8_t max_mpdus_inampdu;
 	uint16_t sap_max_mcs_txdata;

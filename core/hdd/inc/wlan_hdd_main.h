@@ -126,7 +126,7 @@ struct hdd_apf_context {
 #endif /* FEATURE_WLAN_APF */
 
 /** Number of Tx Queues */
-#ifdef QCA_LL_TX_FLOW_CONTROL_V2
+#if defined(QCA_LL_TX_FLOW_CONTROL_V2) || defined(QCA_LL_PDEV_TX_FLOW_CONTROL)
 #define NUM_TX_QUEUES 5
 #else
 #define NUM_TX_QUEUES 4
@@ -248,6 +248,8 @@ enum hdd_driver_flags {
 #define WLAN_WAIT_TIME_APF     1000
 
 #define WLAN_WAIT_TIME_FW_ROAM_STATS 1000
+
+#define WLAN_WAIT_TIME_ANTENNA_ISOLATION 8000
 
 /* Maximum time(ms) to wait for RSO CMD status event */
 #define WAIT_TIME_RSO_CMD_STATUS 2000
@@ -534,9 +536,6 @@ struct hdd_tx_rx_stats {
 	__u32 rx_delivered[NUM_CPUS];
 	__u32 rx_refused[NUM_CPUS];
 	qdf_atomic_t rx_usolict_arp_n_mcast_drp;
-	/* rx gro */
-	__u32 rx_aggregated;
-	__u32 rx_non_aggregated;
 
 	/* txflow stats */
 	bool     is_txflow_paused;
@@ -1752,6 +1751,25 @@ struct hdd_dynamic_mac {
 };
 
 /**
+ * hdd_fw_ver_info - FW version info structure
+ * @major_spid: FW version - major spid.
+ * @minor_spid: FW version - minor spid
+ * @siid:       FW version - siid
+ * @sub_id:     FW version - sub id
+ * @rel_id:     FW version - release id
+ * @crmid:      FW version - crmid
+ */
+
+struct hdd_fw_ver_info {
+	uint32_t major_spid;
+	uint32_t minor_spid;
+	uint32_t siid;
+	uint32_t sub_id;
+	uint32_t rel_id;
+	uint32_t crmid;
+};
+
+/**
  * struct hdd_context - hdd shared driver and psoc/device context
  * @psoc: object manager psoc context
  * @pdev: object manager pdev context
@@ -1847,6 +1865,7 @@ struct hdd_context {
 	/* defining the firmware version */
 	uint32_t target_fw_version;
 	uint32_t target_fw_vers_ext;
+	struct hdd_fw_ver_info fw_version_info;
 
 	/* defining the chip/rom version */
 	uint32_t target_hw_version;
@@ -1951,8 +1970,7 @@ struct hdd_context {
 #endif
 	/* Present state of driver cds modules */
 	enum driver_modules_status driver_status;
-	/* interface idle work */
-	qdf_delayed_work_t iface_idle_work;
+	qdf_delayed_work_t psoc_idle_timeout_work;
 	/* Interface change lock */
 	struct mutex iface_change_lock;
 	bool rps;
@@ -2546,12 +2564,9 @@ static inline bool hdd_scan_random_mac_addr_supported(void)
  */
 int hdd_start_vendor_acs(struct hdd_adapter *adapter);
 
-void hdd_get_fw_version(struct hdd_context *hdd_ctx,
-			uint32_t *major_spid, uint32_t *minor_spid,
-			uint32_t *siid, uint32_t *crmid);
 /**
  * hdd_acs_response_timeout_handler() - timeout handler for acs_timer
- * @context : timeout handler context
+ * @context: timeout handler context
  *
  * Return: None
  */
@@ -2827,6 +2842,26 @@ static inline void hdd_set_tso_flags(struct hdd_context *hdd_ctx,
 void hdd_get_ibss_peer_info_cb(void *pUserData,
 				tSirPeerInfoRspParams *pPeerInfo);
 
+/**
+ * wlan_hdd_get_host_log_nl_proto() - Get host log netlink protocol
+ * @hdd_ctx: HDD context
+ *
+ * This function returns with host log netlink protocol settings
+ *
+ * Return: none
+ */
+#ifdef WLAN_LOGGING_SOCK_SVC_ENABLE
+static inline int wlan_hdd_get_host_log_nl_proto(struct hdd_context *hdd_ctx)
+{
+	return hdd_ctx->config->host_log_custom_nl_proto;
+}
+#else
+static inline int wlan_hdd_get_host_log_nl_proto(struct hdd_context *hdd_ctx)
+{
+	return NETLINK_USERSOCK;
+}
+#endif
+
 #ifdef CONFIG_CNSS_LOGGER
 /**
  * wlan_hdd_nl_init() - wrapper function to CNSS_LOGGER case
@@ -2843,7 +2878,10 @@ void hdd_get_ibss_peer_info_cb(void *pUserData,
  */
 static inline int wlan_hdd_nl_init(struct hdd_context *hdd_ctx)
 {
-	hdd_ctx->radio_index = nl_srv_init(hdd_ctx->wiphy);
+	int proto;
+
+	proto = wlan_hdd_get_host_log_nl_proto(hdd_ctx);
+	hdd_ctx->radio_index = nl_srv_init(hdd_ctx->wiphy, proto);
 
 	/* radio_index is assigned from 0, so only >=0 will be valid index  */
 	if (hdd_ctx->radio_index >= 0)
@@ -2863,7 +2901,10 @@ static inline int wlan_hdd_nl_init(struct hdd_context *hdd_ctx)
  */
 static inline int wlan_hdd_nl_init(struct hdd_context *hdd_ctx)
 {
-	return nl_srv_init(hdd_ctx->wiphy);
+	int proto;
+
+	proto = wlan_hdd_get_host_log_nl_proto(hdd_ctx);
+	return nl_srv_init(hdd_ctx->wiphy, proto);
 }
 #endif
 QDF_STATUS hdd_sme_open_session_callback(uint8_t session_id,
@@ -3100,15 +3141,12 @@ void wlan_hdd_deinit_chan_info(struct hdd_context *hdd_ctx);
 void wlan_hdd_start_sap(struct hdd_adapter *ap_adapter, bool reinit);
 
 /**
- * hdd_check_for_opened_interfaces()- Check for interface up
+ * hdd_is_any_interface_open()- Check for interface up
  * @hdd_ctx: HDD context
  *
- * check  if there are any wlan interfaces before starting the timer
- * to close the modules
- *
- * Return: 0 if interface was opened else false
+ * Return: true if any interface is open
  */
-bool hdd_check_for_opened_interfaces(struct hdd_context *hdd_ctx);
+bool hdd_is_any_interface_open(struct hdd_context *hdd_ctx);
 
 #ifdef WIFI_POS_CONVERGED
 /**
@@ -3358,10 +3396,11 @@ int hdd_set_limit_off_chan_for_tos(struct hdd_adapter *adapter, enum tos tos,
 /**
  * hdd_drv_ops_inactivity_handler() - Timeout handler for driver ops
  * inactivity timer
+ * @context: pointer to context
  *
  * Return: None
  */
-void hdd_drv_ops_inactivity_handler(void);
+void hdd_drv_ops_inactivity_handler(void *context);
 
 /**
  * hdd_start_driver_ops_timer() - Starts driver ops inactivity timer
@@ -3424,12 +3463,27 @@ void hdd_component_psoc_disable(struct wlan_objmgr_psoc *psoc);
 #ifdef WLAN_FEATURE_MEMDUMP_ENABLE
 int hdd_driver_memdump_init(void);
 void hdd_driver_memdump_deinit(void);
+
+/**
+ * hdd_driver_mem_cleanup() - Frees memory allocated for
+ * driver dump
+ *
+ * This function  frees driver dump memory.
+ *
+ * Return: None
+ */
+void hdd_driver_mem_cleanup(void);
+
 #else /* WLAN_FEATURE_MEMDUMP_ENABLE */
 static inline int hdd_driver_memdump_init(void)
 {
 	return 0;
 }
 static inline void hdd_driver_memdump_deinit(void)
+{
+}
+
+static inline void hdd_driver_mem_cleanup(void)
 {
 }
 #endif /* WLAN_FEATURE_MEMDUMP_ENABLE */
@@ -3629,4 +3683,47 @@ void wlan_hdd_send_tcp_param_update_event(struct hdd_context *hdd_ctx,
  */
 void hdd_hidden_ssid_enable_roaming(hdd_handle_t hdd_handle, uint8_t vdev_id);
 
+/**
+ * hdd_trigger_psoc_idle_restart() - trigger restart of a previously shutdown
+ * idle psoc, if needed
+ * @hdd_ctx: the hdd context which should be restarted
+ *
+ * This API does nothing if the given psoc is already active.
+ *
+ *  Return: Errno
+ */
+int hdd_trigger_psoc_idle_restart(struct hdd_context *hdd_ctx);
+
+/**
+ * hdd_psoc_idle_shutdown - perform idle shutdown after interface inactivity
+ *                          timeout
+ * @dev: platform device structure
+ *
+ * Return: 0 for success errorno for failure
+ */
+int hdd_psoc_idle_shutdown(struct device *dev);
+
+/**
+ * hdd_psoc_idle_restart - perform idle restart after idle shutdown
+ * @dev: platform device structure
+ *
+ * Return: 0 for success non-zero error code for failure
+ */
+int hdd_psoc_idle_restart(struct device *dev);
+
+/**
+ * hdd_psoc_idle_timer_start() - start the idle psoc detection timer
+ * @hdd_ctx: the hdd context for which the timer should be started
+ *
+ * Return: None
+ */
+void hdd_psoc_idle_timer_start(struct hdd_context *hdd_ctx);
+
+/**
+ * hdd_psoc_idle_timer_stop() - stop the idle psoc detection timer
+ * @hdd_ctx: the hdd context for which the timer should be stopped
+ *
+ * Return: None
+ */
+void hdd_psoc_idle_timer_stop(struct hdd_context *hdd_ctx);
 #endif /* end #if !defined(WLAN_HDD_MAIN_H) */

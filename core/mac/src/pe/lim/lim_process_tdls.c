@@ -3130,7 +3130,6 @@ static void lim_check_aid_and_delete_peer(tpAniSirGlobal p_mac,
 	size_t aid_bitmap_size = sizeof(session_entry->peerAIDBitmap);
 	struct qdf_mac_addr mac_addr;
 	QDF_STATUS status;
-
 	/*
 	 * Check all the set bit in peerAIDBitmap and delete the peer
 	 * (with that aid) entry from the hash table and add the aid
@@ -3155,17 +3154,16 @@ static void lim_check_aid_and_delete_peer(tpAniSirGlobal p_mac,
 				lim_send_deauth_mgmt_frame(p_mac,
 					eSIR_MAC_DEAUTH_LEAVING_BSS_REASON,
 					stads->staAddr, session_entry, false);
-
-				/* Delete TDLS peer */
-				qdf_mem_copy(mac_addr.bytes, stads->staAddr,
-					     QDF_MAC_ADDR_SIZE);
-
-				status = lim_tdls_del_sta(p_mac, mac_addr,
-							 session_entry, false);
-				if (status != QDF_STATUS_SUCCESS)
-					pe_debug("peer "MAC_ADDRESS_STR" not found",
-						MAC_ADDR_ARRAY(stads->staAddr));
 			}
+			/* Delete TDLS peer */
+			qdf_mem_copy(mac_addr.bytes, stads->staAddr,
+				     QDF_MAC_ADDR_SIZE);
+
+			status = lim_tdls_del_sta(p_mac, mac_addr,
+						  session_entry, false);
+			if (status != QDF_STATUS_SUCCESS)
+				pe_debug("peer " QDF_MAC_ADDR_STR " not found",
+					 QDF_MAC_ADDR_ARRAY(stads->staAddr));
 
 			dph_delete_hash_entry(p_mac,
 				stads->staAddr, stads->assocId,
@@ -3287,16 +3285,20 @@ void lim_process_tdls_del_sta_rsp(tpAniSirGlobal mac_ctx,
 		return;
 	}
 
+	qdf_mem_copy(peer_mac.bytes,
+		     del_sta_params->staMac, QDF_MAC_ADDR_SIZE);
+
 	sta_ds = dph_lookup_hash_entry(mac_ctx, del_sta_params->staMac,
 			&peer_idx, &session_entry->dph.dphHashTable);
 	if (!sta_ds) {
-		pe_err("DPH Entry for STA: %X is missing",
-			DPH_STA_HASH_INDEX_PEER);
+		pe_err("DPH Entry for STA: %X is missing release the serialization command",
+		       DPH_STA_HASH_INDEX_PEER);
+		lim_send_sme_tdls_del_sta_rsp(mac_ctx,
+					      session_entry->smeSessionId,
+					      peer_mac, NULL,
+					      QDF_STATUS_SUCCESS);
 		goto skip_event;
 	}
-
-	qdf_mem_copy(peer_mac.bytes,
-			del_sta_params->staMac, QDF_MAC_ADDR_SIZE);
 
 	if (QDF_STATUS_SUCCESS != del_sta_params->status) {
 		pe_err("DEL STA failed!");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -449,7 +449,8 @@ void wlan_ipa_uc_rt_debug_init(struct wlan_ipa_priv *ipa_ctx);
  * Return: None
  */
 static inline
-void wlan_ipa_reg_sap_xmit_cb(struct wlan_ipa_priv *ipa_ctx, void *cb)
+void wlan_ipa_reg_sap_xmit_cb(struct wlan_ipa_priv *ipa_ctx,
+			      wlan_ipa_softap_xmit cb)
 {
 	ipa_ctx->softap_xmit = cb;
 }
@@ -462,7 +463,8 @@ void wlan_ipa_reg_sap_xmit_cb(struct wlan_ipa_priv *ipa_ctx, void *cb)
  * Return: None
  */
 static inline
-void wlan_ipa_reg_send_to_nw_cb(struct wlan_ipa_priv *ipa_ctx, void *cb)
+void wlan_ipa_reg_send_to_nw_cb(struct wlan_ipa_priv *ipa_ctx,
+				wlan_ipa_send_to_nw cb)
 {
 	ipa_ctx->send_to_nw = cb;
 }
@@ -606,6 +608,19 @@ int wlan_ipa_uc_smmu_map(bool map, uint32_t num_buf, qdf_mem_info_t *buf_arr);
  * Return: true if FW WDI actived, false otherwise
  */
 bool wlan_ipa_is_fw_wdi_activated(struct wlan_ipa_priv *ipa_ctx);
+
+/**
+ * wlan_ipa_uc_cleanup_sta - disconnect and cleanup sta iface
+ * @ipa_ctx: IPA context
+ * @net_dev: Interface net device
+ *
+ * Send disconnect sta event to IPA driver and cleanup IPA iface
+ * if not yet done
+ *
+ * Return: void
+ */
+void wlan_ipa_uc_cleanup_sta(struct wlan_ipa_priv *ipa_ctx,
+			     qdf_netdev_t net_dev);
 
 /**
  * wlan_ipa_uc_disconnect_ap() - send ap disconnect event

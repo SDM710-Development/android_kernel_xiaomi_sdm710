@@ -203,6 +203,8 @@ QDF_STATUS cds_init(void)
 
 	return QDF_STATUS_SUCCESS;
 deinit:
+	qdf_cpuhp_deinit();
+	qdf_event_list_destroy();
 	qdf_mc_timer_manager_exit();
 	qdf_mem_exit();
 	qdf_lock_stats_deinit();
@@ -301,6 +303,7 @@ cds_cfg_update_ac_specs_params(struct txrx_pdev_cfg_param_t *olcfg,
 	}
 }
 
+#if defined(QCA_LL_TX_FLOW_CONTROL_V2) || defined(QCA_LL_PDEV_TX_FLOW_CONTROL)
 static inline void
 cds_cdp_set_flow_control_params(struct cds_config_info *cds_cfg,
 				struct txrx_pdev_cfg_param_t *cdp_cfg)
@@ -309,6 +312,12 @@ cds_cdp_set_flow_control_params(struct cds_config_info *cds_cfg,
 	cdp_cfg->tx_flow_start_queue_offset =
 				 cds_cfg->tx_flow_start_queue_offset;
 }
+#else
+static inline void
+cds_cdp_set_flow_control_params(struct cds_config_info *cds_cfg,
+				struct txrx_pdev_cfg_param_t *cdp_cfg)
+{}
+#endif
 
 /**
  * cds_cdp_cfg_attach() - attach data path config module
