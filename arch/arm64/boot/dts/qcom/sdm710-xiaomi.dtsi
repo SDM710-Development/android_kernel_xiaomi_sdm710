@@ -23,6 +23,12 @@
 	};
 };
 
+&soc {
+	restart@10ac000 {
+		qcom,force-warm-reboot;
+	};
+};
+
 /* sdm670.dtsi */
 &pil_modem {
 	/delete-property/ qcom,minidump-id;
