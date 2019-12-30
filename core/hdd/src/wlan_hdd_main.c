@@ -71,6 +71,9 @@
 #include <linux/semaphore.h>
 #include <linux/ctype.h>
 #include <linux/compat.h>
+#ifdef WLAN_FEATURE_ETHTOOL
+#include <linux/ethtool.h>
+#endif
 #ifdef MSM_PLATFORM
 #include <soc/qcom/subsystem_restart.h>
 #endif
@@ -3092,6 +3095,10 @@ int hdd_wlan_start_modules(struct hdd_context *hdd_ctx, bool reinit)
 			cds_set_rx_thread_cpu_mask(
 				hdd_ctx->config->rx_thread_affinity_mask);
 
+		if (hdd_ctx->config->rx_thread_ul_affinity_mask)
+			cds_set_rx_thread_ul_cpu_mask(
+				hdd_ctx->config->rx_thread_ul_affinity_mask);
+
 		/* initialize components configurations after psoc open */
 		ret = hdd_update_components_config(hdd_ctx);
 		if (ret) {
@@ -3944,6 +3951,44 @@ static void hdd_set_multicast_list(struct net_device *dev)
 	cds_ssr_protect(__func__);
 	__hdd_set_multicast_list(dev);
 	cds_ssr_unprotect(__func__);
+}
+#endif
+
+#ifdef WLAN_FEATURE_ETHTOOL
+static int hdd_ethtool_get_ts_info(struct net_device *dev,
+	struct ethtool_ts_info *info)
+{
+	info->so_timestamping =
+		SOF_TIMESTAMPING_RX_SOFTWARE |
+		SOF_TIMESTAMPING_SOFTWARE |
+		SOF_TIMESTAMPING_TX_SOFTWARE |
+		SOF_TIMESTAMPING_TX_HARDWARE |
+		SOF_TIMESTAMPING_RX_HARDWARE |
+		SOF_TIMESTAMPING_RAW_HARDWARE;
+	/* phc index is required only if ptp clock supported */
+	info->phc_index =  -1;
+	info->tx_types =
+		(1 << HWTSTAMP_TX_OFF) |
+		(1 << HWTSTAMP_TX_ON);
+	info->rx_filters =
+		(1 << HWTSTAMP_FILTER_NONE) |
+		(1 << HWTSTAMP_FILTER_ALL);
+
+	return 0;
+}
+
+static const struct ethtool_ops ethtool_drv_ops = {
+	.get_drvinfo = cfg80211_get_drvinfo,
+	.get_ts_info = hdd_ethtool_get_ts_info,
+};
+
+static void hdd_set_ethtool_ops(struct net_device *dev)
+{
+	dev->ethtool_ops = &ethtool_drv_ops;
+}
+#else
+static void hdd_set_ethtool_ops(struct net_device *dev)
+{
 }
 #endif
 
@@ -5556,6 +5601,7 @@ struct hdd_adapter *hdd_open_adapter(struct hdd_context *hdd_ctx, uint8_t sessio
 	if (adapter->device_mode == QDF_STA_MODE)
 		wlan_hdd_debugfs_csr_init(adapter);
 
+	hdd_set_ethtool_ops(adapter->dev);
 	return adapter;
 
 err_free_netdev:
@@ -8269,6 +8315,17 @@ static void hdd_pld_request_bus_bandwidth(struct hdd_context *hdd_ctx,
 			}
 			if (hdd_ctx->dynamic_rps)
 				hdd_set_rps_cpu_mask(hdd_ctx);
+		}
+
+		if (hdd_ctx->config->rx_thread_ul_affinity_mask) {
+			if (next_vote_level == PLD_BUS_WIDTH_HIGH &&
+			    (tx_packets >
+			    hdd_ctx->config->busBandwidthHighThreshold) &&
+			    (rx_packets >
+			    hdd_ctx->config->busBandwidthLowThreshold))
+				cds_sched_handle_rx_thread_affinity_req(true);
+			else if (next_vote_level != PLD_BUS_WIDTH_HIGH)
+				cds_sched_handle_rx_thread_affinity_req(false);
 		}
 
 		if (hdd_ctx->config->napi_cpu_affinity_mask)
@@ -11112,6 +11169,7 @@ static int hdd_set_ani_enabled(struct hdd_context *hdd_ctx)
 static int hdd_pre_enable_configure(struct hdd_context *hdd_ctx)
 {
 	int ret;
+	uint8_t max_retry = 0;
 	QDF_STATUS status;
 	void *soc = cds_get_context(QDF_MODULE_ID_SOC);
 
@@ -11150,6 +11208,14 @@ static int hdd_pre_enable_configure(struct hdd_context *hdd_ctx)
 				  PDEV_CMD);
 	if (0 != ret) {
 		hdd_err("WMI_PDEV_PARAM_TX_CHAIN_MASK_1SS failed %d", ret);
+		goto out;
+	}
+
+	max_retry = hdd_ctx->config->mgmt_retry_max;
+	ret = sme_cli_set_command(0, WMI_PDEV_PARAM_MGMT_RETRY_LIMIT, max_retry,
+				  PDEV_CMD);
+	if (0 != ret) {
+		hdd_err("WMI_PDEV_PARAM_MGMT_RETRY_LIMIT failed %d", ret);
 		goto out;
 	}
 
@@ -13739,10 +13805,6 @@ static void hdd_driver_unload(void)
 	cds_set_driver_loaded(false);
 	cds_set_unload_in_progress(true);
 
-	if (!cds_wait_for_external_threads_completion(__func__))
-		hdd_warn("External threads are still active attempting "
-			 "driver unload anyway");
-
 	if (hdd_ctx)
 		hdd_psoc_idle_timer_stop(hdd_ctx);
 
@@ -14898,6 +14960,10 @@ int hdd_update_components_config(struct hdd_context *hdd_ctx)
 		return ret;
 
 	ret = hdd_update_dfs_config(hdd_ctx);
+	if (ret)
+		return ret;
+
+	ret = hdd_update_regulatory_config(hdd_ctx);
 
 	return ret;
 }
