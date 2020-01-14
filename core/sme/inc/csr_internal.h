@@ -620,6 +620,7 @@ struct csr_config {
 	uint8_t oce_feature_bitmap;
 	struct csr_mbo_thresholds mbo_thresholds;
 	uint32_t btm_offload_config;
+	uint32_t pmkid_modes;
 	uint32_t btm_solicited_timeout;
 	uint32_t btm_max_attempt_cnt;
 	uint32_t btm_sticky_time;
@@ -648,6 +649,7 @@ struct csr_config {
 #ifdef WLAN_ADAPTIVE_11R
 	bool enable_adaptive_11r;
 #endif
+	bool enable_pending_list_req;
 };
 
 struct csr_channel_powerinfo {
@@ -725,6 +727,7 @@ struct csr_scanstruct {
 	bool fcc_constraint;
 	uint8_t max_scan_count;
 	bool defer_update_channel_list;
+	bool pending_channel_list_req;
 	wlan_scan_requester requester_id;
 };
 
