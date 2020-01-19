@@ -267,11 +267,9 @@ QDF_STATUS wma_roam_scan_mawc_params(tp_wma_handle wma_handle,
 QDF_STATUS wma_roam_scan_offload_rssi_thresh(tp_wma_handle wma_handle,
 					     tSirRoamOffloadScanReq *roam_req);
 
-QDF_STATUS wma_roam_scan_offload_scan_period(tp_wma_handle wma_handle,
-					     uint32_t scan_period,
-					     uint32_t scan_age,
-					     uint32_t vdev_id,
-					     uint32_t roam_full_scan_period);
+QDF_STATUS
+wma_roam_scan_offload_scan_period(tp_wma_handle wma_handle,
+				  tSirRoamOffloadScanReq *roam_req);
 
 QDF_STATUS wma_roam_scan_offload_rssi_change(tp_wma_handle wma_handle,
 					     uint32_t vdev_id,
@@ -1474,4 +1472,18 @@ int wma_cold_boot_cal_event_handler(void *wma_ctx, uint8_t *event_buff,
  */
 QDF_STATUS wma_set_roam_triggers(tp_wma_handle wma_handle,
 				 struct roam_triggers *triggers);
+
+/**
+ * wma_get_ani_level_evt_handler - event handler to fetch ani level
+ * @handle: the wma handle
+ * @event_buf: buffer with event
+ * @len: buffer length
+ *
+ * This function receives ani level from firmware and passes the event
+ * to upper layer
+ *
+ * Return: 0 on success
+ */
+int wma_get_ani_level_evt_handler(void *handle, uint8_t *event_buf,
+				  uint32_t len);
 #endif
