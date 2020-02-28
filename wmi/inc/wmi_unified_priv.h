@@ -1633,6 +1633,9 @@ QDF_STATUS (*extract_ndp_sch_update)(wmi_unified_t wmi_handle,
 QDF_STATUS (*send_btm_config)(wmi_unified_t wmi_handle,
 			      struct wmi_btm_config *params);
 
+QDF_STATUS (*send_roam_preauth_status)(wmi_unified_t wmi_handle,
+				struct wmi_roam_auth_status_params *params);
+
 QDF_STATUS (*send_roam_bss_load_config)(wmi_unified_t wmi_handle,
 					struct wmi_bss_load_config *params);
 QDF_STATUS (*send_disconnect_roam_params)(
@@ -1762,6 +1765,15 @@ QDF_STATUS (*extract_ani_level)(uint8_t *evt_buf,
 				struct wmi_host_ani_level_event **info,
 				uint32_t *num_freqs);
 #endif /* FEATURE_ANI_LEVEL_REQUEST */
+
+#ifdef FEATURE_WLAN_TIME_SYNC_FTM
+QDF_STATUS (*send_wlan_time_sync_ftm_trigger_cmd)(wmi_unified_t wmi_handle,
+						  uint32_t vdev_id,
+						  bool burst_mode);
+QDF_STATUS (*send_wlan_ts_qtime_cmd)(wmi_unified_t wmi_handle,
+				     uint32_t vdev_id,
+				     uint64_t lpass_ts);
+#endif /* FEATURE_WLAN_TIME_SYNC_FTM */
 };
 
 /* Forward declartion for psoc*/
