@@ -548,6 +548,13 @@ rrm_process_beacon_report_req(tpAniSirGlobal pMac,
 	pe_info("maxDuration = %d sign = %d maxMeasduration = %d measDuration = %d",
 		maxDuration, sign, maxMeasduration, measDuration);
 
+	if (measDuration == 0 &&
+	    pBeaconReq->measurement_request.Beacon.meas_mode !=
+	    eSIR_BEACON_TABLE) {
+		pe_err("Invalid measurement duration");
+		return eRRM_REFUSED;
+	}
+
 	if (maxMeasduration < measDuration) {
 		if (pBeaconReq->durationMandatory) {
 			pe_err("Dropping the request: duration mandatory and maxduration > measduration");
@@ -751,9 +758,16 @@ rrm_fill_beacon_ies(tpAniSirGlobal pMac,
 	}
 
 	while (BcnNumIes > 0) {
-		len = *(pBcnIes + 1) + 2;       /* element id + length. */
+		len = *(pBcnIes + 1);
+		len += 2;       /* element id + length. */
 		pe_debug("EID = %d, len = %d total = %d",
 			*pBcnIes, *(pBcnIes + 1), len);
+
+		if (BcnNumIes < len) {
+			pe_err("RRM: Invalid IE len:%d exp_len:%d",
+			       len, BcnNumIes);
+			break;
+		}
 
 		if (len <= 2) {
 			pe_err("RRM: Invalid IE");

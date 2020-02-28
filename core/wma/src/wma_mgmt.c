@@ -1039,34 +1039,32 @@ static void wma_mask_tx_ht_rate(tp_wma_handle wma, uint8_t *mcs_set)
  * Return: one of the 11ax values defined in enum wlan_phymode;
  *         or WLAN_PHYMODE_AUTO if the input is not an 11ax phymode
  */
-static enum wlan_phymode wma_fw_to_host_phymode_11ac(WLAN_PHY_MODE phymode)
+static enum wlan_phymode wma_fw_to_host_phymode_11ac(WMI_HOST_WLAN_PHY_MODE phymode)
 {
 	switch (phymode) {
 	default:
 		return WLAN_PHYMODE_AUTO;
-#if SUPPORT_11AX
-	case MODE_11AX_HE20:
+	case WMI_HOST_MODE_11AX_HE20:
 		return WLAN_PHYMODE_11AC_VHT20;
-	case MODE_11AX_HE40:
+	case WMI_HOST_MODE_11AX_HE40:
 		return WLAN_PHYMODE_11AC_VHT40;
-	case MODE_11AX_HE80:
+	case WMI_HOST_MODE_11AX_HE80:
 		return WLAN_PHYMODE_11AC_VHT80;
-	case MODE_11AX_HE80_80:
+	case WMI_HOST_MODE_11AX_HE80_80:
 		return WLAN_PHYMODE_11AC_VHT80_80;
-	case MODE_11AX_HE160:
+	case WMI_HOST_MODE_11AX_HE160:
 		return WLAN_PHYMODE_11AC_VHT160;
-	case MODE_11AX_HE20_2G:
+	case WMI_HOST_MODE_11AX_HE20_2G:
 		return WLAN_PHYMODE_11AC_VHT20;
-	case MODE_11AX_HE40_2G:
+	case WMI_HOST_MODE_11AX_HE40_2G:
 		return WLAN_PHYMODE_11AC_VHT40;
-	case MODE_11AX_HE80_2G:
+	case WMI_HOST_MODE_11AX_HE80_2G:
 		return WLAN_PHYMODE_11AC_VHT80;
-#endif
 	}
 	return WLAN_PHYMODE_AUTO;
 }
 #else
-static enum wlan_phymode wma_fw_to_host_phymode_11ac(WLAN_PHY_MODE phymode)
+static enum wlan_phymode wma_fw_to_host_phymode_11ac(WMI_HOST_WLAN_PHY_MODE phymode)
 {
 	return WLAN_PHYMODE_AUTO;
 }
@@ -1081,31 +1079,27 @@ static enum wlan_phymode wma_fw_to_host_phymode_11ac(WLAN_PHY_MODE phymode)
  * Return: one of the 160 mhz values defined in enum wlan_phymode;
  *         or WLAN_PHYMODE_AUTO if the input is not a 160 mhz phymode
  */
-static enum wlan_phymode wma_fw_to_host_phymode_160(WLAN_PHY_MODE phymode)
+static enum wlan_phymode
+wma_fw_to_host_phymode_160(WMI_HOST_WLAN_PHY_MODE phymode)
 {
 	switch (phymode) {
 	default:
 		return WLAN_PHYMODE_AUTO;
-	case MODE_11AC_VHT80_80:
+	case WMI_HOST_MODE_11AC_VHT80_80:
 		return WLAN_PHYMODE_11AC_VHT80_80;
-	case MODE_11AC_VHT160:
+	case WMI_HOST_MODE_11AC_VHT160:
 		return WLAN_PHYMODE_11AC_VHT160;
 	}
 }
 #else
-static enum wlan_phymode wma_fw_to_host_phymode_160(WLAN_PHY_MODE phymode)
+static enum wlan_phymode
+wma_fw_to_host_phymode_160(WMI_HOST_WLAN_PHY_MODE phymode)
 {
 	return WLAN_PHYMODE_AUTO;
 }
 #endif
-/**
- * wma_fw_to_host_phymode() - convert fw to host phymode
- * @phymode: phymode to convert
- *
- * Return: one of the values defined in enum wlan_phymode;
- *         or WLAN_PHYMODE_AUTO if the conversion fails
- */
-static enum wlan_phymode wma_fw_to_host_phymode(WLAN_PHY_MODE phymode)
+
+enum wlan_phymode wma_fw_to_host_phymode(WMI_HOST_WLAN_PHY_MODE phymode)
 {
 	enum wlan_phymode host_phymode;
 	switch (phymode) {
@@ -1114,34 +1108,34 @@ static enum wlan_phymode wma_fw_to_host_phymode(WLAN_PHY_MODE phymode)
 		if (host_phymode != WLAN_PHYMODE_AUTO)
 			return host_phymode;
 		return wma_fw_to_host_phymode_11ac(phymode);
-	case MODE_11A:
+	case WMI_HOST_MODE_11A:
 		return WLAN_PHYMODE_11A;
-	case MODE_11G:
+	case WMI_HOST_MODE_11G:
 		return WLAN_PHYMODE_11G;
-	case MODE_11B:
+	case WMI_HOST_MODE_11B:
 		return WLAN_PHYMODE_11B;
-	case MODE_11GONLY:
-		return WLAN_PHYMODE_11G;
-	case MODE_11NA_HT20:
+	case WMI_HOST_MODE_11GONLY:
+		return WLAN_PHYMODE_11G_ONLY;
+	case WMI_HOST_MODE_11NA_HT20:
 		return WLAN_PHYMODE_11NA_HT20;
-	case MODE_11NG_HT20:
+	case WMI_HOST_MODE_11NG_HT20:
 		return WLAN_PHYMODE_11NG_HT20;
-	case MODE_11NA_HT40:
+	case WMI_HOST_MODE_11NA_HT40:
 		return WLAN_PHYMODE_11NA_HT40;
-	case MODE_11NG_HT40:
+	case WMI_HOST_MODE_11NG_HT40:
 		return WLAN_PHYMODE_11NG_HT40;
-	case MODE_11AC_VHT20:
+	case WMI_HOST_MODE_11AC_VHT20:
 		return WLAN_PHYMODE_11AC_VHT20;
-	case MODE_11AC_VHT40:
+	case WMI_HOST_MODE_11AC_VHT40:
 		return WLAN_PHYMODE_11AC_VHT40;
-	case MODE_11AC_VHT80:
+	case WMI_HOST_MODE_11AC_VHT80:
 		return WLAN_PHYMODE_11AC_VHT80;
-	case MODE_11AC_VHT20_2G:
-		return WLAN_PHYMODE_11AC_VHT20;
-	case MODE_11AC_VHT40_2G:
-		return WLAN_PHYMODE_11AC_VHT40;
-	case MODE_11AC_VHT80_2G:
-		return WLAN_PHYMODE_11AC_VHT80;
+	case WMI_HOST_MODE_11AC_VHT20_2G:
+		return WLAN_PHYMODE_11AC_VHT20_2G;
+	case WMI_HOST_MODE_11AC_VHT40_2G:
+		return WLAN_PHYMODE_11AC_VHT40_2G;
+	case WMI_HOST_MODE_11AC_VHT80_2G:
+		return WLAN_PHYMODE_11AC_VHT80_2G;
 	}
 }
 
@@ -1150,24 +1144,26 @@ static enum wlan_phymode wma_fw_to_host_phymode(WLAN_PHY_MODE phymode)
  * wma_host_to_fw_phymode_160() - convert host to fw phymode for 160 mhz
  * @host_phymode: phymode to convert
  *
- * Return: one of the 160 mhz values defined in enum WLAN_PHY_MODE;
- *         or MODE_UNKNOWN if the input is not a 160 mhz phymode
+ * Return: one of the 160 mhz values defined in enum WMI_HOST_WLAN_PHY_MODE;
+ *         or WMI_HOST_MODE_UNKNOWN if the input is not a 160 mhz phymode
  */
-static WLAN_PHY_MODE wma_host_to_fw_phymode_160(enum wlan_phymode host_phymode)
+static WMI_HOST_WLAN_PHY_MODE
+wma_host_to_fw_phymode_160(enum wlan_phymode host_phymode)
 {
 	switch (host_phymode) {
 	case WLAN_PHYMODE_11AC_VHT80_80:
-		return MODE_11AC_VHT80_80;
+		return WMI_HOST_MODE_11AC_VHT80_80;
 	case WLAN_PHYMODE_11AC_VHT160:
-		return MODE_11AC_VHT160;
+		return WMI_HOST_MODE_11AC_VHT160;
 	default:
-		return MODE_UNKNOWN;
+		return WMI_HOST_MODE_UNKNOWN;
 	}
 }
 #else
-static WLAN_PHY_MODE wma_host_to_fw_phymode_160(enum wlan_phymode host_phymode)
+static WMI_HOST_WLAN_PHY_MODE
+wma_host_to_fw_phymode_160(enum wlan_phymode host_phymode)
 {
-	return MODE_UNKNOWN;
+	return WMI_HOST_MODE_UNKNOWN;
 }
 #endif
 
@@ -1176,68 +1172,84 @@ static WLAN_PHY_MODE wma_host_to_fw_phymode_160(enum wlan_phymode host_phymode)
  * wma_host_to_fw_phymode_11ax() - convert host to fw phymode for 11ax phymode
  * @host_phymode: phymode to convert
  *
- * Return: one of the 11ax values defined in enum WLAN_PHY_MODE;
- *         or MODE_UNKNOWN if the input is not an 11ax phymode
+ * Return: one of the 11ax values defined in enum WMI_HOST_WLAN_PHY_MODE;
+ *         or WMI_HOST_MODE_UNKNOWN if the input is not an 11ax phymode
  */
-static WLAN_PHY_MODE wma_host_to_fw_phymode_11ax(enum wlan_phymode host_phymode)
+static WMI_HOST_WLAN_PHY_MODE
+wma_host_to_fw_phymode_11ax(enum wlan_phymode host_phymode)
 {
 	switch (host_phymode) {
 	case WLAN_PHYMODE_11AXA_HE20:
-		return MODE_11AX_HE20;
+		return WMI_HOST_MODE_11AX_HE20;
 	case WLAN_PHYMODE_11AXA_HE40:
-		return MODE_11AX_HE40;
+		return WMI_HOST_MODE_11AX_HE40;
 	case WLAN_PHYMODE_11AXA_HE80:
-		return MODE_11AX_HE80;
+		return WMI_HOST_MODE_11AX_HE80;
 	case WLAN_PHYMODE_11AXA_HE80_80:
-		return MODE_11AX_HE80_80;
+		return WMI_HOST_MODE_11AX_HE80_80;
 	case WLAN_PHYMODE_11AXA_HE160:
-		return MODE_11AX_HE160;
+		return WMI_HOST_MODE_11AX_HE160;
+	case WLAN_PHYMODE_11AXG_HE20:
+		return WMI_HOST_MODE_11AX_HE20_2G;
+	case WLAN_PHYMODE_11AXG_HE40:
+	case WLAN_PHYMODE_11AXG_HE40PLUS:
+	case WLAN_PHYMODE_11AXG_HE40MINUS:
+		return WMI_HOST_MODE_11AX_HE40_2G;
+	case WLAN_PHYMODE_11AXG_HE80:
+		return WMI_HOST_MODE_11AX_HE80_2G;
 	default:
-		return MODE_UNKNOWN;
+		return WMI_HOST_MODE_UNKNOWN;
 	}
 }
 #else
-static WLAN_PHY_MODE wma_host_to_fw_phymode_11ax(enum wlan_phymode host_phymode)
+static WMI_HOST_WLAN_PHY_MODE
+wma_host_to_fw_phymode_11ax(enum wlan_phymode host_phymode)
 {
-	return MODE_UNKNOWN;
+	return WMI_HOST_MODE_UNKNOWN;
 }
 #endif
 
-/**
- * wma_host_to_fw_phymode() - convert host to fw phymode
- * @host_phymode: phymode to convert
- *
- * Return: one of the values defined in enum WLAN_PHY_MODE;
- *         or MODE_UNKNOWN if the conversion fails
- */
-static WLAN_PHY_MODE wma_host_to_fw_phymode(enum wlan_phymode host_phymode)
+WMI_HOST_WLAN_PHY_MODE
+wma_host_to_fw_phymode(enum wlan_phymode host_phymode)
 {
-	WLAN_PHY_MODE fw_phymode;
+	WMI_HOST_WLAN_PHY_MODE fw_phymode;
 
 	switch (host_phymode) {
 	case WLAN_PHYMODE_11A:
-		return MODE_11A;
+		return WMI_HOST_MODE_11A;
 	case WLAN_PHYMODE_11G:
-		return MODE_11G;
+		return WMI_HOST_MODE_11G;
 	case WLAN_PHYMODE_11B:
-		return MODE_11B;
+		return WMI_HOST_MODE_11B;
+	case WLAN_PHYMODE_11G_ONLY:
+		return WMI_HOST_MODE_11GONLY;
 	case WLAN_PHYMODE_11NA_HT20:
-		return MODE_11NA_HT20;
+		return WMI_HOST_MODE_11NA_HT20;
 	case WLAN_PHYMODE_11NG_HT20:
-		return MODE_11NG_HT20;
+		return WMI_HOST_MODE_11NG_HT20;
 	case WLAN_PHYMODE_11NA_HT40:
-		return MODE_11NA_HT40;
+		return WMI_HOST_MODE_11NA_HT40;
 	case WLAN_PHYMODE_11NG_HT40:
-		return MODE_11NG_HT40;
+	case WLAN_PHYMODE_11NG_HT40PLUS:
+	case WLAN_PHYMODE_11NG_HT40MINUS:
+		return WMI_HOST_MODE_11NG_HT40;
 	case WLAN_PHYMODE_11AC_VHT20:
-		return MODE_11AC_VHT20;
+		return WMI_HOST_MODE_11AC_VHT20;
 	case WLAN_PHYMODE_11AC_VHT40:
-		return MODE_11AC_VHT40;
+		return WMI_HOST_MODE_11AC_VHT40;
 	case WLAN_PHYMODE_11AC_VHT80:
-		return MODE_11AC_VHT80;
+		return WMI_HOST_MODE_11AC_VHT80;
+	case WLAN_PHYMODE_11AC_VHT20_2G:
+		return WMI_HOST_MODE_11AC_VHT20_2G;
+	case WLAN_PHYMODE_11AC_VHT40PLUS_2G:
+	case WLAN_PHYMODE_11AC_VHT40MINUS_2G:
+	case WLAN_PHYMODE_11AC_VHT40_2G:
+		return WMI_HOST_MODE_11AC_VHT40_2G;
+	case WLAN_PHYMODE_11AC_VHT80_2G:
+		return WMI_HOST_MODE_11AC_VHT80_2G;
 	default:
 		fw_phymode = wma_host_to_fw_phymode_160(host_phymode);
-		if (fw_phymode != MODE_UNKNOWN)
+		if (fw_phymode != WMI_HOST_MODE_UNKNOWN)
 			return fw_phymode;
 		return wma_host_to_fw_phymode_11ax(host_phymode);
 	}
@@ -1253,7 +1265,7 @@ static WLAN_PHY_MODE wma_host_to_fw_phymode(enum wlan_phymode host_phymode)
  */
 static void wma_objmgr_set_peer_mlme_phymode(tp_wma_handle wma,
 					     uint8_t *mac_addr,
-					     WLAN_PHY_MODE phymode)
+					     WMI_HOST_WLAN_PHY_MODE phymode)
 {
 	uint8_t pdev_id;
 	struct wlan_objmgr_peer *peer;
@@ -1501,7 +1513,10 @@ QDF_STATUS wma_send_peer_assoc(tp_wma_handle wma,
 	    || params->encryptType == eSIR_ED_WPI
 #endif /* FEATURE_WLAN_WAPI */
 	    ) {
-		cmd->peer_flags |= WMI_PEER_NEED_PTK_4_WAY;
+		if (!params->no_ptk_4_way) {
+			cmd->peer_flags |= WMI_PEER_NEED_PTK_4_WAY;
+			WMA_LOGD("no ptk 4 way %d", params->no_ptk_4_way);
+		}
 		WMA_LOGD("Acquire set key wake lock for %d ms",
 			WMA_VDEV_SET_KEY_WAKELOCK_TIMEOUT);
 		wma_acquire_wakelock(&intr->vdev_set_key_wakelock,
@@ -1877,6 +1892,26 @@ static void wma_set_peer_unicast_cipher(tp_wma_handle wma,
 }
 
 /**
+ * wma_skip_bip_key_set() - skip the BIP key step or not
+ * @wma_handle: wma handle
+ * @iface: txrx node
+ * @key_cipher: key cipher
+ *
+ * if target not support the BIP key cipher, skip the set key command.
+ *
+ * Return: true to skip set key to target, otherwise set key to target
+ */
+static bool
+wma_skip_bip_key_set(tp_wma_handle wma_handle, uint32_t key_cipher)
+{
+	if ((key_cipher == WMI_CIPHER_AES_GMAC) &&
+	    !wmi_service_enabled(wma_handle->wmi_handle,
+				 wmi_service_gmac_offload_support))
+		return true;
+	return false;
+}
+
+/**
  * wma_setup_install_key_cmd() - set key parameters
  * @wma_handle: wma handle
  * @key_params: key parameters
@@ -1903,6 +1938,7 @@ static QDF_STATUS wma_setup_install_key_cmd(tp_wma_handle wma_handle,
 	uint32_t pn[4] = {0, 0, 0, 0};
 	uint8_t peer_id;
 	struct cdp_peer *peer;
+	bool skip_set_key;
 
 	if ((key_params->key_type == eSIR_ED_NONE &&
 	     key_params->key_len) || (key_params->key_type != eSIR_ED_NONE &&
@@ -2099,8 +2135,11 @@ static QDF_STATUS wma_setup_install_key_cmd(tp_wma_handle wma_handle,
 	/* Set PN check & security type in data path */
 	cdp_set_pn_check(soc, txrx_vdev, peer, sec_type, pn);
 
-	status = wmi_unified_setup_install_key_cmd(wma_handle->wmi_handle,
-								&params);
+	skip_set_key = wma_skip_bip_key_set(wma_handle, params.key_cipher);
+	if (!skip_set_key)
+		status = wmi_unified_setup_install_key_cmd(
+				wma_handle->wmi_handle, &params);
+
 	if (!key_params->unicast) {
 		/* Its GTK release the wake lock */
 		WMA_LOGD("Release set key wake lock");
@@ -3749,7 +3788,8 @@ int wma_process_bip(tp_wma_handle wma_handle,
 
 	if (iface->key.key_cipher == WMI_CIPHER_AES_CMAC) {
 		mmie_size = cds_get_mmie_size();
-	} else if (iface->key.key_cipher == WMI_CIPHER_AES_GMAC) {
+	} else if (iface->key.key_cipher == WMI_CIPHER_AES_GMAC ||
+		   iface->key.key_cipher == WMI_CIPHER_BIP_GMAC_256) {
 		mmie_size = cds_get_gmac_mmie_size();
 	} else {
 		WMA_LOGE(FL("Invalid key cipher %d"), iface->key.key_cipher);
@@ -3796,6 +3836,7 @@ int wma_process_bip(tp_wma_handle wma_handle,
 		break;
 
 	case WMI_CIPHER_AES_GMAC:
+	case WMI_CIPHER_BIP_GMAC_256:
 		if (wmi_service_enabled(wma_handle->wmi_handle,
 				wmi_service_gmac_offload_support)) {
 			/*
@@ -4435,6 +4476,7 @@ QDF_STATUS wma_de_register_mgmt_frm_client(void)
  * wma_register_roaming_callbacks() - Register roaming callbacks
  * @csr_roam_synch_cb: CSR roam synch callback routine pointer
  * @pe_roam_synch_cb: PE roam synch callback routine pointer
+ * @csr_roam_auth_event_handle_cb: CSR callback routine pointer
  *
  * Register the SME and PE callback routines with WMA for
  * handling roaming
@@ -4446,6 +4488,10 @@ QDF_STATUS wma_register_roaming_callbacks(
 		roam_offload_synch_ind *roam_synch_data,
 		tpSirBssDescription  bss_desc_ptr,
 		enum sir_roam_op_code reason),
+	QDF_STATUS (*csr_roam_auth_event_handle_cb)(tpAniSirGlobal mac,
+						    uint8_t vdev_id,
+						    struct qdf_mac_addr bssid),
+
 	QDF_STATUS (*pe_roam_synch_cb)(tpAniSirGlobal mac,
 		roam_offload_synch_ind *roam_synch_data,
 		tpSirBssDescription  bss_desc_ptr,
@@ -4461,6 +4507,7 @@ QDF_STATUS wma_register_roaming_callbacks(
 		return QDF_STATUS_E_FAILURE;
 	}
 	wma->csr_roam_synch_cb = csr_roam_synch_cb;
+	wma->csr_roam_auth_event_handle_cb = csr_roam_auth_event_handle_cb;
 	wma->pe_roam_synch_cb = pe_roam_synch_cb;
 	wma->pe_disconnect_cb = pe_disconnect_cb;
 	WMA_LOGD("Registered roam synch callbacks with WMA successfully");

@@ -144,6 +144,8 @@ typedef uint8_t tSirVersionString[SIR_VERSION_STRING_LEN];
 #define AKM_FT_SAE           0
 #define AKM_FT_SUITEB_SHA384 1
 #define AKM_FT_FILS          2
+#define AKM_SAE              3
+#define AKM_OWE              4
 
 /**
  * enum sir_roam_op_code - Operation to be done by the callback.
@@ -454,6 +456,9 @@ typedef struct sSirSmeReadyReq {
 	uint16_t length;
 	uint16_t transactionId;
 	void *csr_roam_synch_cb;
+	QDF_STATUS (*csr_roam_auth_event_handle_cb)(tpAniSirGlobal mac,
+						    uint8_t vdev_id,
+						    struct qdf_mac_addr bssid);
 	void *pe_roam_synch_cb;
 	void *stop_roaming_cb;
 	QDF_STATUS (*sme_msg_cb)(tpAniSirGlobal mac,
@@ -2691,12 +2696,12 @@ typedef struct {
 	uint32_t authentication;
 	uint8_t encryption;
 	uint8_t mcencryption;
+	tAniEdType gp_mgmt_cipher_suite;
 	uint8_t ChannelCount;
 	uint8_t ChannelCache[SIR_ROAM_MAX_CHANNELS];
 #ifdef WLAN_FEATURE_11W
 	bool mfp_enabled;
 #endif
-
 } tSirRoamNetworkType;
 
 typedef struct SirMobilityDomainInfo {
@@ -2797,6 +2802,7 @@ struct roam_ext_params {
  * @pcl_weightage: PCL weightage
  * @channel_congestion_weightage: channel congestion weightage
  * @oce_wan_weightage: OCE WAN metrics weightage
+ * @vendor_roam_score_algorithm: Preferred vendor roam score algorithm
  */
 struct  sir_weight_config {
 	uint8_t rssi_weightage;
@@ -2810,6 +2816,7 @@ struct  sir_weight_config {
 	uint8_t pcl_weightage;
 	uint8_t channel_congestion_weightage;
 	uint8_t oce_wan_weightage;
+	uint32_t vendor_roam_score_algorithm;
 };
 
 struct sir_rssi_cfg_score  {
