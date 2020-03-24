@@ -25,6 +25,9 @@
 #include "wlan_pkt_capture_mon_thread.h"
 #include "wlan_pkt_capture_mgmt_txrx.h"
 #include "target_if_pkt_capture.h"
+#include "cdp_txrx_ctrl.h"
+#include "cds_utils.h"
+#include "cdp_txrx_mon.h"
 
 static struct wlan_objmgr_vdev *gp_pkt_capture_vdev;
 
@@ -438,4 +441,27 @@ pkt_capture_psoc_destroy_notification(struct wlan_objmgr_psoc *psoc, void *arg)
 
 	qdf_mem_free(psoc_priv);
 	return status;
+}
+
+void pkt_capture_record_channel(void)
+{
+	struct wlan_objmgr_pdev *pdev = wlan_vdev_get_pdev(gp_pkt_capture_vdev);
+	void *soc = cds_get_context(QDF_MODULE_ID_SOC);
+	uint32_t chan;
+	uint32_t ch_freq;
+	struct wlan_objmgr_psoc *psoc;
+	struct wlan_channel *des_chan;
+
+	if (!gp_pkt_capture_vdev) {
+		pkt_capture_err("gp_pkt_capture_vdev is NULL");
+		return;
+	}
+
+	psoc = wlan_vdev_get_psoc(gp_pkt_capture_vdev);
+
+	des_chan = gp_pkt_capture_vdev->vdev_mlme.des_chan;
+	ch_freq = des_chan->ch_freq;
+	chan = cds_freq_to_chan(ch_freq);
+	cdp_pktcapture_record_channel(soc, wlan_objmgr_pdev_get_pdev_id(pdev),
+				      chan);
 }

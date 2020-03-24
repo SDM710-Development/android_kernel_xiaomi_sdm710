@@ -3232,6 +3232,7 @@ static void wma_extract_mgmt_offload_event_params(
 	params->rssi = hdr->rssi;
 	params->buf_len = hdr->buf_len;
 	params->tx_status = hdr->tx_status;
+	params->tx_retry_cnt = hdr->tx_retry_cnt;
 }
 
 /**
@@ -3258,8 +3259,8 @@ int wma_mgmt_tx_completion_handler(void *handle, uint8_t *cmpl_event_params,
 	}
 	cmpl_params = param_buf->fixed_param;
 
-	if (ucfg_pkt_capture_get_pktcap_mode() &
-	    PKT_CAPTURE_MODE_MGMT_ONLY) {
+	if ((ucfg_pkt_capture_get_pktcap_mode() &
+	    PKT_CAPTURE_MODE_MGMT_ONLY) && param_buf->mgmt_hdr) {
 		struct mgmt_offload_event_params params = {0};
 
 		wma_extract_mgmt_offload_event_params(
@@ -3333,8 +3334,8 @@ int wma_mgmt_tx_bundle_completion_handler(void *handle, uint8_t *buf,
 	}
 
 	for (i = 0; i < num_reports; i++) {
-		if (ucfg_pkt_capture_get_pktcap_mode() &
-		    PKT_CAPTURE_MODE_MGMT_ONLY) {
+		if ((ucfg_pkt_capture_get_pktcap_mode() &
+		    PKT_CAPTURE_MODE_MGMT_ONLY) && param_buf->mgmt_hdr) {
 			struct mgmt_offload_event_params params = {0};
 
 			wma_extract_mgmt_offload_event_params(

@@ -7119,16 +7119,12 @@ void sme_free_join_rsp_fils_params(struct csr_roam_info *roam_info)
 {
 	struct fils_join_rsp_params *roam_fils_params;
 
-	if (!roam_info) {
-		sme_debug("FILS Roam Info NULL");
+	if (!roam_info)
 		return;
-	}
 
 	roam_fils_params = roam_info->fils_join_rsp;
-	if (!roam_fils_params) {
-		sme_debug("FILS Roam Param NULL");
+	if (!roam_fils_params)
 		return;
-	}
 
 	if (roam_fils_params->fils_pmk)
 		qdf_mem_free(roam_fils_params->fils_pmk);
@@ -8666,7 +8662,7 @@ void sme_dump_chan_list(tCsrChannelInfo *chan_info)
 		}
 	}
 
-	sme_debug("No.of frequencies: %u, frequency list: %s", i, channel_list);
+	sme_debug("frequency list [%u]: %s", i, channel_list);
 	qdf_mem_free(channel_list);
 }
 
@@ -17079,13 +17075,18 @@ QDF_STATUS sme_set_roam_triggers(mac_handle_t mac_handle,
 	tpAniSirGlobal mac = PMAC_STRUCT(mac_handle);
 	struct scheduler_msg message = {0};
 	struct roam_triggers *roam_trigger_data;
+	tCsrNeighborRoamControlInfo *neighbor_roam_info;
 
 	/* per contract must make a copy of the params when messaging */
 	roam_trigger_data = qdf_mem_malloc(sizeof(*roam_trigger_data));
 	if (!roam_trigger_data)
 		return QDF_STATUS_E_NOMEM;
+
 	*roam_trigger_data = *triggers;
 
+	neighbor_roam_info = &mac->roam.neighborRoamInfo[triggers->vdev_id];
+	neighbor_roam_info->cfgParams.roam_trigger_bitmap =
+				roam_trigger_data->trigger_bitmap;
 	status = sme_acquire_global_lock(&mac->sme);
 	if (QDF_IS_STATUS_ERROR(status)) {
 		qdf_mem_free(roam_trigger_data);

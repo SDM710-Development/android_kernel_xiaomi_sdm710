@@ -72,6 +72,47 @@ bool ucfg_is_ftm_time_sync_enable(struct wlan_objmgr_psoc *psoc);
  * Return: None
  */
 void ucfg_ftm_time_sync_set_enable(struct wlan_objmgr_psoc *psoc, bool value);
+
+/**
+ * ucfg_ftm_time_sync_update_sta_connect_state() - Handler for STA state change
+ * @vdev: STA vdev
+ * @state: connected/disconnected state
+ * @bssid: bssid of connected AP
+ *
+ * This function triggers the FTM time sync feature in case of connection and
+ * stops the ftm sync feature in case of disconnection.
+ *
+ * Return: None
+ */
+void
+ucfg_ftm_time_sync_update_sta_connect_state(struct wlan_objmgr_vdev *vdev,
+					    enum ftm_time_sync_sta_state state,
+					    struct qdf_mac_addr bssid);
+
+/**
+ * ucfg_ftm_time_sync_update_bss_state() - Handler to notify bss start/stop
+ * @vdev: SAP vdev
+ * @ap_state: BSS start/stop state
+ *
+ * This function triggers the FTM time sync feature in case of bss start and
+ * stops the ftm sync feature in case of bss stop.
+ *
+ * Return: None.
+ */
+void ucfg_ftm_time_sync_update_bss_state(struct wlan_objmgr_vdev *vdev,
+					 enum ftm_time_sync_bss_state ap_state);
+
+/**
+ * ucfg_ftm_time_sync_show() - Show the ftm time sync offset values derived
+ * @vdev: vdev context
+ * @buf: buffer in which the values to be written
+ *
+ * This function prints the offset values derived after ftm time sync
+ * between the qtime of STA(slave) and connected SAP(master).
+ *
+ * Return: number of bytes written in buffer
+ */
+ssize_t ucfg_ftm_time_sync_show(struct wlan_objmgr_vdev *vdev, char *buf);
 #else
 
 static inline
@@ -101,6 +142,24 @@ bool ucfg_is_ftm_time_sync_enable(struct wlan_objmgr_psoc *psoc)
 static inline
 void ucfg_ftm_time_sync_set_enable(struct wlan_objmgr_psoc *psoc, bool value)
 {
+}
+
+static inline void
+ucfg_ftm_time_sync_update_sta_connect_state(struct wlan_objmgr_vdev *vdev,
+					    enum ftm_time_sync_sta_state state)
+{
+}
+
+static inline void
+ucfg_ftm_time_sync_update_bss_state(struct wlan_objmgr_vdev *vdev,
+				    enum ftm_time_sync_bss_state ap_state)
+{
+}
+
+static inline
+ssize_t ucfg_ftm_time_sync_show(struct wlan_objmgr_vdev *vdev, char *buf)
+{
+	return 0;
 }
 #endif /* FEATURE_WLAN_TIME_SYNC_FTM */
 #endif /* _FTM_TIME_SYNC_UCFG_API_H_ */

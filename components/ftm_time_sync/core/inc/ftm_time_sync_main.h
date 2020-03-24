@@ -141,4 +141,44 @@ enum ftm_time_sync_mode ftm_time_sync_get_mode(struct wlan_objmgr_psoc *psoc);
  * Return: enum ftm_time_sync_role
  */
 enum ftm_time_sync_role ftm_time_sync_get_role(struct wlan_objmgr_psoc *psoc);
+
+/**
+ * ftm_time_sync_send_trigger() - Handler for sending trigger cmd to FW
+ * @vdev: vdev for which FTM time_sync trigger cmd to be send
+ *
+ * This function sends the ftm trigger cmd to target.
+ *
+ * Return: QDF_STATUS
+ */
+QDF_STATUS ftm_time_sync_send_trigger(struct wlan_objmgr_vdev *vdev);
+
+/**
+ * ftm_time_sync_stop() - Handler for stopping the FTM time sync
+ * @vdev: vdev for which FTM time_sync feature to be stopped
+ *
+ * This function stops the ftm time sync functionality.
+ *
+ * Return: QDF_STATUS
+ */
+QDF_STATUS ftm_time_sync_stop(struct wlan_objmgr_vdev *vdev);
+
+/**
+ * ftm_time_sync_show() - Handler to print the offset derived
+ * @vdev: vdev for which offset is to be shown
+ * @buf: buffer in which the values to be printed
+ *
+ * Return: the number of bytes written in buf
+ */
+ssize_t ftm_time_sync_show(struct wlan_objmgr_vdev *vdev, char *buf);
+
+/**
+ * ftm_time_sync_update_bssid() - Update the bssid info
+ * @vdev: vdev context
+ * @bssid: bssid of connected AP
+ *
+ * Return: None
+ */
+void ftm_time_sync_update_bssid(struct wlan_objmgr_vdev *vdev,
+				struct qdf_mac_addr bssid);
+
 #endif /* end of _FTM_TIME_SYNC_MAIN_H_ */
