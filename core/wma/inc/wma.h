@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2020 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -92,6 +92,17 @@
 #define wma_info(params...) QDF_TRACE_INFO(QDF_MODULE_ID_WMA, params)
 #define wma_debug(params...) QDF_TRACE_DEBUG(QDF_MODULE_ID_WMA, params)
 #define wma_err_rl(params...) QDF_TRACE_ERROR_RL(QDF_MODULE_ID_WMA, params)
+
+#define wma_nofl_alert(params...) \
+	QDF_TRACE_FATAL_NO_FL(QDF_MODULE_ID_WMA, params)
+#define wma_nofl_err(params...) \
+	QDF_TRACE_ERROR_NO_FL(QDF_MODULE_ID_WMA, params)
+#define wma_nofl_warn(params...) \
+	QDF_TRACE_WARN_NO_FL(QDF_MODULE_ID_WMA, params)
+#define wma_nofl_info(params...) \
+	QDF_TRACE_INFO_NO_FL(QDF_MODULE_ID_WMA, params)
+#define wma_nofl_debug(params...) \
+	QDF_TRACE_DEBUG_NO_FL(QDF_MODULE_ID_WMA, params)
 
 #define WMA_DEBUG_ALWAYS
 
@@ -1067,6 +1078,8 @@ struct wma_valid_channels {
  * @RArateLimitInterval: RA rate limit interval
  * @is_lpass_enabled: Flag to indicate if LPASS feature is enabled or not
  * @is_nan_enabled: Flag to indicate if NaN feature is enabled or not
+ * @nan_separate_iface_support: Flag to indicate whether separate iface for NAN
+ * is enabled or not
  * @staMaxLIModDtim: station max listen interval
  * @staModDtim: station mode DTIM
  * @staDynamicDtim: station dynamic DTIM
@@ -1224,6 +1237,7 @@ typedef struct {
 #endif
 #ifdef WLAN_FEATURE_NAN
 	bool is_nan_enabled;
+	bool nan_separate_iface_support;
 #endif
 	uint8_t staMaxLIModDtim;
 	uint8_t staModDtim;
@@ -1258,7 +1272,12 @@ typedef struct {
 		tpSirBssDescription  bss_desc_ptr,
 		enum sir_roam_op_code reason);
 	QDF_STATUS (*pe_disconnect_cb) (tpAniSirGlobal mac,
-					uint8_t vdev_id);
+					uint8_t vdev_id,
+					uint8_t *deauth_disassoc_frame,
+					uint16_t deauth_disassoc_frame_len,
+					uint16_t reason_code);
+	QDF_STATUS (*csr_roam_pmkid_req_cb)(uint8_t vdev_id,
+		struct roam_pmkid_req_event *bss_list);
 	qdf_wake_lock_t wmi_cmd_rsp_wake_lock;
 	qdf_runtime_lock_t wmi_cmd_rsp_runtime_lock;
 	bool apf_enabled;
@@ -1291,6 +1310,7 @@ typedef struct {
 	qdf_atomic_t critical_events_in_flight;
 	bool enable_tx_compl_tsf64;
 	bool enable_three_way_coex_config_legacy;
+	bool bmiss_skip_full_scan;
 } t_wma_handle, *tp_wma_handle;
 
 extern void cds_wma_complete_cback(void);
