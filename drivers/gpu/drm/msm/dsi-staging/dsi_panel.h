@@ -222,6 +222,7 @@ struct dsi_panel {
 	enum dsi_dms_mode dms_mode;
 
 	bool sync_broadcast_en;
+	bool doze_enabled;
 	int power_mode;
 	enum dsi_panel_physical_type panel_type;
 
