@@ -29,7 +29,7 @@ audio_machine-$(CONFIG_SND_SOC_SDM450) += msm8952.o
 
 # MSM8909 internal codec sound card driver
 obj-$(CONFIG_SND_SOC_MSM8909) += audio_machine_int.o
-audio_machine_int-$(CONFIG_SND_SOC_MSM8909) += msm8952.o
+audio_machine_int-$(CONFIG_SND_SOC_MSM8909) += msm8952.o voice_svc.o
 
 # SDM450 external codec sound card driver
 obj-$(CONFIG_SND_SOC_EXT_CODEC_SDM450) += audio_machine_ext.o
