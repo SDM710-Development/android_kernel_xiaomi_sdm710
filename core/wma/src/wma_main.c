@@ -5818,10 +5818,6 @@ static int wma_update_hdd_cfg(tp_wma_handle wma_handle)
 	if (wmi_service_enabled(wma_handle->wmi_handle, wmi_service_nan_vdev))
 		tgt_cfg.nan_seperate_vdev_support = true;
 
-	wlan_res_cfg->nan_separate_iface_support =
-			tgt_cfg.nan_seperate_vdev_support &&
-			wma_get_separate_iface_support(wma_handle);
-
 	ret = wma_handle->tgt_cfg_update_cb(hdd_ctx, &tgt_cfg);
 	if (ret)
 		return -EINVAL;
@@ -6955,6 +6951,10 @@ int wma_rx_service_ready_ext_event(void *handle, uint8_t *event,
 		ucfg_ftm_time_sync_set_enable(wma_handle->psoc, false);
 	}
 
+	if (wmi_service_enabled(wma_handle->wmi_handle, wmi_service_nan_vdev) &&
+	    wma_get_separate_iface_support(wma_handle))
+		wlan_res_cfg->nan_separate_iface_support = true;
+
 	return 0;
 }
 
@@ -7806,6 +7806,11 @@ static void wma_set_arp_req_stats(WMA_HANDLE handle,
 	}
 	if (!wma_is_vdev_valid(req_buf->vdev_id)) {
 		WMA_LOGE("vdev id not active or not valid");
+		return;
+	}
+
+	if (!wma_is_vdev_up(req_buf->vdev_id)) {
+		WMA_LOGD("vdev id:%d is not started", req_buf->vdev_id);
 		return;
 	}
 
