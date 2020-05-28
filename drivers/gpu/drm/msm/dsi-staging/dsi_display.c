@@ -4767,6 +4767,19 @@ static ssize_t fod_pressed_store(struct device *dev,
 	return count;
 }
 
+static ssize_t fod_ui_show(struct device *dev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct dsi_display *display = dev_get_drvdata(dev);
+
+	if (!display->panel) {
+		pr_err("Invalid display\n");
+		return -EINVAL;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", display->fod_ui);
+}
+
 static ssize_t hbm_show(struct device *dev, struct device_attribute *attr,
 			char *buf)
 {
@@ -4809,10 +4822,12 @@ static ssize_t hbm_store(struct device *dev, struct device_attribute *attr,
 }
 
 static DEVICE_ATTR_RW(fod_pressed);
+static DEVICE_ATTR_RO(fod_ui);
 static DEVICE_ATTR_RW(hbm);
 
 static struct attribute *display_fs_attrs[] = {
 	&dev_attr_fod_pressed.attr,
+	&dev_attr_fod_ui.attr,
 	&dev_attr_hbm.attr,
 	NULL,
 };
@@ -5166,6 +5181,7 @@ static void dsi_display_unbind(struct device *dev,
 	}
 
 	atomic_set(&display->clkrate_change_pending, 0);
+	display->fod_ui = false;
 	(void)dsi_display_sysfs_deinit(display);
 	(void)dsi_display_debugfs_deinit(display);
 
@@ -6726,11 +6742,22 @@ static int dsi_display_set_roi(struct dsi_display *display,
 int dsi_display_pre_kickoff(struct dsi_display *display,
 		struct msm_display_kickoff_params *params)
 {
+	enum msm_dim_layer_type prev_type;
 	int rc = 0;
 	int i;
 
 	/* pass current dimming layer type to panel */
-	dsi_panel_update_dimlayer(display->panel, params->dim_layer_type);
+	prev_type = dsi_panel_update_dimlayer(display->panel,
+					      params->dim_layer_type);
+
+	/* check if we are switching from or to FOD dim layer type */
+	if (params->dim_layer_type != prev_type &&
+	    (params->dim_layer_type == MSM_DIM_LAYER_FOD ||
+	     prev_type == MSM_DIM_LAYER_FOD)) {
+		/* if so then notify userspace */
+		display->fod_ui = (params->dim_layer_type == MSM_DIM_LAYER_FOD);
+		sysfs_notify(&display->pdev->dev.kobj, NULL, "fod_ui");
+	}
 
 	/* check and setup MISR */
 	if (display->misr_enable)
