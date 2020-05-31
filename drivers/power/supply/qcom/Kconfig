@@ -29,6 +29,12 @@ config SMB135X_CHARGER
 	  The driver reports the charger status via the power supply framework.
 	  A charger status change triggers an IRQ via the device STAT pin.
 
+config CHARGER_BQ25910_SLAVE
+	tristate "TI BQ25910 battery charger driver"
+	depends on I2C
+	help
+	  Say Y to enable support for TI bq25910 as slave charger
+
 config SMB1360_CHARGER_FG
 	tristate "SMB1360 Charger and Fuel Gauge"
 	depends on I2C
