@@ -1,4 +1,5 @@
 /* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2020 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1559,7 +1560,7 @@ static irqreturn_t qpnp_wled_ovp_irq_handler(int irq, void *_wled)
 			QPNP_WLED_INT_RT_STS(wled->ctrl_base), &int_sts);
 	if (rc < 0) {
 		pr_err("Error in reading WLED_INT_RT_STS rc=%d\n", rc);
-		return IRQ_HANDLED;
+		goto END;
 	}
 
 	rc = qpnp_wled_read_reg(wled,
@@ -1600,6 +1601,9 @@ static irqreturn_t qpnp_wled_ovp_irq_handler(int irq, void *_wled)
 		}
 	}
 
+END:
+	disable_irq_nosync(wled->ovp_irq);
+	wled->ovp_irq_disabled = true;
 	return IRQ_HANDLED;
 }
 
