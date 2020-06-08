@@ -139,7 +139,6 @@ config ARCH_SDM845
 	select DTS_EAGLE
 	select DTS_SRS_TM
 	select MSM_ADSP_LOADER
-	select MSM_AVTIMER
 	select MSM_CDC_PINCTRL
 	select MSM_GLINK_SPI_XPRT
 	select MSM_QDSP6_APRV2_GLINK
@@ -197,7 +196,6 @@ config ARCH_SDM670
 	select DTS_EAGLE
 	select DTS_SRS_TM
 	select MSM_ADSP_LOADER
-	select MSM_AVTIMER
 	select MSM_CDC_PINCTRL
 	select MSM_GLINK_SPI_XPRT
 	select MSM_QDSP6_APRV2_GLINK
