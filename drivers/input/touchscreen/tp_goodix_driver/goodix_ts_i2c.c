@@ -1880,8 +1880,9 @@ static int goodix_touch_handler(struct goodix_ts_device *dev,
 						(buffer[i * BYTES_PER_COORD + 4] << 8);
 		coords->y = buffer[i * BYTES_PER_COORD + 5] |
 						(buffer[i * BYTES_PER_COORD + 6] << 8);
-		coords->w = buffer[i * BYTES_PER_COORD + 7];
-		coords->p = coords->w;
+		coords->w = coords->p / 16;
+		coords->p = buffer[i * BYTES_PER_COORD + 7] |
+						(buffer[i * BYTES_PER_COORD + 8] << 8);
 		coords->overlapping_area = buffer[8];
 		coords->area = buffer[i * BYTES_PER_COORD + 9];
 
@@ -1904,8 +1905,9 @@ static int goodix_touch_handler(struct goodix_ts_device *dev,
 				(buffer[i * BYTES_PER_COORD + 4] << 8);
 			touch_data->pen_coords[0].y = buffer[i * BYTES_PER_COORD + 5] |
 				(buffer[i * BYTES_PER_COORD + 6] << 8);
-			touch_data->pen_coords[0].w = buffer[i * BYTES_PER_COORD + 7];
-			touch_data->pen_coords[0].p = touch_data->pen_coords[0].w;
+			touch_data->pen_coords[0].w = 6;
+			touch_data->pen_coords[0].p = buffer[i * BYTES_PER_COORD + 7] |
+				(buffer[i * BYTES_PER_COORD + 8] << 8);
 
 			/*ts_debug("EP:[%d](%d, %d)", touch_data->pen_coords[0].id,
 					touch_data->pen_coords[0].x, touch_data->pen_coords[0].y);*/
@@ -1917,8 +1919,9 @@ static int goodix_touch_handler(struct goodix_ts_device *dev,
 						(buffer[i * BYTES_PER_COORD + 4] << 8);
 		coords->y = buffer[i * BYTES_PER_COORD + 5] |
 						(buffer[i * BYTES_PER_COORD + 6] << 8);
-		coords->w = buffer[i * BYTES_PER_COORD + 7];
-		coords->p = coords->w;
+		coords->w = coords->p / 16;
+		coords->p = buffer[i * BYTES_PER_COORD + 7] |
+						(buffer[i * BYTES_PER_COORD + 8] << 8);
 		coords->overlapping_area = buffer[8];
 		coords->area = buffer[i * BYTES_PER_COORD + 9];
 
