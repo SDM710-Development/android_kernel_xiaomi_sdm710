@@ -1161,7 +1161,6 @@ static void reg_set_5g_channel_params(struct wlan_objmgr_pdev *pdev,
 	 * state. Also return the maximum bandwidth supported by the channel.
 	 */
 
-	enum phy_ch_width next_lower_bw;
 	enum channel_state chan_state = CHANNEL_STATE_ENABLE;
 	enum channel_state chan_state2 = CHANNEL_STATE_ENABLE;
 	const struct bonded_channel *bonded_chan_ptr = NULL;
@@ -1178,11 +1177,8 @@ static void reg_set_5g_channel_params(struct wlan_objmgr_pdev *pdev,
 		else
 			ch_params->ch_width = CH_WIDTH_160MHZ;
 	}
-	next_lower_bw = ch_params->ch_width;
 
 	while (ch_params->ch_width != CH_WIDTH_INVALID) {
-		ch_params->ch_width = next_lower_bw;
-		next_lower_bw = get_next_lower_bw[ch_params->ch_width];
 		bonded_chan_ptr = NULL;
 		bonded_chan_ptr2 = NULL;
 		chan_state = reg_get_5g_bonded_channel(pdev, ch,
@@ -1202,7 +1198,8 @@ static void reg_set_5g_channel_params(struct wlan_objmgr_pdev *pdev,
 
 		if ((CHANNEL_STATE_ENABLE != chan_state) &&
 		    (CHANNEL_STATE_DFS != chan_state))
-			continue;
+			goto update_bw;
+
 		if (CH_WIDTH_20MHZ >= ch_params->ch_width) {
 			ch_params->sec_ch_offset = NO_SEC_CH;
 			ch_params->center_freq_seg0 = ch;
@@ -1213,7 +1210,7 @@ static void reg_set_5g_channel_params(struct wlan_objmgr_pdev *pdev,
 					QDF_ARRAY_SIZE(bonded_chan_40mhz_list),
 					&bonded_chan_ptr2);
 			if (!bonded_chan_ptr || !bonded_chan_ptr2)
-				continue;
+				goto update_bw;
 			if (ch == bonded_chan_ptr2->start_ch)
 				ch_params->sec_ch_offset = LOW_PRIMARY_CH;
 			else
@@ -1224,6 +1221,8 @@ static void reg_set_5g_channel_params(struct wlan_objmgr_pdev *pdev,
 				 bonded_chan_ptr->end_ch)/2;
 			break;
 		}
+update_bw:
+		ch_params->ch_width = get_next_lower_bw[ch_params->ch_width];
 	}
 
 	if (CH_WIDTH_160MHZ == ch_params->ch_width) {
@@ -3146,6 +3145,67 @@ reg_ignore_default_country(struct wlan_regulatory_psoc_priv_obj *soc_reg,
 	return true;
 }
 
+/**
+ * reg_send_ctl_info() - Sends CTL info to firmware
+ * @soc_reg: soc private object for regulatory
+ * @regulatory_info: regualatory info
+ * @tx_ops: send operations for regulatory component
+ *
+ * Return: QDF_STATUS
+ */
+static QDF_STATUS
+reg_send_ctl_info(struct wlan_regulatory_psoc_priv_obj *soc_reg,
+		  struct cur_regulatory_info *regulatory_info,
+		  struct wlan_lmac_if_reg_tx_ops *tx_ops)
+{
+	struct wlan_objmgr_psoc *psoc = regulatory_info->psoc;
+	struct reg_ctl_params params = {0};
+	QDF_STATUS status;
+	uint16_t regd_index;
+	uint32_t index_2g, index_5g;
+
+	if (soc_reg->offload_enabled)
+		return QDF_STATUS_SUCCESS;
+
+	status = reg_get_rdpair_from_regdmn_id(regulatory_info->reg_dmn_pair,
+					       &regd_index);
+	if (QDF_IS_STATUS_ERROR(status)) {
+		reg_err("Failed to get regdomain index for regdomain pair: %x",
+			regulatory_info->reg_dmn_pair);
+		return status;
+	}
+
+	index_2g = g_reg_dmn_pairs[regd_index].dmn_id_2g;
+	index_5g = g_reg_dmn_pairs[regd_index].dmn_id_5g;
+	params.ctl_2g = regdomains_2g[index_2g].ctl_val;
+	params.ctl_5g = regdomains_5g[index_5g].ctl_val;
+	params.regd_2g = reg_2g_sub_dmn_code[index_2g];
+	params.regd_5g = reg_5g_sub_dmn_code[index_5g];
+
+	if (reg_is_world_ctry_code(regulatory_info->reg_dmn_pair))
+		params.regd = regulatory_info->reg_dmn_pair;
+	else
+		params.regd = regulatory_info->ctry_code | COUNTRY_ERD_FLAG;
+
+	if (!tx_ops || !tx_ops->send_ctl_info) {
+		reg_err("No regulatory tx_ops for send_ctl_info");
+		return QDF_STATUS_E_FAULT;
+	}
+
+	reg_debug("regdomain pair = %u, regdomain index = %u",
+		  regulatory_info->reg_dmn_pair, regd_index);
+	reg_debug("index_2g = %u, index_5g = %u, ctl_2g = %x, ctl_5g = %x",
+		  index_2g, index_5g, params.ctl_2g, params.ctl_5g);
+	reg_debug("regd_2g = %x, regd_5g = %x, regd = %x",
+		  params.regd_2g, params.regd_5g, params.regd);
+
+	status = tx_ops->send_ctl_info(psoc, &params);
+	if (QDF_IS_STATUS_ERROR(status))
+		reg_err("Failed to send CTL info to firmware");
+
+	return status;
+}
+
 QDF_STATUS reg_process_master_chan_list(struct cur_regulatory_info
 					*regulat_info)
 {
@@ -3174,6 +3234,12 @@ QDF_STATUS reg_process_master_chan_list(struct cur_regulatory_info
 
 	tx_ops = reg_get_psoc_tx_ops(psoc);
 	phy_id = regulat_info->phy_id;
+
+	status = reg_send_ctl_info(soc_reg, regulat_info, tx_ops);
+	if (!QDF_IS_STATUS_SUCCESS(status)) {
+		reg_err("Failed to send ctl info to fw");
+		return status;
+	}
 
 	if (reg_ignore_default_country(soc_reg, regulat_info)) {
 		status = reg_set_curr_country(soc_reg, regulat_info, tx_ops);
