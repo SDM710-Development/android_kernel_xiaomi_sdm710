@@ -353,4 +353,53 @@ config ARCH_ZYNQMP
 	help
 	  This enables support for Xilinx ZynqMP Family
 
+config MACH_XIAOMI
+	bool "Xiaomi devices"
+	help
+	  This enables support for Xiaomi devices.
+
+if MACH_XIAOMI
+
+config MACH_XIAOMI_SDM710
+	bool
+	select ARCH_QCOM
+	select ARCH_SDM670
+
+choice
+	prompt "Xiaomi device"
+	default MACH_XIAOMI_DUMMY
+
+config MACH_XIAOMI_DUMMY
+	bool "Dummy device"
+	help
+	  A stub configuration that doesn't enable support for anything.
+
+config MACH_XIAOMI_E2
+	bool "E2 board"
+	select MACH_XIAOMI_SDM710
+	help
+	  This enables support for Xiaomi Mi 8 SE.
+
+config MACH_XIAOMI_F2
+	bool "F2 board"
+	select MACH_XIAOMI_SDM710
+	help
+	  This enables support for Xiaomi Mi 9 SE.
+
+config MACH_XIAOMI_F3B
+	bool "F3B board"
+	select MACH_XIAOMI_SDM710
+	help
+	  This enables support for Xiaomi Mi CC9 (China) / 9 Lite (Global).
+
+config MACH_XIAOMI_F3M
+	bool "F3M board"
+	select MACH_XIAOMI_SDM710
+	help
+	  This enables support for Xiaomi Mi CC9 Meitu Edition.
+
+endchoice
+
+endif
+
 endmenu
