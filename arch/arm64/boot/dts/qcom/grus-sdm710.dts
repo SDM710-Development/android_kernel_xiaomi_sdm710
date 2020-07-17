@@ -10,13 +10,19 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-#include "sdm670-audio-overlay.dtsi"
 
-&int_codec {
-	qcom,msm-mbhc-usbc-audio-supported = <1>;
-	qcom,usbc-analog-en1-gpio = <&pm660_gpios 13 0>;
-	qcom,usbc-analog-en2-gpio = <&tlmm 40 0>;
-	pinctrl-names = "aud_active", "aud_sleep";
-	pinctrl-0 = <&wcd_usbc_analog_en2_active>;
-	pinctrl-1 = <&wcd_usbc_analog_en2_idle>;
+
+/dts-v1/;
+
+#include "sdm710.dtsi"
+#include "grus-sdm710.dtsi"
+#include "sdm670-int-cdc-usbc-audio-overlay.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. SDM710 PM660 + PM660L MTP,Int Codec, Grus";
+	compatible = "qcom,sdm710-mtp", "qcom,sdm710", "qcom,mtp";
+	qcom,board-id = <34 0>;
+	qcom,pmic-id = <0x0001001b 0x0101011a 0x0 0x0>,
+		       <0x0001001b 0x0102001a 0x0 0x0>,
+		       <0x0001001b 0x0201011a 0x0 0x0>;
 };

@@ -20,3 +20,7 @@
 	pinctrl-0 = <&wcd_usbc_analog_en2_active>;
 	pinctrl-1 = <&wcd_usbc_analog_en2_idle>;
 };
+
+&pmic_analog_codec {
+	qcom,cdc-micbias-cfilt-mv = <2700000>;
+};
