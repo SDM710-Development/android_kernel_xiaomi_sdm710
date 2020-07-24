@@ -25,7 +25,6 @@
 #define CONFIG_SND_SOC_TAS2557
 */
 
-#define DEBUG
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>

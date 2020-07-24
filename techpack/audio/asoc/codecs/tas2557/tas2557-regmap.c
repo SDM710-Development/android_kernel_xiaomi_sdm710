@@ -25,7 +25,6 @@
 #define CONFIG_SND_SOC_TAS2557
 */
 #ifdef CONFIG_TAS2557_REGMAP
-#define DEBUG
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
