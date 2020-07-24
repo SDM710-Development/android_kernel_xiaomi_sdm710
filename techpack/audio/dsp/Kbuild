@@ -106,6 +106,14 @@ ifdef CONFIG_MSM_ADSP_LOADER
 ADSP_LOADER_OBJS += adsp-loader.o
 endif
 
+ifeq ($(TARGET_PRODUCT), pyxis)
+AUDIO_FEATURE_ENABLED_SPKR_PROTECTION := true
+endif
+
+ifeq ($(TARGET_PRODUCT), vela)
+AUDIO_FEATURE_ENABLED_SPKR_PROTECTION := true
+endif
+
 ifdef CONFIG_MSM_QDSP6_NOTIFIER
 QDSP6_NOTIFIER_OBJS += audio_notifier.o audio_ssr.o
 endif
@@ -139,6 +147,10 @@ CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
 		-Wall\
 		-Werror\
 		-D__linux__
+
+ifeq ($(strip $(AUDIO_FEATURE_ENABLED_SPKR_PROTECTION)),true)
+	CDEFINES += -DCONFIG_SND_SOC_TAS2562_FOR_PYXIS
+endif
 
 KBUILD_CPPFLAGS += $(CDEFINES)
 
