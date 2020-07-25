@@ -1,4 +1,5 @@
-/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2020 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -17,15 +18,15 @@
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM camera
 #undef TRACE_INCLUDE_PATH
-#define TRACE_INCLUDE_PATH .
+#define TRACE_INCLUDE_PATH ../../drivers/media/platform/msm/camera/cam_utils
 #undef TRACE_INCLUDE_FILE
 #define TRACE_INCLUDE_FILE cam_trace
 
 #include <linux/tracepoint.h>
+#include <cam_context.h>
 #include <media/cam_req_mgr.h>
 #include "cam_req_mgr_core.h"
 #include "cam_req_mgr_interface.h"
-#include "cam_context.h"
 
 TRACE_EVENT(cam_context_state,
 	TP_PROTO(const char *name, struct cam_context *ctx),
@@ -72,19 +73,17 @@ TRACE_EVENT(cam_isp_activated_irq,
 );
 
 TRACE_EVENT(cam_icp_fw_dbg,
-	TP_PROTO(char *dbg_message, uint64_t timestamp),
-	TP_ARGS(dbg_message, timestamp),
+	TP_PROTO(char *dbg_message),
+	TP_ARGS(dbg_message),
 	TP_STRUCT__entry(
 		__string(dbg_message, dbg_message)
-		__field(uint64_t, timestamp)
 	),
 	TP_fast_assign(
 		__assign_str(dbg_message, dbg_message);
-		__entry->timestamp = timestamp;
 	),
 	TP_printk(
-		"%llu %s: ",
-		 __entry->timestamp, __get_str(dbg_message)
+		"%s: ",
+		__get_str(dbg_message)
 	)
 );
 
