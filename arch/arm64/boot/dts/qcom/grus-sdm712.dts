@@ -16,7 +16,7 @@
 
 #include "sdm710.dtsi"
 #include "grus-sdm710.dtsi"
-#include "sdm670-int-cdc-usbc-audio-overlay.dtsi"
+#include "xiaomi-int-cdc-usbc-audio-overlay.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. SDM710 PM660 + PM660L MTP,Int Codec, Grus";

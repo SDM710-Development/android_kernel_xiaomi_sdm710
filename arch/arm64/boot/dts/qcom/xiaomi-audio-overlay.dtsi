@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+#include "sdm670-audio-overlay.dtsi"
+
+&int_codec {
+	asoc-codec = <&stub_codec>, <&msm_digital_codec>,
+		     <&pmic_analog_codec>, <&msm_sdw_codec>;
+	asoc-codec-names = "msm-stub-codec.1", "msm-dig-codec",
+			   "analog-codec", "msm_sdw_codec";
+
+	qcom,wsa-max-devs = <0>;
+};
+
+&cdc_sdw_gpios {
+	status = "disabled";
+};
+
+&wsa_spkr_en1 {
+	status = "disabled";
+};
+
+&wsa_spkr_en2 {
+	status = "disabled";
+};
