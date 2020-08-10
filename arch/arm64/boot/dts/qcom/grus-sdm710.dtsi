@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 #include "xiaomi-sdm710-common.dtsi"
-#include "xiaomi-sde-display.dtsi"
 #include "grus-sdm710-camera-sensor.dtsi"
 &soc {
 	sound {
@@ -112,12 +111,6 @@
 	qcom,mdss-dsi-bl-max-level = <2047>;
 	qcom,platform-reset-gpio = <&tlmm 75 0>;
 	qcom,platform-te-gpio = <&tlmm 10 0>;
-};
-
-&dsi_sim_vid {
-	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
-	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-	qcom,platform-reset-gpio = <&tlmm 75 0>;
 };
 
 &sde_dsi_active {
