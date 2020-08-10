@@ -1,0 +1,45 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+&tlmm {
+	spk_id_no_pull: spk_id_no_pull {
+		mux {
+			pins = "gpio116";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio116";
+			drive-strength = <8>;
+			bias-disable;
+			input-enable;
+		};
+	};
+
+	spk_id_pull_up: spk_id_pull_up {
+		mux {
+			pins = "gpio116";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio116";
+			drive-strength = <8>;
+			bias-pull-up;
+			input-enable;
+		};
+	};
+
+	spk_id_pull_down: spk_id_pull_down {
+		mux {
+			pins = "gpio116";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio116";
+			drive-strength = <8>;
+			bias-pull-down;
+			input-enable;
+		};
+	};
+};

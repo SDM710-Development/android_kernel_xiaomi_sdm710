@@ -11,7 +11,9 @@
  * GNU General Public License for more details.
  */
 #include "xiaomi-sdm710-common.dtsi"
+#include "xiaomi-pinctrl.dtsi"
 #include "grus-sdm710-camera-sensor.dtsi"
+
 &soc {
 	sound {
 		qcom,msm-micbias1-ext-cap;
@@ -187,50 +189,38 @@
 	status = "disabled";
 };
 
-/*redefine pinctrl stat for grus*/
-&tlmm {
-	ts_mux {
-		ts_active: ts_active {
-			mux {
-				pins = "gpio125", "gpio5";
-				function = "gpio";
-			};
+/* redefine pinctrl stat for grus */
+&ts_active {
+	mux {
+		pins = "gpio125", "gpio5";
+	};
 
-			config {
-				pins = "gpio125", "gpio5";
-				drive-strength = <16>;
-				bias-pull-up;
-			};
-		};
+	config {
+		pins = "gpio125", "gpio5";
+	};
+};
+
+&ts_reset_suspend {
+	mux {
+		pins = "gpio5";
+	};
+
+	config {
+		pins = "gpio5";
+		drive-strength = <16>;
 	};
 };
 
 &ts_int_suspend {
 	mux {
 		pins = "gpio125";
-		function = "gpio";
 	};
 
 	config {
 		pins = "gpio125";
 		drive-strength = <16>;
-		bias-diable;
-		input-enable;
 	};
 
-};
-
-&ts_reset_suspend {
-	mux {
-		pins = "gpio5";
-		function = "gpio";
-	};
-
-	config {
-		pins = "gpio5";
-		drive-strength = <16>;
-		bias-disable;
-	};
 };
 
 &qupv3_se4_spi {
@@ -815,4 +805,225 @@
 	reg = <0 0x97615000 0 0x2000>;
 };
 
+/* sdm670-pinctrl.dtsi */
+&tlmm {
+	cam_sensor_mclk3_active: cam_sensor_mclk3_active {
+		/* MCLK0 */
+		mux {
+			pins = "gpio16";
+			function = "cam_mclk";
+		};
 
+		config {
+			pins = "gpio16";
+			bias-disable; /* No PULL */
+			drive-strength = <4>; /* 4 MA */
+		};
+	};
+
+	cam_sensor_mclk3_suspend: cam_sensor_mclk3_suspend {
+		/* MCLK0 */
+		mux {
+			pins = "gpio16";
+			function = "cam_mclk";
+		};
+
+		config {
+			pins = "gpio16";
+			bias-pull-down; /* PULL DOWN */
+			drive-strength = <4>; /* 4 MA */
+		};
+	};
+
+	cam_sensor_rear3_active: cam_sensor_rear3_active {
+		/* RESET */
+		mux {
+			pins = "gpio24", "gpio27";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio24", "gpio27";
+			bias-disable; /* No PULL */
+			drive-strength = <2>; /* 2 MA */
+		};
+	};
+
+	cam_sensor_rear3_suspend: cam_sensor_rear3_suspend {
+		/* RESET */
+		mux {
+			pins = "gpio24", "gpio27";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio24", "gpio27";
+			bias-pull-down; /* PULL DOWN */
+			drive-strength = <2>; /* 2 MA */
+			output-low;
+		};
+	};
+
+	cam_sensor_front_mipi_sel_active: cam_sensor_front_mipi_sel_active {
+		/* RESET */
+		mux {
+			pins = "gpio25";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio25";
+			bias-pull-down; /* PULL DOWN */
+			drive-strength = <2>; /* 2 MA */
+			output-low;
+		};
+	};
+
+	cam_sensor_front_mipi_sel_suspend: cam_sensor_front_mipi_sel_suspend {
+		/* RESET */
+		mux {
+			pins = "gpio25";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio25";
+			bias-disable; /* No PULL */
+			drive-strength = <2>; /* 2 MA */
+			output-high;
+		};
+	};
+
+	cam_sensor_rear3_mipi_sel_active: cam_sensor_rear3_mipi_sel_active {
+		/* RESET */
+		mux {
+			pins = "gpio25";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio25";
+			bias-disable; /* No PULL */
+			drive-strength = <2>; /* 2 MA */
+			output-high;
+		};
+	};
+
+	cam_sensor_rear3_mipi_sel_suspend: cam_sensor_rear3_mipi_sel_suspend {
+		/* RESET */
+		mux {
+			pins = "gpio25";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio25";
+			bias-pull-down; /* PULL DOWN */
+			drive-strength = <2>; /* 2 MA */
+			output-low;
+		};
+	};
+};
+
+&cam_sensor_mclk0_active {
+	config {
+		drive-strength = <4>; /* 4 MA */
+	};
+};
+
+&cam_sensor_mclk0_suspend {
+	config {
+		drive-strength = <4>; /* 4 MA */
+	};
+};
+
+&cam_sensor_front_active {
+	mux {
+		pins = "gpio8", "gpio9";
+	};
+
+	config {
+		pins = "gpio8", "gpio9";
+	};
+};
+
+&cam_sensor_front_suspend {
+	mux {
+		pins = "gpio8", "gpio9";
+	};
+
+	config {
+		pins = "gpio8", "gpio9";
+	};
+};
+
+&cam_sensor_rear2_active {
+	mux {
+		pins = "gpio23";
+	};
+
+	config {
+		pins = "gpio23";
+	};
+};
+
+&cam_sensor_rear2_suspend {
+	mux {
+		pins = "gpio23";
+	};
+
+	config {
+		pins = "gpio23";
+	};
+};
+
+&cam_sensor_mclk2_active {
+	config {
+		drive-strength = <4>; /* 4 MA */
+	};
+};
+
+&cam_sensor_mclk2_suspend {
+	config {
+		drive-strength = <4>; /* 4 MA */
+	};
+};
+
+&pm660l_gpios {
+	cam_sensor_rear_ldo_en {
+		cam_sensor_rear_ldo_en: cam_sensor_rear_ldo_en {
+			pins = "gpio2";
+			function = "normal";
+			power-source = <0>;
+			qcom,drive-strength = <2>;
+			output-high;
+		};
+	};
+
+	cam_sensor_rear_ldo_disable {
+		cam_sensor_rear_ldo_disable: cam_sensor_rear_ldo_disable {
+			pins = "gpio2";
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+
+	cam_sensor_rear2_ldo_en {
+		cam_sensor_rear2_ldo_en: cam_sensor_rear2_ldo_en {
+			pins = "gpio3";
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+
+	cam_sensor_rear2_ldo_disable {
+		cam_sensor_rear2_ldo_disable: cam_sensor_rear2_ldo_disable {
+			pins = "gpio3";
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+};
