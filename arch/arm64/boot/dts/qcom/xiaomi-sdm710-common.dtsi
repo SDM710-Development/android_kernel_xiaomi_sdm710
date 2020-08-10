@@ -348,3 +348,99 @@
 		};
 	};
 };
+
+/* pm660.dtsi */
+#include <dt-bindings/msm/power-on.h>
+
+&pm660_pon {
+	qcom,pon-dbc-delay = <62500>;
+
+	qcom,pon_1 {
+		qcom,support-reset = <1>;
+		qcom,s1-timer = <4480>;
+		qcom,s2-timer = <2000>;
+		qcom,s2-type = <PON_POWER_OFF_HARD_RESET>;
+	};
+
+	qcom,pon_3 {
+		qcom,pon-type = <3>;
+		qcom,support-reset = <1>;
+		qcom,pull-up = <1>;
+		qcom,s1-timer = <1352>;
+		qcom,s2-timer = <2000>;
+		qcom,s2-type = <PON_POWER_OFF_WARM_RESET>;
+		qcom,use-bark;
+	};
+};
+
+&pm660_gpios {
+	interrupts = <0x0 0xc1 0 IRQ_TYPE_NONE>,
+			<0x0 0xc2 0 IRQ_TYPE_NONE>,
+			<0x0 0xc3 0 IRQ_TYPE_NONE>,
+			<0x0 0xc5 0 IRQ_TYPE_NONE>,
+			<0x0 0xc8 0 IRQ_TYPE_NONE>,
+			<0x0 0xca 0 IRQ_TYPE_NONE>,
+			<0x0 0xcb 0 IRQ_TYPE_NONE>,
+			<0x0 0xcc 0 IRQ_TYPE_NONE>;
+	interrupt-names = "pm660_gpio2", "pm660_gpio3",
+			"pm660_gpio4", "pm660_gpio6",
+			"pm660_gpio9", "pm660_gpio11",
+			"pm660_gpio12", "pm660_gpio13";
+	qcom,gpios-disallowed = <1 5 7 8 10>;
+};
+
+&pm660_rtc {
+	qcom,qpnp-rtc-alarm-pwrup = <1>;
+};
+
+/* pm660l.dtsi */
+&pm660l_gpios {
+	interrupts = <0x2 0xc1 0 IRQ_TYPE_NONE>,
+			<0x2 0xc2 0 IRQ_TYPE_NONE>,
+			<0x2 0xc3 0 IRQ_TYPE_NONE>,
+			<0x2 0xc4 0 IRQ_TYPE_NONE>,
+			<0x2 0xc5 0 IRQ_TYPE_NONE>,
+			<0x2 0xc6 0 IRQ_TYPE_NONE>,
+			<0x2 0xc7 0 IRQ_TYPE_NONE>,
+			<0x2 0xc8 0 IRQ_TYPE_NONE>;
+	interrupt-names = "pm660l_gpio2","pm660l_gpio3", "pm660l_gpio4",
+			"pm660l_gpio5", "pm660l_gpio6",
+			"pm660l_gpio7", "pm660l_gpio8",
+			"pm660l_gpio9";
+	qcom,gpios-disallowed = <1 10 11 12>;
+};
+
+&pm660l_flash2 {
+	qcom,max-current = <1500>;
+	qcom,current-ma = <1000>;
+};
+
+&pm660l_torch0 {
+	qcom,max-current = <100>;
+	qcom,current-ma = <100>;
+};
+
+&pm660l_torch1 {
+	qcom,max-current = <100>;
+	qcom,current-ma = <100>;
+};
+
+&pm660l_torch2 {
+	qcom,max-current = <100>;
+	qcom,current-ma = <100>;
+};
+
+&flash_led {
+	pm660l_flashlight: qcom,flashlight {
+		label = "flash";
+		qcom,led-name = "flashlight";
+		qcom,max-current = <750>;
+		qcom,default-led-trigger = "flashlight_trigger";
+		qcom,id = <3>;
+		qcom,current-ma = <500>;
+		qcom,duration-ms = <1280>;
+		qcom,ires-ua = <12500>;
+		qcom,hdrm-voltage-mv = <325>;
+		qcom,hdrm-vol-hi-lo-win-mv = <100>;
+	};
+};
