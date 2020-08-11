@@ -1,0 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+/dts-v1/;
+
+#include "sdm670.dtsi"
+#include "sdm710-xiaomi.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. SDM670 SoC, Xiaomi";
+	compatible = "qcom,sdm670"
+	qcom,board-id = <0 0>;
+};

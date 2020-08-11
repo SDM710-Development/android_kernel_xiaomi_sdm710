@@ -134,15 +134,15 @@ ifeq ($(CONFIG_MACH_XIAOMI_SDM710),y)
 	dtbo-$(CONFIG_MACH_XIAOMI_F3M) += \
 		vela-sdm710-overlay.dtbo
 
-sirius-sdm670-overlay.dtbo-base := sdm670.dtb
-sirius-sdm710-overlay.dtbo-base := sdm710.dtb
+sirius-sdm670-overlay.dtbo-base := sdm670-xiaomi.dtb
+sirius-sdm710-overlay.dtbo-base := sdm710-xiaomi.dtb
 
-grus-sdm710-overlay.dtbo-base := sdm710.dtb
-grus-sdm712-overlay.dtbo-base := sdm710.dtb
+grus-sdm710-overlay.dtbo-base := sdm710-xiaomi.dtb
+grus-sdm712-overlay.dtbo-base := sdm710-xiaomi.dtb
 
-pyxis-sdm710-overlay.dtbo-base := sdm710.dtb
+pyxis-sdm710-overlay.dtbo-base := sdm710-xiaomi.dtb
 
-vela-sdm710-overlay.dtbo-base := sdm710.dtb
+vela-sdm710-overlay.dtbo-base := sdm710-xiaomi.dtb
 else
 	dtbo-$(CONFIG_ARCH_SDM670) += \
 		sdm670-cdp-overlay.dtbo \

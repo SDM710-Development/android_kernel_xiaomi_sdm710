@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+/* sdm670.dtsi */
+&pil_modem {
+	/delete-property/ qcom,minidump-id;
+};
+
+/* msm-arm-smmu-sdm670.dtsi */
+&kgsl_smmu {
+	/delete-property/ qcom,deferred-regulator-disable-delay;
+};
+
+/* sdm670-audio.dtsi */
+&int_codec {
+	/delete-property/ qcom,ext-disp-audio-rx;
+};
+
+/* sdm670-pmic-overlay.dtsi */
+#include "sdm670-pmic-overlay.dtsi"
+
+&pm660_fg {
+	/delete-property/ qcom,hold-soc-while-full;
+};

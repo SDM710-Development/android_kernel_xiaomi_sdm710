@@ -746,53 +746,43 @@
 	};
 };
 
-&reserved_memory {
-	ramdump_fb_mem: ramdump_fb_region@af000000 {
-		compatible = "removed-dma-pool";
-		no-map;
-		reg = <0 0xaf000000 0 0x1000000>;
-	};
+/ {
+	reserved-memory {
+		ramdump_fb_mem: ramdump_fb_region@af000000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0xaf000000 0 0x1000000>;
+		};
 
-	secure_dsp_mem: secure_dsp_region {
-		compatible = "removed-dma-pool";
-		no-map;
-		reg = <0 0x9fd00000 0 0xc00000>;
+		secure_dsp_mem: secure_dsp_region {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x9fd00000 0 0xc00000>;
+		};
 	};
 };
 
 &pil_cdsp_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x93400000 0 0x1e00000>;
 };
 
 &pil_mba_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x95200000 0 0x200000>;
 };
 
 &pil_adsp_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x95400000 0 0x2200000>;
 };
 
 &pil_ipa_fw_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x97600000 0 0x10000>;
 };
 
 &pil_ipa_gsi_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x97610000 0 0x5000>;
 };
 
 &pil_gpu_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x97615000 0 0x2000>;
 };
 
