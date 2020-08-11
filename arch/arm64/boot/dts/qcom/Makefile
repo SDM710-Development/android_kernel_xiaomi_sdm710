@@ -304,8 +304,7 @@ dtb-$(CONFIG_MACH_XIAOMI_E2) += \
 	sirius-sdm710.dtb
 
 dtb-$(CONFIG_MACH_XIAOMI_F2) += \
-	grus-sdm710.dtb \
-	grus-sdm712.dtb
+	grus-sdm710.dtb
 
 dtb-$(CONFIG_MACH_XIAOMI_F3B) += \
 	pyxis-sdm710.dtb

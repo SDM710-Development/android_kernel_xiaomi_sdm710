@@ -19,7 +19,7 @@
 #include "xiaomi-int-cdc-usbc-audio-overlay.dtsi"
 
 / {
-	model = "Qualcomm Technologies, Inc. SDM710 PM660 + PM660L MTP,Int Codec, Grus";
+	model = "Qualcomm Technologies, Inc. SDM710 PM660 + PM660L, USB-C Audio, MTP, Xiaomi Grus";
 	compatible = "qcom,sdm710-mtp", "qcom,sdm710", "qcom,mtp";
 	qcom,board-id = <34 0>;
 	qcom,pmic-id = <0x0001001b 0x0101011a 0x0 0x0>,
