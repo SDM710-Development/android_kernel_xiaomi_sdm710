@@ -181,6 +181,49 @@
 	};
 };
 
+/* sdm670.dtsi */
+&firmware {
+	android {
+		fstab {
+			system {
+				compatible = "android,system";
+				dev = "/dev/block/platform/soc/7c4000.sdhci/by-name/system";
+				type = "ext4";
+				mnt_flags = "ro,barrier=1,discard";
+				fsmgr_flags = "wait,avb";
+				/* originally enabled, but only sirius has early mount */
+				status = "disabled";
+			};
+
+			vendor {
+				fsmgr_flags = "wait,avb";
+			};
+		};
+	};
+};
+
+&xbl_region {
+	reg = <0 0x85e00000 0 0x1c0000>;
+};
+
+&soc {
+	qcom,qbt1000 {
+		status = "disabled";
+	};
+};
+
+&wdog {
+	qcom,bark-time = <15000>;
+};
+
+&ufshc_mem {
+	spm-level = <3>;
+};
+
+&gpu_cx_gdsc {
+	vdd_parent-supply = <&pm660l_s3_level>;
+};
+
 /* sdm670-pinctrl.dtsi */
 &tlmm {
 	pri_mi2s {

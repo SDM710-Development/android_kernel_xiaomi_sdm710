@@ -458,20 +458,12 @@
 
 			fstab {
 				compatible = "android,fstab";
-				system {
-					compatible = "android,system";
-					dev = "/dev/block/platform/soc/7c4000.sdhci/by-name/system";
-					type = "ext4";
-					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait,avb";
-					status = "ok";
-				};
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/soc/1d84000.ufshc/by-name/vendor";
 					type = "ext4";
 					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait,avb";
+					fsmgr_flags = "wait,slotselect,avb";
 					status = "ok";
 				};
 			};
@@ -492,7 +484,7 @@
 		xbl_region: xbl_region@85e00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x85e00000 0 0x1c0000>;
+			reg = <0 0x85e00000 0 0x100000>;
 		};
 
 		removed_region: removed_region@85fc0000 {
@@ -879,7 +871,6 @@
 	};
 
 	qcom,qbt1000 {
-		status="disabled";
 		compatible = "qcom,qbt1000";
 		clock-names = "core", "iface";
 		clock-frequency = <25000000>;
@@ -1212,7 +1203,7 @@
 		reg = <0x17980000 0x1000>;
 		reg-names = "wdt-base";
 		interrupts = <0 0 0>, <0 1 0>;
-		qcom,bark-time = <15000>;
+		qcom,bark-time = <11000>;
 		qcom,pet-time = <9360>;
 		qcom,ipi-ping;
 		qcom,wakeup-enable;
@@ -1893,7 +1884,7 @@
 		ufs-qcom-crypto = <&ufs_ice>;
 
 		lanes-per-direction = <1>;
-		spm-level = <3>;
+		spm-level = <5>;
 		dev-ref-clk-freq = <0>; /* 19.2 MHz */
 
 		clock-names =
@@ -2997,7 +2988,6 @@
 
 &gpu_cx_gdsc {
 	parent-supply = <&pm660l_s3_level>;
-	vdd_parent-supply = <&pm660l_s3_level>;
 	status = "ok";
 };
 
