@@ -457,3 +457,20 @@
 		qcom,hdrm-vol-hi-lo-win-mv = <100>;
 	};
 };
+
+/* sdm670-regulator.dtsi */
+#include <dt-bindings/regulator/qcom,rpmh-regulator.h>
+
+&pm660_l13 {
+	qcom,init-mode = <RPMH_REGULATOR_MODE_HPM>;
+};
+
+&pm660l_l6 {
+	regulator-min-microvolt = <3300000>;
+	qcom,init-voltage = <3300000>;
+	qcom,init-mode = <RPMH_REGULATOR_MODE_HPM>;
+};
+
+&pm660l_l8 {
+	qcom,init-mode = <RPMH_REGULATOR_MODE_HPM>;
+};
