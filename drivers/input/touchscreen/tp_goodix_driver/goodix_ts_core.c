@@ -69,8 +69,6 @@
 #define PINCTRL_STATE_SUSPEND   "pmx_ts_suspend"
 extern int goodix_start_cfg_bin(struct goodix_ts_core *ts_core);
 extern int goodix_i2c_write(struct goodix_ts_device *dev, unsigned int reg, unsigned char *data, unsigned int len);
-extern void touch_irq_boost(void);
-extern void lpm_disable_for_input(bool on);
 
 struct goodix_module goodix_modules;
 struct goodix_ts_core *goodix_core_data;
@@ -771,7 +769,6 @@ static void release_all_touches(struct goodix_ts_core *core_data)
 	core_data->sleep_finger = core_data->touch_id;
 	core_data->touch_id = 0;
 	input_sync(core_data->input_dev);
-	lpm_disable_for_input(false);
 	mutex_unlock(&ts_dev->report_mutex);
 }
 
@@ -875,7 +872,6 @@ static void goodix_ts_sleep_work(struct work_struct *work)
 		r = wait_for_completion_timeout(&core_data->pm_resume_completion, msecs_to_jiffies(500));
 		if (!r) {
 			ts_info("pm_resume_completion timeout, i2c is closed");
-			lpm_disable_for_input(false);
 			wake_unlock(&core_data->tp_wakelock);
 			return;
 		} else {
@@ -891,7 +887,6 @@ static void goodix_ts_sleep_work(struct work_struct *work)
 		if (r == EVT_CANCEL_IRQEVT) {
 			ts_info("irq exit");
 			mutex_unlock(&goodix_modules.mutex);
-			lpm_disable_for_input(false);
 			wake_unlock(&core_data->tp_wakelock);
 			return;
 		}
@@ -907,7 +902,6 @@ static void goodix_ts_sleep_work(struct work_struct *work)
 					&ts_event->event_data.touch_data);
 		}
 	}
-	lpm_disable_for_input(false);
 	wake_unlock(&core_data->tp_wakelock);
 	ts_info("exit");
 }
@@ -930,8 +924,6 @@ static irqreturn_t goodix_ts_threadirq_func(int irq, void *data)
 
 	core_data->irq_trig_cnt++;
 	/* inform external module */
-	lpm_disable_for_input(true);
-	touch_irq_boost();
 
 	if (core_data->tp_already_suspend) {
 		ts_info("device in suspend, schedue to work");
@@ -947,7 +939,6 @@ static irqreturn_t goodix_ts_threadirq_func(int irq, void *data)
 		r = ext_module->funcs->irq_event(core_data, ext_module);
 		if (r == EVT_CANCEL_IRQEVT) {
 			mutex_unlock(&goodix_modules.mutex);
-			lpm_disable_for_input(false);
 			return IRQ_HANDLED;
 		}
 	}
@@ -963,8 +954,6 @@ static irqreturn_t goodix_ts_threadirq_func(int irq, void *data)
 		}
 	}
 
-	if (!core_data->touch_id)
-		lpm_disable_for_input(false);
 	return IRQ_HANDLED;
 }
 
