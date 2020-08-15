@@ -76,6 +76,7 @@ struct cam_eeprom_memory_map_t {
 	struct cam_eeprom_map_t pageen;
 	struct cam_eeprom_map_t poll;
 	struct cam_eeprom_map_t mem;
+	struct cam_eeprom_map_t delay;
 	uint32_t saddr;
 };
 
