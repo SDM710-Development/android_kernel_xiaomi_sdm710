@@ -1,5 +1,21 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+/ {
+	reserved-memory {
+		secure_dsp_mem: secure_dsp_region {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x9fd00000 0 0xc00000>;
+		};
+
+		ramdump_fb_mem: ramdump_fb_region@af000000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0xaf000000 0 0x1000000>;
+		};
+	};
+};
+
 /* sdm670.dtsi */
 &pil_modem {
 	/delete-property/ qcom,minidump-id;
