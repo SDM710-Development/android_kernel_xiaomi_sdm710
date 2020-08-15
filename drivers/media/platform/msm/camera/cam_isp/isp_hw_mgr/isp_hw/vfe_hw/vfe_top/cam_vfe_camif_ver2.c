@@ -266,7 +266,7 @@ static int cam_vfe_camif_resource_start(
 	case CAM_CPAS_TITAN_175_V101:
 	case CAM_CPAS_TITAN_175_V100:
 		epoch0_irq_mask = ((rsrc_data->last_line -
-				rsrc_data->first_line) / 2) +
+				rsrc_data->first_line) * 2 / 3) +
 				rsrc_data->first_line;
 		epoch1_irq_mask = rsrc_data->reg_data->epoch_line_cfg &
 				0xFFFF;
