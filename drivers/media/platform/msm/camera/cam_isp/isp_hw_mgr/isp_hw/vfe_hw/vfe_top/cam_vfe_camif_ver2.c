@@ -204,6 +204,7 @@ static int cam_vfe_camif_resource_deinit(
 
 }
 
+extern uint32_t g_operation_mode;
 static int cam_vfe_camif_resource_start(
 	struct cam_isp_resource_node        *camif_res)
 {
@@ -268,10 +269,15 @@ static int cam_vfe_camif_resource_start(
 		epoch0_irq_mask = ((rsrc_data->last_line -
 				rsrc_data->first_line) * 2 / 3) +
 				rsrc_data->first_line;
+		if (g_operation_mode == 0x803C)
+			epoch0_irq_mask = ((1499 - rsrc_data->first_line) * 2 / 3) +
+					  rsrc_data->first_line;
 		epoch1_irq_mask = rsrc_data->reg_data->epoch_line_cfg &
 				0xFFFF;
 		computed_epoch_line_cfg = (epoch0_irq_mask << 16) |
 				epoch1_irq_mask;
+		if (g_operation_mode == 0)
+		        computed_epoch_line_cfg = rsrc_data->reg_data->epoch_line_cfg;
 		cam_io_w_mb(computed_epoch_line_cfg,
 				rsrc_data->mem_base +
 				rsrc_data->camif_reg->epoch_irq);
