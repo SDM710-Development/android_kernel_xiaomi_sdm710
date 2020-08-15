@@ -36,6 +36,8 @@
 
 #define DSI_MODE_MAX 5
 
+#define DEFAULT_FOD_OFF_DIMMING_DELAY  170
+
 enum dsi_panel_rotation {
 	DSI_PANEL_ROTATE_NONE = 0,
 	DSI_PANEL_ROTATE_HV_FLIP,
@@ -117,6 +119,8 @@ struct dsi_backlight_config {
 	/* WLED params */
 	struct led_trigger *wled;
 	struct backlight_device *bd;
+
+	bool dcs_type_ss;
 };
 
 struct dsi_reset_seq {
@@ -153,6 +157,10 @@ struct drm_panel_esd_config {
 	u8 *return_buf;
 	u8 *status_buf;
 	u32 groups;
+
+	int esd_err_irq_gpio;
+	int esd_err_irq;
+	int esd_interrupt_flags;
 };
 
 enum dsi_panel_type {
@@ -170,6 +178,13 @@ struct dsi_panel_exd_config {
 	int led_en2;
 	int oenab;
 	int selab;
+};
+
+struct dsi_read_config {
+	bool enabled;
+	struct dsi_panel_cmd_set read_cmd;
+	u32 cmds_rlen;
+	u8 rbuf[64];
 };
 
 struct dsi_panel {
@@ -217,6 +232,35 @@ struct dsi_panel {
 	bool sync_broadcast_en;
 
 	struct dsi_panel_exd_config exd_config;
+
+	bool dispparam_enabled;
+	u32 skip_dimmingon;
+	/* prevent set DISPPARAM_DOZE_BRIGHTNESS_HBM/LBM in FOD HBM */
+	bool fod_hbm_enabled;
+	bool fod_dimlayer_enabled;
+ 	bool fod_dimlayer_hbm_enabled;
+	bool fod_ui_ready;
+	u32 fod_off_dimming_delay;
+	ktime_t fod_hbm_off_time;
+	ktime_t fod_backlight_off_time;
+
+	u32 last_bl_lvl;
+	s32 backlight_delta;
+	u32 doze_backlight_threshold;
+	u32 panel_on_dimming_delay;
+	struct delayed_work cmds_work;
+
+	bool elvss_dimming_check_enable;
+	struct dsi_read_config elvss_dimming_cmds;
+	struct dsi_panel_cmd_set elvss_dimming_offset;
+	bool fod_backlight_flag;
+	bool in_aod;
+	u32 fod_target_backlight;
+	u32 dc_threshold;
+	bool dc_enable;
+	bool dim_layer_replace_dc;
+	bool fod_dimlayer_bl_block;
+	bool fodflag;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
