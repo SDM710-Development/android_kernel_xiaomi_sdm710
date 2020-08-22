@@ -1059,7 +1059,7 @@ static int __get_target_freq(struct devfreq *dev, unsigned long *freq)
 	vidc_data = (struct msm_vidc_gov_data *)stats.private_data;
 
 	for (c = 0; c < vidc_data->data_count; ++c) {
-		if (vidc_data->data->power_mode == VIDC_POWER_TURBO) {
+		if (vidc_data->data[c].power_mode == VIDC_POWER_TURBO) {
 			*freq = INT_MAX;
 			goto exit;
 		}
