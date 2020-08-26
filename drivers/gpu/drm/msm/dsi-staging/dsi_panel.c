@@ -917,6 +917,9 @@ u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel)
 	u32 brightness = dsi_panel_get_backlight(panel);
 	int i;
 
+	if (panel->hbm_mode)
+		return 0;
+
 	if (!panel->fod_dim_lut)
 		return 0;
 
@@ -983,6 +986,9 @@ int dsi_panel_set_doze_mode(struct dsi_panel *panel, enum dsi_doze_mode_type mod
 int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status)
 {
 	int rc = 0;
+
+	if (panel->hbm_mode)
+		return rc;
 
 	if (status) {
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_HBM_FOD_ON);
