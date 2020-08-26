@@ -24,7 +24,12 @@
 #define SET_EMULATOR_TEST_POINT		_IOW(0xE9, 0x05, unsigned int)
 #define NFCC_INITIAL_CORE_RESET_NTF	_IOW(0xE9, 0x10, unsigned int)
 
-#define MAX_BUFFER_SIZE			(320)
+/*
+ * From MW 11.04 buffer size increased to support
+ * frame size of 554 in FW download mode
+ * Frame len(2) + Frame Header(6) + DATA(512) + HASH(32) + CRC(2) + RFU(4)
+ */
+#define MAX_BUFFER_SIZE			(558)
 #define WAKEUP_SRC_TIMEOUT		(2000)
 #define NCI_HEADER_LEN			3
 #define NCI_PAYLOAD_IDX			3
