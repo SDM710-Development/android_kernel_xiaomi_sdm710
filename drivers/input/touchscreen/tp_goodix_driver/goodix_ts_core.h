@@ -38,7 +38,6 @@
 #include <linux/completion.h>
 #include <linux/debugfs.h>
 #include <linux/of_irq.h>
-#include <linux/wakelock.h>
 #ifdef CONFIG_OF
 #include <linux/of_gpio.h>
 #include <linux/regulator/consumer.h>
@@ -495,7 +494,7 @@ struct goodix_ts_core {
 	struct work_struct sleep_work;
 	bool tp_already_suspend;
 	bool palm_sensor_switch;
-	struct wake_lock tp_wakelock;
+	struct wakeup_source tp_wakelock;
 	struct completion pm_resume_completion;
 #ifdef CONFIG_TOUCHSCREEN_GOODIX_DEBUG_FS
 	struct dentry *debugfs;
