@@ -4461,14 +4461,9 @@ static int panel_disp_param_send_lock(struct dsi_panel *panel, int param)
 		panel->fod_hbm_enabled = false;
 		panel->fod_hbm_off_time = ktime_add_ms(ktime_get(), panel->fod_off_dimming_delay);
 
-		{
-			struct dsi_display *display = NULL;
-			struct mipi_dsi_host *host = panel->host;
-
-			if (host)
-				display = container_of(host, struct dsi_display, host);
-			if (display->drm_dev && (display->drm_dev->state == DRM_BLANK_LP1 ||
-			     display->drm_dev->state == DRM_BLANK_LP2)) {
+		if (display->drm_dev) {
+			if (display->drm_dev->state == DRM_BLANK_LP1 ||
+			    display->drm_dev->state == DRM_BLANK_LP2) {
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DOZE_HBM);
 				if (rc)
 					pr_err("[%s] failed to send DSI_CMD_SET_DOZE_HBM cmd, rc=%d\n",
@@ -4478,9 +4473,8 @@ static int panel_disp_param_send_lock(struct dsi_panel *panel, int param)
 				panel->in_aod = true;
 				panel->skip_dimmingon = STATE_DIM_BLOCK;
 			}
-		}
-		if (display->drm_dev)
 			display->drm_dev->hbm_status = 0;
+		}
 		break;
 	case 0xF0000:
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_HBM_OFF);
@@ -4545,12 +4539,6 @@ static int panel_disp_param_send_lock(struct dsi_panel *panel, int param)
 		break;
 	case 0xD00000:
 		if (fod_backlight == 0x1000) {
-			struct dsi_display *display = NULL;
-			struct mipi_dsi_host *host = panel->host;
-
-			if (host)
-				display = container_of(host, struct dsi_display, host);
-
 			rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_DIMMINGOFF);
 			if (panel->dc_enable)
 				rc = dsi_panel_update_backlight(panel, panel->dc_threshold);
