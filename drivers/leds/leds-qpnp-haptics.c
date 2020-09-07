@@ -760,6 +760,12 @@ static int qpnp_haptics_play(struct hap_chip *chip, bool enable)
 			goto out;
 		}
 
+		rc = qpnp_haptics_mod_enable(chip, false);
+		if (rc < 0) {
+			pr_err("Error in disabling module, rc=%d\n", rc);
+			goto out;
+		}
+
 		if (is_sw_lra_auto_resonance_control(chip)) {
 			if (chip->status_flags & AUTO_RESONANCE_ENABLED)
 				qpnp_haptics_update_lra_frequency(chip);
