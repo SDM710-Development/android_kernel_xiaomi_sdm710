@@ -449,19 +449,6 @@ out:
 	return rc;
 }
 
-static inline int get_buffer_mode_duration(struct hap_chip *chip)
-{
-	int sample_count, sample_duration;
-
-	sample_count = chip->wave_rep_cnt * chip->wave_s_rep_cnt *
-			chip->wf_samp_len;
-	sample_duration = sample_count * chip->wave_play_rate_us;
-	pr_debug("sample_count: %d sample_duration: %d\n", sample_count,
-		sample_duration);
-
-	return (sample_duration / 1000);
-}
-
 static bool is_sw_lra_auto_resonance_control(struct hap_chip *chip)
 {
 	if (chip->act_type != HAP_LRA)
@@ -753,12 +740,11 @@ static int qpnp_haptics_play(struct hap_chip *chip, bool enable)
 			goto out;
 		}
 
-		if (chip->play_mode == HAP_BUFFER)
-			time_ms = get_buffer_mode_duration(chip);
-		hrtimer_start(&chip->stop_timer,
-			ktime_set(time_ms / MSEC_PER_SEC,
-			(time_ms % MSEC_PER_SEC) * NSEC_PER_MSEC),
-			HRTIMER_MODE_REL);
+		if (chip->play_mode != HAP_BUFFER)
+			hrtimer_start(&chip->stop_timer,
+				ktime_set(time_ms / MSEC_PER_SEC,
+				(time_ms % MSEC_PER_SEC) * NSEC_PER_MSEC),
+				HRTIMER_MODE_REL);
 
 		rc = qpnp_haptics_auto_res_enable(chip, true);
 		if (rc < 0) {
