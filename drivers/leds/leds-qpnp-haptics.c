@@ -1262,7 +1262,6 @@ static int qpnp_haptics_auto_mode_config(struct hap_chip *chip, int time_ms)
 
 		brake_pat[0] = BRAKE_VMAX;
 		chip->play_mode = HAP_BUFFER;
-		chip->wave_shape = HAP_WAVE_SQUARE;
 	} else {
 		/* long pattern */
 		ares_cfg.lra_high_z = HAP_LRA_HIGH_Z_OPT1;
@@ -1291,8 +1290,8 @@ static int qpnp_haptics_auto_mode_config(struct hap_chip *chip, int time_ms)
 		}
 
 		chip->play_mode = HAP_DIRECT;
-		chip->wave_shape = HAP_WAVE_SINE;
 	}
+	chip->wave_shape = HAP_WAVE_SINE;
 
 	chip->ares_cfg.auto_res_mode = ares_cfg.auto_res_mode;
 	rc = qpnp_haptics_lra_auto_res_config(chip, &ares_cfg);
