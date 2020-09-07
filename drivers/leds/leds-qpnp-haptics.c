@@ -1221,7 +1221,7 @@ static int qpnp_haptics_auto_mode_config(struct hap_chip *chip, int time_ms)
 		/* short pattern */
 		rc = qpnp_haptics_parse_buffer_dt(chip);
 		if (!rc) {
-			rc = qpnp_haptics_buffer_config(chip, wave_samp, true);
+			rc = qpnp_haptics_buffer_config(chip, wave_samp, false);
 			if (rc < 0) {
 				pr_err("Error in configuring buffer mode %d\n",
 					rc);
