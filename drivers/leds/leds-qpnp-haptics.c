@@ -486,15 +486,6 @@ static int qpnp_haptics_auto_res_enable(struct hap_chip *chip, bool enable)
 							HAP_AUTO_RES_QWD);
 
 	/*
-	 * Do not enable auto resonance if auto mode is enabled and auto
-	 * resonance mode is QWD, meaning long pattern.
-	 */
-	if (chip->lra_auto_mode && auto_res_mode_qwd && enable) {
-		pr_debug("auto_mode enabled, not enabling auto_res\n");
-		return 0;
-	}
-
-	/*
 	 * For auto resonance detection to work properly, sufficient back-emf
 	 * has to be generated. In general, back-emf takes some time to build
 	 * up. When the auto resonance mode is chosen as QWD, high-z will be
