@@ -2509,9 +2509,9 @@ static int qpnp_haptics_parse_dt(struct hap_chip *chip)
 	if (rc == -EINVAL)
 		rc = 0;
 
-	if (chip->play_mode == HAP_BUFFER)
-		rc = qpnp_haptics_parse_buffer_dt(chip);
-	else if (chip->play_mode == HAP_PWM)
+	rc = qpnp_haptics_parse_buffer_dt(chip);
+
+	if (chip->play_mode == HAP_PWM)
 		rc = qpnp_haptics_parse_pwm_dt(chip);
 
 	if (of_find_property(node, "vcc_pon-supply", NULL)) {
