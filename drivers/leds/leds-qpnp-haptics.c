@@ -498,6 +498,9 @@ static int qpnp_haptics_auto_res_enable(struct hap_chip *chip, bool enable)
 	if (auto_res_mode_qwd && enable)
 		usleep_range(delay_us, delay_us + 1);
 
+#ifdef CONFIG_MACH_XIAOMI_F2
+	enable = 0;
+#endif
 	val = enable ? AUTO_RES_EN_BIT : 0;
 
 	if (chip->revid->pmic_subtype == PM660_SUBTYPE)
