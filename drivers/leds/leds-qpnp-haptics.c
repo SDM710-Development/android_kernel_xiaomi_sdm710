@@ -740,20 +740,20 @@ static int qpnp_haptics_play(struct hap_chip *chip, bool enable)
 			goto out;
 		}
 
-		if (chip->play_mode != HAP_BUFFER)
+		if (chip->play_mode != HAP_BUFFER) {
 			hrtimer_start(&chip->stop_timer,
 				ktime_set(time_ms / MSEC_PER_SEC,
 				(time_ms % MSEC_PER_SEC) * NSEC_PER_MSEC),
 				HRTIMER_MODE_REL);
-		else
+
+			rc = qpnp_haptics_auto_res_enable(chip, true);
+			if (rc < 0) {
+				pr_err("Error in enabling auto_res, rc=%d\n", rc);
+				goto out;
+			}
+		} else
 			hrtimer_start(&chip->stop_timer, ktime_set(40 / MSEC_PER_SEC,
 				(time_ms % MSEC_PER_SEC) * NSEC_PER_MSEC), HRTIMER_MODE_REL);
-
-		rc = qpnp_haptics_auto_res_enable(chip, true);
-		if (rc < 0) {
-			pr_err("Error in enabling auto_res, rc=%d\n", rc);
-			goto out;
-		}
 
 		if (is_sw_lra_auto_resonance_control(chip))
 			hrtimer_start(&chip->auto_res_err_poll_timer,
