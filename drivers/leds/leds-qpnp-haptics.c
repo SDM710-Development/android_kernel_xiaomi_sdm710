@@ -745,6 +745,9 @@ static int qpnp_haptics_play(struct hap_chip *chip, bool enable)
 				ktime_set(time_ms / MSEC_PER_SEC,
 				(time_ms % MSEC_PER_SEC) * NSEC_PER_MSEC),
 				HRTIMER_MODE_REL);
+		else
+			hrtimer_start(&chip->stop_timer, ktime_set(40 / MSEC_PER_SEC,
+				(time_ms % MSEC_PER_SEC) * NSEC_PER_MSEC), HRTIMER_MODE_REL);
 
 		rc = qpnp_haptics_auto_res_enable(chip, true);
 		if (rc < 0) {
