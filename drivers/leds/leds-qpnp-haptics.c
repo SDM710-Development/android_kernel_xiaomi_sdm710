@@ -1221,20 +1221,18 @@ static int qpnp_haptics_auto_mode_config(struct hap_chip *chip, int time_ms)
 		/* short pattern */
 		rc = qpnp_haptics_parse_buffer_dt(chip);
 		if (!rc) {
-			rc = qpnp_haptics_wave_rep_config(chip,
-				HAP_WAVE_REPEAT | HAP_WAVE_SAMP_REPEAT);
-			if (rc < 0) {
-				pr_err("Error in configuring wave_rep config %d\n",
-					rc);
-				return rc;
-			}
-
 			rc = qpnp_haptics_buffer_config(chip, wave_samp, true);
 			if (rc < 0) {
 				pr_err("Error in configuring buffer mode %d\n",
 					rc);
 				return rc;
 			}
+		}
+
+		rc = qpnp_haptics_wave_rep_config(chip, HAP_WAVE_REPEAT | HAP_WAVE_SAMP_REPEAT);
+		if (rc < 0) {
+			pr_err("Error in configuring wave_rep config %d\n", rc);
+			return rc;
 		}
 
 		ares_cfg.lra_high_z = HAP_LRA_HIGH_Z_OPT1;
