@@ -168,6 +168,8 @@ struct qusb_phy {
 	int			soc_min_rev;
 	bool			host_chirp_erratum;
 	bool			override_bias_ctrl2;
+
+	int			tune_efuse_correction;
 };
 
 #ifdef CONFIG_NVMEM
@@ -419,6 +421,7 @@ static void qusb_phy_get_tune1_param(struct qusb_phy *qphy)
 {
 	u8 reg;
 	u32 bit_mask = 1;
+	int corrected_val;
 
 	pr_debug("%s(): num_of_bits:%d bit_pos:%d\n", __func__,
 				qphy->efuse_num_of_bits,
@@ -437,6 +440,13 @@ static void qusb_phy_get_tune1_param(struct qusb_phy *qphy)
 
 	qphy->tune_val = TUNE_VAL_MASK(qphy->tune_val,
 				qphy->efuse_bit_pos, bit_mask);
+	if (qphy->tune_efuse_correction) {
+		corrected_val = qphy->tune_val + qphy->tune_efuse_correction;
+		if (corrected_val < 0)
+			qphy->tune_val = 0;
+		else
+			qphy->tune_val = min_t(unsigned, corrected_val, 0x7);
+	}
 	reg = readb_relaxed(qphy->base + qphy->phy_reg[PORT_TUNE1]);
 	if (qphy->tune_val) {
 		reg = reg & 0x0f;
@@ -1133,6 +1143,9 @@ static int qusb_phy_probe(struct platform_device *pdev)
 				"DT Value for efuse is invalid.\n");
 				return -EINVAL;
 			}
+
+			of_property_read_u32(dev->of_node, "qcom,tune-efuse-correction",
+					     &qphy->tune_efuse_correction);
 		}
 	}
 
