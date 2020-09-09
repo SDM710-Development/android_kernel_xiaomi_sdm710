@@ -2667,7 +2667,7 @@ thermal_message_of_batt_show(struct device *dev, struct device_attribute *attr, 
 	return snprintf(buf, PAGE_SIZE, "array_size %s\nscreen_on %s\nscreen_off %s\n",
 			tm->batt_array_size, tm->batt_level_screen_on, tm->batt_level_screen_off);
 }
-static DEVICE_ATTR(batt_message, 0644, thermal_message_of_batt_show, NULL);
+static DEVICE_ATTR(batt_message, 0444, thermal_message_of_batt_show, NULL);
 
 #ifdef CONFIG_DRM
 static ssize_t
@@ -2675,7 +2675,7 @@ thermal_screen_state_show(struct device *dev, struct device_attribute *attr, cha
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", sm.screen_state);
 }
-static DEVICE_ATTR(screen_state, 0644, thermal_screen_state_show, NULL);
+static DEVICE_ATTR(screen_state, 0444, thermal_screen_state_show, NULL);
 #endif
 
 static ssize_t
