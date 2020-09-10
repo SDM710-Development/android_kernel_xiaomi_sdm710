@@ -1733,6 +1733,22 @@ static int smb2_init_hw(struct smb2 *chip)
 			true, 0);
 	vote(chg->pd_disallowed_votable_indirect, PD_NOT_SUPPORTED_VOTER,
 			chip->dt.no_pd, 0);
+
+	/* Operate the QC2.0 in 5V/9V mode i.e. Disable 12V */
+	rc = smblib_masked_write(chg, HVDCP_PULSE_COUNT_MAX_REG, PULSE_COUNT_QC2P0_12V |
+				 PULSE_COUNT_QC2P0_9V, PULSE_COUNT_QC2P0_9V);
+	if (rc < 0) {
+		dev_err(chg->dev, "Couldn't configure QC2.0 to 9V rc=%d\n", rc);
+		return rc;
+	}
+
+	/* Operate the QC3.0 to limit vbus to 6.4v */
+	rc = smblib_masked_write(chg, HVDCP_PULSE_COUNT_MAX_REG, PULSE_COUNT_QC3P0_MASK, 0x7);
+	if (rc < 0) {
+		dev_err(chg->dev, "Couldn't configure QC3.0 to 6.6V rc=%d\n", rc);
+		return rc;
+	}
+
 	/*
 	 * AICL configuration:
 	 * start from min and AICL ADC disable

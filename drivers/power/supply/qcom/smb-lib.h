@@ -74,11 +74,21 @@ enum print_reason {
 #define FG_ESR_VOTER			"FG_ESR_VOTER"
 #define FCC_STEPPER_VOTER		"FCC_STEPPER_VOTER"
 #define PD_NOT_SUPPORTED_VOTER		"PD_NOT_SUPPORTED_VOTER"
+#define CHG_AWAKE_VOTER			"CHG_AWAKE_VOTER"
+#define CC_FLOAT_VOTER			"CC_FLOAT_VOTER"
+#define UNSTANDARD_QC2_VOTER		"UNSTANDARD_QC2_VOTER"
+#define PL_HIGH_CAPACITY_VOTER		"PL_HIGH_CAPACITY_VOTER"
 
 #define VCONN_MAX_ATTEMPTS	3
 #define OTG_MAX_ATTEMPTS	3
 #define BOOST_BACK_STORM_COUNT	3
 #define WEAK_CHG_STORM_COUNT	8
+
+#define CC_FLOAT_WORK_START_DELAY_MS	700
+/* QC2.0 voltage UV threshold 7.8V */
+#define QC2_HVDCP_VOL_UV_THR		7800000
+#define CHECK_VBUS_WORK_DELAY_MS	10
+#define UNSTANDARD_HVDCP2_UA		1800000
 
 enum smb_mode {
 	PARALLEL_MASTER = 0,
@@ -318,6 +328,9 @@ struct smb_charger {
 	struct delayed_work	uusb_otg_work;
 	struct delayed_work	bb_removal_work;
 
+	struct delayed_work	cc_float_charge_work;
+	struct delayed_work	check_vbus_work;
+
 	/* cached status */
 	int			voltage_min_uv;
 	int			voltage_max_uv;
@@ -370,6 +383,8 @@ struct smb_charger {
 	int			*thermal_mitigation_pd_base;
 #endif
 	bool			dynamic_fv_enabled;
+	bool			legacy;
+	bool                    unstandard_hvdcp;
 
 	/* workaround flag */
 	u32			wa_flags;
@@ -382,6 +397,8 @@ struct smb_charger {
 	bool			non_compliant_chg_detected;
 	bool			fake_usb_insertion;
 	bool			reddragon_ipc_wa;
+
+	bool			cc_float_detected;
 
 	/* extcon for VBUS / ID notification to USB for uUSB */
 	struct extcon_dev	*extcon;
