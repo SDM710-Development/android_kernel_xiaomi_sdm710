@@ -378,6 +378,8 @@ enum {
 #define OTG_ENG_OTG_CFG_REG		(OTG_BASE + 0xC0)
 #define ENG_BUCKBOOST_HALT1_8_MODE_BIT	BIT(0)
 
+#define OTG_ENG_HICCUP_MODE		(OTG_BASE + 0xE2)
+
 /* BATIF Peripheral Registers */
 /* BATIF Interrupt Bits */
 #define BAT_7_RT_STS_BIT			BIT(7)

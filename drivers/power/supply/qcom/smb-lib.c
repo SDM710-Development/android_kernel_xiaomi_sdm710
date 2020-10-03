@@ -1601,9 +1601,21 @@ static int smblib_enable_otg_wa(struct smb_charger *chg)
 				break;
 			}
 			/* increase the delay for following iterations */
-			if (retry_count > 5)
+			if (retry_count > 5) {
 				min_delay = MAX_DELAY_US;
 
+				/*
+				 * if otg icl is equal or above 1A,
+				 * retry_count is above 5, disable hiccup
+				 */
+				if (i >= 2) {
+					rc = smblib_write(chg, OTG_ENG_HICCUP_MODE, 0x0f);
+					if (rc < 0)
+						smblib_err(chg,
+							   "Couldn't configure OTG_ENG_HICCUP_MODE rc=%d\n",
+							   rc);
+				}
+			}
 		} while (retry_count++ < MAX_RETRY);
 
 		if (retry_count >= MAX_RETRY) {
@@ -1615,6 +1627,19 @@ static int smblib_enable_otg_wa(struct smb_charger *chg)
 				goto out;
 			}
 		} else {
+			/* if hiccup is disabled, when otg enable ok, should enable hiccup */
+			rc = smblib_read(chg, OTG_ENG_HICCUP_MODE, &stat);
+			if (rc < 0)
+				smblib_err(chg, "Couldn't read OTG_ENG_HICCUP_MODE rc=%d\n", rc);
+
+			if (stat == 0x0f) {
+				rc = smblib_write(chg, OTG_ENG_HICCUP_MODE, 0x00);
+				if (rc < 0)
+					smblib_err(chg,
+						   "Couldn't configure OTG_ENG_HICCUP_MODE rc=%d\n",
+						   rc);
+			}
+
 			smblib_dbg(chg, PR_OTG, "OTG enabled\n");
 			return 0;
 		}
