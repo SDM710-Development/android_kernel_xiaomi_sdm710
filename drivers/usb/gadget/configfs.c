@@ -5,6 +5,7 @@
 #include <linux/nls.h>
 #include <linux/usb/composite.h>
 #include <linux/usb/gadget_configfs.h>
+#include <linux/power_supply.h>
 #include "configfs.h"
 #include "u_f.h"
 #include "u_os_desc.h"
@@ -1425,6 +1426,21 @@ err_comp_cleanup:
 }
 
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
+static int smblib_cancel_recheck(void)
+{
+	union power_supply_propval pval = { 0 };
+	struct power_supply *usb_psy = power_supply_get_by_name("usb");
+
+	if (!usb_psy) {
+		pr_err("%s: could not get usb psy\n", __func__);
+		return -ENODEV;
+	}
+
+	pval.intval = 0;
+	power_supply_set_property(usb_psy, POWER_SUPPLY_PROP_TYPE_RECHECK, &pval);
+	return pval.intval;
+}
+
 static void android_work(struct work_struct *data)
 {
 	struct gadget_info *gi = container_of(data, struct gadget_info, work);
@@ -1461,6 +1477,7 @@ static void android_work(struct work_struct *data)
 		kobject_uevent_env(&gi->dev->kobj,
 					KOBJ_CHANGE, configured);
 		pr_info("%s: sent uevent %s\n", __func__, configured[0]);
+		smblib_cancel_recheck();
 		uevent_sent = true;
 	}
 
