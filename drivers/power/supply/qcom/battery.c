@@ -46,6 +46,9 @@
 #define PL_FCC_LOW_VOTER		"PL_FCC_LOW_VOTER"
 #define ICL_LIMIT_VOTER			"ICL_LIMIT_VOTER"
 #define FCC_STEPPER_VOTER		"FCC_STEPPER_VOTER"
+#define PL_HIGH_CAPACITY_VOTER		"PL_HIGH_CAPACITY_VOTER"
+
+#define CONFIG_SLAVE_PCT	65
 
 struct pl_data {
 	int			pl_mode;
@@ -93,6 +96,9 @@ struct pl_data {
 	bool			pl_disable;
 	int			taper_entry_fv;
 	u32			float_voltage_uv;
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	int			const_slave_pct;
+#endif
 };
 
 struct pl_data *the_chip;
@@ -125,6 +131,9 @@ enum {
 	RESTRICT_CHG_ENABLE,
 	RESTRICT_CHG_CURRENT,
 	FCC_STEPPING_IN_PROGRESS,
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	CONST_SLAVE_PCT,
+#endif
 };
 
 /*******
@@ -304,7 +313,12 @@ static ssize_t slave_pct_store(struct class *c, struct class_attribute *attr,
 	if (kstrtoul(ubuf, 10, &val))
 		return -EINVAL;
 
-	chip->slave_pct = val;
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	if (chip->const_slave_pct > 0)
+		chip->slave_pct = chip->const_slave_pct;
+	else
+#endif
+		chip->slave_pct = val;
 
 	rc = validate_parallel_icl(chip, &disable);
 	if (rc < 0)
@@ -317,6 +331,28 @@ static ssize_t slave_pct_store(struct class *c, struct class_attribute *attr,
 
 	return count;
 }
+
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+static ssize_t const_slave_pct_show(struct class *c, struct class_attribute *attr, char *ubuf)
+{
+	struct pl_data *chip = container_of(c, struct pl_data, qcom_batt_class);
+
+	return snprintf(ubuf, PAGE_SIZE, "%d\n", chip->const_slave_pct);
+}
+
+static ssize_t const_slave_pct_store(struct class *c, struct class_attribute *attr,
+			const char *ubuf, size_t count)
+{
+	struct pl_data *chip = container_of(c, struct pl_data, qcom_batt_class);
+	unsigned long val;
+
+	if (kstrtoul(ubuf, 10, &val))
+		return -EINVAL;
+
+	chip->const_slave_pct = val;
+	return count;
+}
+#endif
 
 /************************
  * RESTRICTED CHARGIGNG *
@@ -408,6 +444,10 @@ static struct class_attribute pl_attributes[] = {
 					restrict_cur_show, restrict_cur_store),
 	[FCC_STEPPING_IN_PROGRESS]
 				= __ATTR_RO(fcc_stepping_in_progress),
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	[CONST_SLAVE_PCT]	= __ATTR(const_parallel_pct, 0644, const_slave_pct_show,
+					const_slave_pct_store),
+#endif
 	__ATTR_NULL,
 };
 
@@ -1317,10 +1357,47 @@ static bool is_parallel_available(struct pl_data *chip)
 	return true;
 }
 
+#define TAPER_CAPACITY_THR	90
+#define TAPER_VBATT_THR		4395000
 static void handle_main_charge_type(struct pl_data *chip)
 {
 	union power_supply_propval pval = {0, };
 	int rc;
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	int taper_soc = 0, taper_vbatt = 0;
+
+	/*
+	 * If charge type failed to change to taper, pl_taper_work cannot
+	 * be launched anymore, so parallel charging cannot be disabled,
+	 * if battery capacity is high, do not allow parallel charging
+	 * to protect the battery avoiding battery over voltage if
+	 * pm670 charge type may failed to change from fast to taper.
+	 */
+	rc = power_supply_get_property(chip->batt_psy, POWER_SUPPLY_PROP_CAPACITY, &pval);
+	if (rc < 0) {
+		pr_err("Couldn't get batt capacity rc=%d\n", rc);
+		return;
+	}
+	taper_soc = pval.intval;
+
+	rc = power_supply_get_property(chip->batt_psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &pval);
+	if (rc < 0) {
+		pr_err("Couldn't get batt voltage rc=%d\n", rc);
+		return;
+	}
+	taper_vbatt = pval.intval;
+
+	if (!get_effective_result_locked(chip->pl_disable_votable)) {
+		if (taper_soc > TAPER_CAPACITY_THR || taper_vbatt > TAPER_VBATT_THR) {
+			pr_err("High capacity or Vbatt above 4395mV, disable pl\n");
+			vote(chip->pl_disable_votable, PL_HIGH_CAPACITY_VOTER, true, 0);
+			return;
+		}
+	} else {
+		if (taper_soc < TAPER_CAPACITY_THR - 2 && taper_vbatt < TAPER_VBATT_THR - 40000)
+			vote(chip->pl_disable_votable, PL_HIGH_CAPACITY_VOTER, false, 0);
+	}
+#endif
 
 	rc = power_supply_get_property(chip->batt_psy,
 			       POWER_SUPPLY_PROP_CHARGE_TYPE, &pval);
@@ -1689,6 +1766,9 @@ int qcom_batt_init(int smb_version)
 		goto unreg_notifier;
 	}
 
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	chip->const_slave_pct = CONFIG_SLAVE_PCT;
+#endif
 	the_chip = chip;
 
 	return 0;

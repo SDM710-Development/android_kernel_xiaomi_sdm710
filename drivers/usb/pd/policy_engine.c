@@ -372,6 +372,10 @@ static void *usbpd_ipc_log;
 #define ID_HDR_VID		0x05c6 /* qcom */
 #define PROD_VDO_PID		0x0a00 /* TBD */
 
+/* limit APDO voltage to maximum 7000mV for better efficiency */
+#define MAX_ALLOWED_APDO_UV	7000000
+#define MAX_ALLOWED_APDO_UA	3000000
+
 static bool check_vsafe0v = true;
 module_param(check_vsafe0v, bool, 0600);
 
@@ -797,6 +801,13 @@ static int pd_select_pdo(struct usbpd *pd, int pdo_pos, int uv, int ua)
 					uv, ua);
 			return -EINVAL;
 		}
+
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		if (ua > MAX_ALLOWED_APDO_UA)
+			ua = MAX_ALLOWED_APDO_UA;
+		if (uv > MAX_ALLOWED_APDO_UV)
+			uv = MAX_ALLOWED_APDO_UV;
+#endif
 
 		curr = ua / 1000;
 		pd->requested_voltage = uv;

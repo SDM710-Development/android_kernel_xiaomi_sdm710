@@ -2296,6 +2296,7 @@ int smblib_set_prop_input_current_limited(struct smb_charger *chg,
 	return 0;
 }
 
+#define PPS_MAX_ALLOWED_7V	7000000
 int smblib_rerun_aicl(struct smb_charger *chg)
 {
 	int rc, settled_icl_ua;
@@ -2307,6 +2308,15 @@ int smblib_rerun_aicl(struct smb_charger *chg)
 								rc);
 		return rc;
 	}
+
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_PD &&
+	    chg->voltage_min_uv == PPS_MAX_ALLOWED_7V) {
+		smblib_dbg(chg, PR_MISC,
+			   "PPS maximum allowed voltage is reached, no need to rerun\n");
+		return rc;
+	}
+#endif
 
 	/* USB is suspended so skip re-running AICL */
 	if (stat & USBIN_SUSPEND_STS_BIT)
@@ -2368,6 +2378,7 @@ static int smblib_force_vbus_voltage(struct smb_charger *chg, u8 val)
 	return rc;
 }
 
+#define HOT_THERMAL_LEVEL_TRH		12
 int smblib_dp_dm(struct smb_charger *chg, int val)
 {
 	int target_icl_ua, rc = 0;
@@ -2375,6 +2386,10 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 
 	switch (val) {
 	case POWER_SUPPLY_DP_DM_DP_PULSE:
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		return 0;
+#endif
+
 		rc = smblib_dp_pulse(chg);
 		if (!rc)
 			chg->pulse_cnt++;
@@ -2382,6 +2397,12 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 				rc, chg->pulse_cnt);
 		break;
 	case POWER_SUPPLY_DP_DM_DM_PULSE:
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		/* if thermal level is very high, do not reduce qc3.0 pulse */
+		if (chg->system_temp_level >= HOT_THERMAL_LEVEL_TRH)
+			return rc;
+#endif
+
 		rc = smblib_dm_pulse(chg);
 		if (!rc && chg->pulse_cnt)
 			chg->pulse_cnt--;
@@ -2389,6 +2410,16 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 				rc, chg->pulse_cnt);
 		break;
 	case POWER_SUPPLY_DP_DM_ICL_DOWN:
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		/*
+		 * as we already limit DP_DM_DP_PULSE max pluse count to 8 to
+		 * prevent OPP when charging with some weak QC3.0 chargers,
+		 * no need to control ICL down by SW_QC3_VOTER, just retrun 0
+		 * here to avoid charging slow caused by SW_QC3.0_VOTER
+		 */
+		return 0;
+#endif
+
 		target_icl_ua = get_effective_result(chg->usb_icl_votable);
 		if (target_icl_ua < 0) {
 			/* no client vote, get the ICL from charger */
@@ -2425,6 +2456,11 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 			pr_err("Failed to force 5V\n");
 		break;
 	case POWER_SUPPLY_DP_DM_FORCE_9V:
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		/* use our own qc2 method to raise to 9V, so just return here */
+		return 0;
+#endif
+
 		/* Force 1A ICL before requesting higher voltage */
 		vote(chg->usb_icl_votable, HVDCP2_ICL_VOTER, true, 1000000);
 		rc = smblib_force_vbus_voltage(chg, FORCE_9V_BIT);
@@ -2432,6 +2468,11 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 			pr_err("Failed to force 9V\n");
 		break;
 	case POWER_SUPPLY_DP_DM_FORCE_12V:
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		/* use our own qc2 method to raise to 9V, so just return here */
+		return 0;
+#endif
+
 		/* Force 1A ICL before requesting higher voltage */
 		vote(chg->usb_icl_votable, HVDCP2_ICL_VOTER, true, 1000000);
 		rc = smblib_force_vbus_voltage(chg, FORCE_12V_BIT);
@@ -2886,7 +2927,11 @@ int smblib_get_prop_die_health(struct smb_charger *chg,
 #define CDP_CURRENT_UA			1500000
 #define DCP_CURRENT_UA			1800000
 #define HVDCP2_CURRENT_UA		1500000
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+#define HVDCP3_CURRENT_UA		2500000
+#else
 #define HVDCP3_CURRENT_UA		2700000
+#endif
 #define TYPEC_DEFAULT_CURRENT_UA	900000
 #define TYPEC_MEDIUM_CURRENT_UA		1500000
 #define TYPEC_HIGH_CURRENT_UA		3000000
@@ -3815,6 +3860,9 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 				vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
 
 				cancel_delayed_work_sync(&chg->charger_type_recheck);
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+				cancel_delayed_work_sync(&chg->dp_dm_pulse_work);
+#endif
 			}
 		}
 	}
@@ -3892,6 +3940,9 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 		}
 
 		cancel_delayed_work_sync(&chg->charger_type_recheck);
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		cancel_delayed_work_sync(&chg->dp_dm_pulse_work);
+#endif
 
 		if (chg->wa_flags & BOOST_BACK_WA) {
 			data = chg->irq_info[SWITCH_POWER_OK_IRQ].irq_data;
@@ -4131,8 +4182,30 @@ static void smblib_handle_hvdcp_3p0_auth_done(struct smb_charger *chg,
 			current_ua = HVDCP2_CURRENT_UA;
 		else
 			current_ua = DCP_CURRENT_UA;
-	} else if (apsd_result->bit & QC_3P0_BIT)
+
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		if (!chg->check_vbus_once) {
+			schedule_delayed_work(&chg->check_vbus_work,
+					      msecs_to_jiffies(CHECK_VBUS_WORK_DELAY_MS));
+			chg->check_vbus_once = true;
+		}
+
+		if (!chg->unstandard_hvdcp) {
+			vote(chg->usb_icl_votable, HVDCP2_ICL_VOTER, true, HVDCP2_CURRENT_UA);
+			rc = smblib_force_vbus_voltage(chg, FORCE_9V_BIT);
+			if (rc < 0)
+				pr_err("Failed to force 9V\n");
+		} else
+			vote(chg->usb_icl_votable, HVDCP2_ICL_VOTER, false, 0);
+#endif
+	} else if (apsd_result->bit & QC_3P0_BIT) {
 		current_ua = HVDCP3_CURRENT_UA;
+
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		if (!delayed_work_pending(&chg->dp_dm_pulse_work))
+			schedule_delayed_work(&chg->dp_dm_pulse_work, msecs_to_jiffies(500));
+#endif
+	}
 
 	vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, current_ua);
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: hvdcp-3p0-auth-done rising; %s detected\n",
@@ -4693,6 +4766,9 @@ static void smblib_handle_typec_removal(struct smb_charger *chg)
 	chg->cc_float_detected = false;
 	chg->float_rerun_apsd = false;
 	chg->unstandard_hvdcp = false;
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	chg->check_vbus_once = false;
+#endif
 
 	/* write back the default FLOAT charger configuration */
 	rc = smblib_masked_write(chg, USBIN_OPTIONS_2_CFG_REG,
@@ -5513,6 +5589,9 @@ static void smblib_charger_type_recheck(struct work_struct *work)
 	last_charger_type = chg->real_charger_type;
 
 	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP_3 ||
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	    chg->check_vbus_once ||
+#endif
 	    (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_FLOAT &&
 	     chg->typec_mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER) ||
 	    chg->pd_active || check_count >= TYPE_RECHECK_COUNT) {
@@ -5549,6 +5628,32 @@ check_next:
 	check_count++;
 	schedule_delayed_work(&chg->charger_type_recheck, msecs_to_jiffies(recheck_time));
 }
+
+#define MAX_PLUSE_COUNT_ALLOWED		10
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+static void smblib_dp_dm_pulse_request(struct work_struct *work)
+{
+	struct smb_charger *chg = container_of(work, struct smb_charger, dp_dm_pulse_work.work);
+	int rc;
+	union power_supply_propval pval = {0, };
+
+	rc = power_supply_get_property(chg->batt_psy, POWER_SUPPLY_PROP_CHARGE_TYPE, &pval);
+	if (rc < 0) {
+		pr_err("Couldn't get batt charge type rc=%d\n", rc);
+		return;
+	}
+
+	if (chg->pulse_cnt >= MAX_PLUSE_COUNT_ALLOWED ||
+	    pval.intval == POWER_SUPPLY_CHARGE_TYPE_TAPER)
+		return;
+
+	rc = smblib_dp_pulse(chg);
+	if (!rc)
+		chg->pulse_cnt++;
+
+	schedule_delayed_work(&chg->dp_dm_pulse_work, msecs_to_jiffies(100));
+}
+#endif
 
 static int smblib_create_votables(struct smb_charger *chg)
 {
@@ -5775,6 +5880,9 @@ int smblib_init(struct smb_charger *chg)
 	INIT_DELAYED_WORK(&chg->cc_float_charge_work, smblib_cc_float_charge_work);
 	INIT_DELAYED_WORK(&chg->check_vbus_work, smblib_check_vbus_work);
 	INIT_DELAYED_WORK(&chg->charger_type_recheck, smblib_charger_type_recheck);
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	INIT_DELAYED_WORK(&chg->dp_dm_pulse_work, smblib_dp_dm_pulse_request);
+#endif
 	chg->fake_capacity = -EINVAL;
 	chg->fake_input_current_limited = -EINVAL;
 	chg->fake_batt_status = -EINVAL;
@@ -5853,6 +5961,9 @@ int smblib_deinit(struct smb_charger *chg)
 		cancel_delayed_work_sync(&chg->bb_removal_work);
 		cancel_delayed_work_sync(&chg->check_vbus_work);
 		cancel_delayed_work_sync(&chg->charger_type_recheck);
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		cancel_delayed_work_sync(&chg->dp_dm_pulse_work);
+#endif
 		power_supply_unreg_notifier(&chg->nb);
 		smblib_destroy_votables(chg);
 		qcom_step_chg_deinit();

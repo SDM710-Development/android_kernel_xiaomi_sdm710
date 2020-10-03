@@ -331,6 +331,9 @@ struct smb_charger {
 	struct delayed_work	cc_float_charge_work;
 	struct delayed_work	check_vbus_work;
 	struct delayed_work	charger_type_recheck;
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	struct delayed_work	dp_dm_pulse_work;
+#endif
 
 	/* cached status */
 	int			voltage_min_uv;
@@ -386,6 +389,9 @@ struct smb_charger {
 	bool			dynamic_fv_enabled;
 	bool			legacy;
 	bool                    unstandard_hvdcp;
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+	bool                    check_vbus_once;
+#endif
 
 	/* workaround flag */
 	u32			wa_flags;
