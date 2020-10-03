@@ -26,6 +26,7 @@
 #include <linux/qpnp/qpnp-misc.h>
 #include "fg-core.h"
 #include "fg-reg.h"
+#include "step-chg-jeita.h"
 
 #define FG_GEN3_DEV_NAME	"qcom,fg-gen3"
 
@@ -3311,6 +3312,9 @@ static void profile_load_work(struct work_struct *work)
 			chip->batt_id_ohms / 1000, rc);
 		goto out;
 	}
+
+	/* xiaomi: move qcom_step_chg_init to fg driver */
+	qcom_step_chg_init(chip->dev, 0 , 1);
 
 	if (!chip->profile_available)
 		goto out;
