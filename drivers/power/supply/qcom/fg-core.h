@@ -517,6 +517,7 @@ struct fg_chip {
 	struct work_struct	esr_filter_work;
 	struct alarm		esr_filter_alarm;
 	ktime_t			last_delta_temp_time;
+	bool			report_full;
 };
 
 /* Debugfs data structures are below */
