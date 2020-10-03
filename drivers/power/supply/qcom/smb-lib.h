@@ -326,7 +326,9 @@ struct smb_charger {
 	int			boost_threshold_ua;
 	int			system_temp_level;
 	int			thermal_levels;
+#ifndef CONFIG_THERMAL
 	int			*thermal_mitigation;
+#endif
 	int			dcp_icl_ua;
 	int			fake_capacity;
 	int			fake_batt_status;
@@ -360,6 +362,13 @@ struct smb_charger {
 	bool			in_chg_lock;
 	bool			fcc_stepper_enable;
 	bool			ufp_only_mode;
+
+#ifdef CONFIG_THERMAL
+	int			*thermal_mitigation_dcp;
+	int			*thermal_mitigation_qc3;
+	int			*thermal_mitigation_qc2;
+	int			*thermal_mitigation_pd_base;
+#endif
 
 	/* workaround flag */
 	u32			wa_flags;

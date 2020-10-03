@@ -2120,6 +2120,76 @@ int smblib_set_prop_batt_status(struct smb_charger *chg,
 	return 0;
 }
 
+#define MAX_TEMP_LEVEL	16
+/* percent of ICL compared to base 5V for different PD voltage_min voltage */
+#define PD_6P5V_PERCENT	85
+#define PD_7P5V_PERCENT	75
+#define PD_8P5V_PERCENT	65
+#define PD_9V_PERCENT	60
+/* PD voltage range is 5V to 9V for SDM670 platform */
+#define PD_MICRO_5V	5000000
+#define PD_MICRO_5P5V	5500000
+#define PD_MICRO_6P5V	6500000
+#define PD_MICRO_7P5V	7500000
+#define PD_MICRO_8P5V	8500000
+#define PD_MICRO_9V	9000000
+#ifdef CONFIG_THERMAL
+static int smblib_therm_charging(struct smb_charger *chg)
+{
+	int thermal_icl_ua = 0, rc;
+
+	if (chg->system_temp_level >= MAX_TEMP_LEVEL)
+		return 0;
+
+	switch (chg->real_charger_type) {
+	case POWER_SUPPLY_TYPE_USB_HVDCP:
+		thermal_icl_ua = chg->thermal_mitigation_qc2[chg->system_temp_level];
+		break;
+	case POWER_SUPPLY_TYPE_USB_HVDCP_3:
+		thermal_icl_ua = chg->thermal_mitigation_qc3[chg->system_temp_level];
+		break;
+	case POWER_SUPPLY_TYPE_USB_PD:
+		if (chg->voltage_min_uv >= PD_MICRO_5V && chg->voltage_min_uv < PD_MICRO_5P5V)
+			thermal_icl_ua = chg->thermal_mitigation_pd_base[chg->system_temp_level];
+		else if (chg->voltage_min_uv >= PD_MICRO_5P5V &&
+			 chg->voltage_min_uv < PD_MICRO_6P5V)
+			thermal_icl_ua = chg->thermal_mitigation_pd_base[chg->system_temp_level] *
+						PD_6P5V_PERCENT / 100;
+		else if (chg->voltage_min_uv >= PD_MICRO_6P5V &&
+			 chg->voltage_min_uv < PD_MICRO_7P5V)
+			thermal_icl_ua = chg->thermal_mitigation_pd_base[chg->system_temp_level] *
+						PD_7P5V_PERCENT / 100;
+		else if (chg->voltage_min_uv >= PD_MICRO_7P5V &&
+			 chg->voltage_min_uv <= PD_MICRO_8P5V)
+			thermal_icl_ua = chg->thermal_mitigation_pd_base[chg->system_temp_level] *
+						PD_8P5V_PERCENT / 100;
+		else if (chg->voltage_min_uv >= PD_MICRO_8P5V &&
+			 chg->voltage_min_uv <= PD_MICRO_9V)
+			thermal_icl_ua = chg->thermal_mitigation_pd_base[chg->system_temp_level] *
+						PD_9V_PERCENT / 100;
+		else
+			thermal_icl_ua = chg->thermal_mitigation_pd_base[chg->system_temp_level];
+		break;
+	case POWER_SUPPLY_TYPE_USB_DCP:
+	default:
+		thermal_icl_ua = chg->thermal_mitigation_dcp[chg->system_temp_level];
+		break;
+	}
+
+	if (chg->system_temp_level == 0) {
+		/* if therm_lvl_sel is 0, clear thermal voter */
+		rc = vote(chg->usb_icl_votable, THERMAL_DAEMON_VOTER, false, 0);
+		if (rc < 0)
+			pr_err("Couldn't disable USB thermal ICL vote rc=%d\n", rc);
+	} else {
+		rc = vote(chg->usb_icl_votable, THERMAL_DAEMON_VOTER, true, thermal_icl_ua);
+		if (rc < 0)
+			pr_err("Couldn't disable USB thermal ICL vote rc=%d\n", rc);
+	}
+	return rc;
+}
+#endif
+
 int smblib_set_prop_system_temp_level(struct smb_charger *chg,
 				const union power_supply_propval *val)
 {
@@ -2133,17 +2203,24 @@ int smblib_set_prop_system_temp_level(struct smb_charger *chg,
 		return -EINVAL;
 
 	chg->system_temp_level = val->intval;
+	/* disable parallel charge in case of system temp level */
+	vote(chg->pl_disable_votable, THERMAL_DAEMON_VOTER, (chg->system_temp_level > 2) ? true :
+	     false, 0);
 
-	if (chg->system_temp_level == chg->thermal_levels)
+	if (chg->system_temp_level >= chg->thermal_levels)
 		return vote(chg->chg_disable_votable,
 			THERMAL_DAEMON_VOTER, true, 0);
 
 	vote(chg->chg_disable_votable, THERMAL_DAEMON_VOTER, false, 0);
+#ifdef CONFIG_THERMAL
+	smblib_therm_charging(chg);
+#else
 	if (chg->system_temp_level == 0)
 		return vote(chg->fcc_votable, THERMAL_DAEMON_VOTER, false, 0);
 
 	vote(chg->fcc_votable, THERMAL_DAEMON_VOTER, true,
 			chg->thermal_mitigation[chg->system_temp_level]);
+#endif
 	return 0;
 }
 
@@ -2790,9 +2867,12 @@ int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 {
 	int rc;
 
-	if (chg->pd_active)
+	if (chg->pd_active) {
 		rc = vote(chg->usb_icl_votable, PD_VOTER, true, val->intval);
-	else
+#ifdef CONFIG_THERMAL
+		rc = smblib_therm_charging(chg);
+#endif
+	} else
 		rc = -EPERM;
 
 	return rc;
@@ -4026,6 +4106,16 @@ static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 	default:
 		break;
 	}
+
+#ifdef CONFIG_THERMAL
+	if (chg->system_temp_level >= 0 && chg->system_temp_level < chg->thermal_levels) {
+		/*
+		 * consider thermal limit only when it is active and not at
+		 * the highest level
+		 */
+		smblib_therm_charging(chg);
+	}
+#endif
 
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: apsd-done rising; %s detected\n",
 		   apsd_result->name);
