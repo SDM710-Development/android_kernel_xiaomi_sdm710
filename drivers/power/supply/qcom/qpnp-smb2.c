@@ -1603,7 +1603,7 @@ static int smb2_disable_typec(struct smb_charger *chg)
 	}
 
 	/* wait for FSM to start */
-	msleep(100);
+	msleep(120);
 	/* move to uUSB mode */
 	/* configure FSM in idle state */
 	rc = smblib_masked_write(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
