@@ -307,6 +307,7 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_QG_VBMS_MODE,
 	POWER_SUPPLY_PROP_REAL_CAPACITY,
 	POWER_SUPPLY_PROP_DYNAMIC_FV_ENABLED,
+	POWER_SUPPLY_PROP_TYPE_RECHECK,
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT,
 	/* Properties of type `const char *' */
