@@ -1204,6 +1204,7 @@ static void fg_notify_charger(struct fg_chip *chip)
 		return;
 	}
 
+#if 0
 	prop.intval = chip->bp.fastchg_curr_ma * 1000;
 	rc = power_supply_set_property(chip->batt_psy,
 			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &prop);
@@ -1212,6 +1213,7 @@ static void fg_notify_charger(struct fg_chip *chip)
 			rc);
 		return;
 	}
+#endif
 
 	fg_dbg(chip, FG_STATUS, "Notified charger on float voltage and FCC\n");
 }
