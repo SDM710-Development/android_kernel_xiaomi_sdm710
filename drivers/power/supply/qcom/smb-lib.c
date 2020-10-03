@@ -3211,6 +3211,15 @@ int smblib_set_prop_type_recheck(struct smb_charger *chg, const union power_supp
 	return 0;
 }
 
+int smblib_set_prop_rerun_apsd(struct smb_charger *chg, const union power_supply_propval *val)
+{
+	if (val->intval == 1) {
+		chg->float_rerun_apsd = true;
+		smblib_rerun_apsd(chg);
+	}
+	return 0;
+}
+
 int smblib_reg_block_update(struct smb_charger *chg,
 				struct reg_info *entry)
 {
@@ -4265,6 +4274,8 @@ static void smblib_notify_usb_host(struct smb_charger *chg, bool enable)
 static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 {
 	const struct apsd_result *apsd_result;
+	union power_supply_propval pval = {0, };
+	int ret, usb_present;
 
 	if (!rising)
 		return;
@@ -4312,6 +4323,27 @@ static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 		break;
 	default:
 		break;
+	}
+
+	if (chg->float_rerun_apsd) {
+		ret = smblib_get_prop_usb_present(chg, &pval);
+		if (ret < 0) {
+			smblib_err(chg, "Couldn't get usb present ret = %d\n", ret);
+			return;
+		}
+
+		usb_present = pval.intval;
+		if (!usb_present)
+			return;
+
+		if (apsd_result->bit & QC_2P0_BIT) {
+			pval.intval = 0;
+			smblib_set_prop_pd_active(chg, &pval);
+			chg->float_rerun_apsd = false;
+		} else if (apsd_result->bit & FLOAT_CHARGER_BIT) {
+			vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 1000000);
+			chg->float_rerun_apsd = false;
+		}
 	}
 
 #ifdef CONFIG_THERMAL
@@ -4659,6 +4691,7 @@ static void smblib_handle_typec_removal(struct smb_charger *chg)
 	chg->pd_hard_reset = 0;
 	chg->typec_legacy_valid = false;
 	chg->cc_float_detected = false;
+	chg->float_rerun_apsd = false;
 	chg->unstandard_hvdcp = false;
 
 	/* write back the default FLOAT charger configuration */

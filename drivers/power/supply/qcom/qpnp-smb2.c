@@ -443,6 +443,7 @@ static enum power_supply_property smb2_usb_props[] = {
 	POWER_SUPPLY_PROP_CONNECTOR_TYPE,
 	POWER_SUPPLY_PROP_MOISTURE_DETECTED,
 	POWER_SUPPLY_PROP_TYPE_RECHECK,
+	POWER_SUPPLY_PROP_RERUN_APSD,
 };
 
 static int smb2_usb_get_prop(struct power_supply *psy,
@@ -643,6 +644,9 @@ static int smb2_usb_set_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_TYPE_RECHECK:
 		rc = smblib_set_prop_type_recheck(chg, val);
+		break;
+	case POWER_SUPPLY_PROP_RERUN_APSD:
+		rc = smblib_set_prop_rerun_apsd(chg, val);
 		break;
 	default:
 		pr_err("set prop %d is not supported\n", psp);

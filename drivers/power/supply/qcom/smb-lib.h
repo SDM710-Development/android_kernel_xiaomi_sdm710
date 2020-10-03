@@ -400,6 +400,7 @@ struct smb_charger {
 	bool			reddragon_ipc_wa;
 
 	bool			cc_float_detected;
+	bool			float_rerun_apsd;
 
 	/* extcon for VBUS / ID notification to USB for uUSB */
 	struct extcon_dev	*extcon;
@@ -543,6 +544,8 @@ int smblib_get_prop_charge_qnovo_enable(struct smb_charger *chg,
 			       union power_supply_propval *val);
 int smblib_get_prop_type_recheck(struct smb_charger *chg,
 				union power_supply_propval *val);
+int smblib_set_prop_rerun_apsd(struct smb_charger *chg,
+				const union power_supply_propval *val);
 int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_sdp_current_max(struct smb_charger *chg,
