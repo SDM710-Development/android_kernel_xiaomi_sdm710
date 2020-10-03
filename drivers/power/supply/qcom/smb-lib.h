@@ -369,6 +369,7 @@ struct smb_charger {
 	int			*thermal_mitigation_qc2;
 	int			*thermal_mitigation_pd_base;
 #endif
+	bool			dynamic_fv_enabled;
 
 	/* workaround flag */
 	u32			wa_flags;
