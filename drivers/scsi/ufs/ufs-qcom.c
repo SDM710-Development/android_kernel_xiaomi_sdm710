@@ -1321,11 +1321,11 @@ static void ufs_qcom_dev_ref_clk_ctrl(struct ufs_qcom_host *host, bool enable)
 
 		/*
 		 * If we call hibern8 exit after this, we need to make sure that
-		 * device ref_clk is stable for at least 1us before the hibern8
+		 * device ref_clk is stable for at least 100us before the hibern8
 		 * exit command.
 		 */
 		if (enable)
-			udelay(1);
+			udelay(100);
 
 		host->is_dev_ref_clk_enabled = enable;
 	}
