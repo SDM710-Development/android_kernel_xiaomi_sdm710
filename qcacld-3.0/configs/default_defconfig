@@ -650,4 +650,4 @@ endif
 #Enable Hash debug
 CONFIG_RX_HASH_DEBUG := y
 
-CONFIG_WLAN_HANG_EVENT := y
+CONFIG_WLAN_HANG_EVENT := n
