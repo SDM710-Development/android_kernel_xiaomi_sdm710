@@ -11,8 +11,11 @@
  * GNU General Public License for more details.
  */
 
-#include "qm215-qrd.dtsi"
+/dts-v1/;
+/plugin/;
 
 / {
-	model = "Qualcomm Technologies, Inc. QCM2150 QRD";
+	model = " SDM450 NOPMI MTP";
+	qcom,board-id = <8 3>;
 };
+

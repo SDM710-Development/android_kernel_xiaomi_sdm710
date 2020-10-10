@@ -13,10 +13,11 @@
 
 /dts-v1/;
 
-#include "qcm2150.dtsi"
+#include "msm8953.dtsi"
+#include "msm8953-mtp.dtsi"
 
 / {
-	model = "Qualcomm Technologies, Inc. QCM2150";
-	compatible = "qcom,qcm2150";
-	qcom,pmic-name = "PM8916";
+	model = "Qualcomm Technologies, Inc. msm8953 + NO PMI SOC";
+	compatible = "qcom,msm8953";
+	qcom,pmic-id = <0x010016 0x0 0x0 0x0>;
 };
