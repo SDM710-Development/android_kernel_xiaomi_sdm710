@@ -33,12 +33,18 @@ static int __init audio_q6_init(void)
 	audio_slimslave_init();
 	avtimer_init();
 	elliptic_driver_init();
+#ifdef CONFIG_MSM_CSPL
+	crus_sp_init();
+#endif
 	return 0;
 }
 
 static void __exit audio_q6_exit(void)
 {
 	avtimer_exit();
+#ifdef CONFIG_MSM_CSPL
+	crus_sp_exit();
+#endif
 	audio_slimslave_exit();
 	msm_audio_ion_exit();
 	core_exit();

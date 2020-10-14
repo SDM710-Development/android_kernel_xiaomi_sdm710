@@ -27,8 +27,10 @@ int msm_audio_ion_init(void);
 int audio_slimslave_init(void);
 int avtimer_init(void);
 int elliptic_driver_init(void);
+int crus_sp_init(void);
 
 void avtimer_exit(void);
+void crus_sp_exit(void);
 void audio_slimslave_exit(void);
 void msm_audio_ion_exit(void);
 void rtac_exit(void);

@@ -27,6 +27,7 @@
 #include "adsp_err.h"
 #include <dsp/q6core.h>
 #include <dsp/apr_elliptic.h>
+#include <dsp/msm-cirrus-playback.h>
 
 #define WAKELOCK_TIMEOUT	5000
 enum {
@@ -364,6 +365,11 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 	afe_callback_debug_print(data);
 	if (data->opcode == AFE_PORT_CMDRSP_GET_PARAM_V2) {
 		uint32_t *payload = data->payload;
+
+#ifdef CONFIG_MSM_CSPL
+		if (crus_afe_callback(data->payload, data->payload_size) == 0)
+			return 0;
+#endif
 
 		if (!payload || (data->token >= AFE_MAX_PORTS)) {
 			pr_err("%s: Error: size %d payload %pK token %d\n",
@@ -836,6 +842,15 @@ static int afe_apr_send_pkt(void *data, wait_queue_head_t *wait)
 	pr_debug("%s: leave %d\n", __func__, ret);
 	return ret;
 }
+
+int afe_apr_send_pkt_crus(void *data, int index, int set)
+{
+	if (set)
+		return afe_apr_send_pkt(data, &this_afe.wait[index]);
+	else /* get */
+		return afe_apr_send_pkt(data, 0);
+}
+EXPORT_SYMBOL(afe_apr_send_pkt_crus);
 
 static int afe_send_cal_block(u16 port_id, struct cal_block_data *cal_block)
 {

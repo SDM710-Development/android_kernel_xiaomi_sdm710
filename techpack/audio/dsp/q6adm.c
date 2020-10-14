@@ -1058,6 +1058,48 @@ dolby_dap_send_param_return:
 }
 EXPORT_SYMBOL(adm_dolby_dap_send_params);
 
+int crus_adm_set_params(int port_id, int copp_idx, uint32_t module_id, uint32_t param_id,
+			char *params, uint32_t params_length)
+{
+	int ret;
+	uint32_t *update_param_data = NULL;
+	uint32_t *param_data = NULL;
+	uint32_t param_size = params_length + sizeof(struct adm_param_data_v5);
+
+	param_data = kzalloc(param_size, GFP_KERNEL);
+	if (!param_data)
+		return -ENOMEM;
+
+	update_param_data = (uint32_t *)param_data;
+	*update_param_data++ = module_id;
+	*update_param_data++ = param_id;
+	*update_param_data++ = params_length;
+
+	memcpy((char *)param_data + sizeof(struct adm_param_data_v5), params, params_length);
+	ret = adm_send_params_v5(port_id, copp_idx, (char *)param_data, param_size);
+	if (ret) {
+		pr_err("%s: Setting param failed with err=%d\n", __func__, ret);
+		ret = -EINVAL;
+	}
+
+	kfree(param_data);
+	return ret;
+}
+EXPORT_SYMBOL(crus_adm_set_params);
+
+int crus_adm_get_params(int port_id, int copp_idx, uint32_t module_id, uint32_t param_id,
+			char *params, uint32_t params_length, uint32_t client_id)
+{
+	int ret;
+
+	ret = adm_get_params(port_id, copp_idx, module_id, param_id, params_length, params);
+	if (ret == 0)
+		pr_debug("%s: params_value [0x%x, 0x%x, 0x%x]\n", __func__, params[0], params[1],
+			 params[2]);
+	return ret;
+}
+EXPORT_SYMBOL(crus_adm_get_params);
+
 /**
  * adm_get_params_v5 -
  *        command to retrieve ADM params for given module
