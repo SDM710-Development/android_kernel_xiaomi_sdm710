@@ -30,6 +30,8 @@
 #define WCN_CDC_SLIM_RX_CH_MAX 2
 #define WCN_CDC_SLIM_TX_CH_MAX 3
 
+#define CS35L41_CODEC_NAME "cs35l41.2-0040"
+
 #define WSA8810_NAME_1 "wsa881x.20170211"
 #define WSA8810_NAME_2 "wsa881x.20170212"
 #define MSM_LL_QOS_VALUE 300 /* time in us to ensure LPM doesn't go in C3/C4 */
@@ -1694,6 +1696,11 @@ static int msm_snd_card_late_probe(struct snd_soc_card *card)
 	struct snd_soc_codec *ana_cdc;
 	struct snd_soc_pcm_runtime *rtd;
 	int ret = 0;
+#if defined(CONFIG_MACH_XIAOMI_F2) && defined(CONFIG_SND_SOC_CS35L41)
+	struct snd_soc_dai_link *dai_link;
+	struct snd_soc_codec *cs35l41_codec;
+	struct snd_soc_dapm_context * cs35l41_dapm;
+#endif
 
 	rtd = snd_soc_get_pcm_runtime(card, be_dl_name);
 	if (!rtd) {
@@ -1714,6 +1721,26 @@ static int msm_snd_card_late_probe(struct snd_soc_card *card)
 			"%s: msm_anlg_cdc_hs_detect failed\n", __func__);
 		kfree(mbhc_cfg_ptr->calibration);
 	}
+
+#if defined(CONFIG_MACH_XIAOMI_F2) && defined(CONFIG_SND_SOC_CS35L41)
+	dai_link = rtd->dai_link;
+	if (dai_link && dai_link->codec_name) {
+		if (!strcmp(dai_link->codec_name, CS35L41_CODEC_NAME)) {
+			cs35l41_codec = rtd->codec;
+			cs35l41_dapm = snd_soc_codec_get_dapm(cs35l41_codec);
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "AMP Playback");
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "AMP Capture");
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "DSP1");
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "Main AMP");
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "ASPRX1");
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "ASPRX2");
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "ASPTX1");
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "ASPTX2");
+			snd_soc_dapm_ignore_suspend(cs35l41_dapm, "SPK");
+			snd_soc_dapm_sync(cs35l41_dapm);
+		}
+	}
+#endif
 
 	return ret;
 }
@@ -3446,6 +3473,10 @@ static struct snd_soc_card *msm_int_populate_sndcard_dailinks(
 
 	if (of_property_read_bool(dev->of_node,
 				  "qcom,mi2s-audio-intf")) {
+#if defined(CONFIG_MACH_XIAOMI_F2) && defined(CONFIG_SND_SOC_CS35L41)
+		msm_mi2s_be_dai_links[0].codec_name = CS35L41_CODEC_NAME;
+		msm_mi2s_be_dai_links[0].codec_dai_name = "cs35l41-pcm";
+#endif
 		memcpy(dailink + len1,
 		       msm_mi2s_be_dai_links,
 		       sizeof(msm_mi2s_be_dai_links));
