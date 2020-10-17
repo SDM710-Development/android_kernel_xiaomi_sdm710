@@ -298,7 +298,7 @@ static ssize_t gsx_gesture_data_show(struct goodix_ext_module *module,
 		ts_info("Gesture module not register!");
 		return -EPERM;
 	}
-	if (!buf || !gsx_gesture->gesture_data) {
+	if (!buf || gsx_gesture->gesture_data == NULL) {
 		ts_info("Parameter error!");
 		return -EPERM;
 	}
