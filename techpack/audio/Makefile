@@ -7,6 +7,11 @@ else ifeq ($(CONFIG_ARCH_SDM670),y)
   audioconf := -include $(srctree)/techpack/audio/config/sdm710autoconf.h
   include $(srctree)/techpack/audio/config/sdm710auto.conf
   export $(shell sed 's/=.*//' $(srctree)/techpack/audio/config/sdm710auto.conf)
+  ifeq ($(CONFIG_MACH_XIAOMI_F2),y)
+    audioconf += -include $(srctree)/techpack/audio/config/sdm710autoconf_grus.h
+    include $(srctree)/techpack/audio/config/sdm710auto_grus.conf
+    export $(shell sed 's/=.*//' $(srctree)/techpack/audio/config/sdm710auto_grus.conf)
+  endif
 else
   # msm8953 platform
   ifeq ($(CONFIG_ARCH_SDM632),y)
