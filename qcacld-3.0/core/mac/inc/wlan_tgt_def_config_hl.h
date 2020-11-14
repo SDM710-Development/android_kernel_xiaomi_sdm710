@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -16,12 +16,11 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-
 #ifndef __WLAN_TGT_DEF_CONFIG_H__
 #define __WLAN_TGT_DEF_CONFIG_H__
 
 /*
- * TODO: please help to consider if we need a seperate config file from LL case.
+ * TODO: please help to consider if we need a separate config file from LL case.
  */
 
 /*
@@ -74,7 +73,7 @@
  * In offload mode target supports features like WOW, chatter and other
  * protocol offloads. In order to support them some functionalities like
  * reorder buffering, PN checking need to be done in target. This determines
- * maximum number of peers suported by target in offload mode
+ * maximum number of peers supported by target in offload mode
  */
 #define CFG_TGT_NUM_OFFLOAD_PEERS       0
 /*
