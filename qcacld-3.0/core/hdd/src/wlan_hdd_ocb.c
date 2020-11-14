@@ -1930,7 +1930,7 @@ static int __wlan_hdd_cfg80211_dcc_update_ndl(struct wiphy *wiphy,
 		tb[QCA_WLAN_VENDOR_ATTR_DCC_UPDATE_NDL_ACTIVE_STATE_ARRAY]);
 
 	/* Check channel count. Per 11p spec, max 2 channels allowed */
-	if (!channel_count || channel_count > TGT_NUM_OCB_CHANNELS) {
+	if (!channel_count || channel_count > CFG_TGT_NUM_OCB_CHANNELS) {
 		hdd_err("Invalid channel_count %d", channel_count);
 		return -EINVAL;
 	}
