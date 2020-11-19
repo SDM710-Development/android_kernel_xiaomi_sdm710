@@ -10103,6 +10103,18 @@ QDF_STATUS csr_roam_disconnect_internal(tpAniSirGlobal pMac, uint32_t sessionId,
 	return status;
 }
 
+#if defined(WLAN_FEATURE_HOST_ROAM) || defined(WLAN_FEATURE_ROAM_OFFLOAD)
+static void
+csr_disable_roaming_offload(tpAniSirGlobal mac_ctx, uint32_t vdev_id)
+{
+	sme_stop_roaming(MAC_HANDLE(mac_ctx), vdev_id, eCsrForcedDisassoc);
+}
+#else
+static inline void
+csr_disable_roaming_offload(tpAniSirGlobal mac_ctx, uint32_t session_id)
+{}
+#endif
+
 QDF_STATUS csr_roam_disconnect(tpAniSirGlobal mac_ctx, uint32_t session_id,
 			       eCsrRoamDisconnectReason reason,
 			       tSirMacReasonCodes mac_reason)
@@ -10116,6 +10128,8 @@ QDF_STATUS csr_roam_disconnect(tpAniSirGlobal mac_ctx, uint32_t session_id,
 
 	session->discon_in_progress = true;
 	csr_roam_cancel_roaming(mac_ctx, session_id);
+	csr_disable_roaming_offload(mac_ctx, session_id);
+
 	csr_roam_remove_duplicate_command(mac_ctx, session_id, NULL,
 					  eCsrForcedDisassoc);
 
@@ -19638,7 +19652,6 @@ QDF_STATUS csr_roam_send_rso_cmd(tpAniSirGlobal mac_ctx, uint8_t session_id,
 
 	request_buf->message_type = eWNI_SME_ROAM_SCAN_OFFLOAD_REQ;
 	request_buf->length = sizeof(*request_buf);
-
 	status = umac_send_mb_message_to_mac(request_buf);
 	if (status != QDF_STATUS_SUCCESS) {
 		sme_err("Send RSO from CSR failed");
@@ -21246,40 +21259,30 @@ csr_create_per_roam_request(tpAniSirGlobal mac_ctx,
 static QDF_STATUS
 csr_roam_offload_per_scan(tpAniSirGlobal mac_ctx, uint8_t session_id)
 {
-	tpCsrNeighborRoamControlInfo roam_info =
-		&mac_ctx->roam.neighborRoamInfo[session_id];
 	struct wmi_per_roam_config_req *req_buf;
 	struct scheduler_msg msg = {0};
-
-	/*
-	 * No need to update in case of stop command, FW takes care of stopping
-	 * this internally
-	 */
-	if (roam_info->last_sent_cmd == ROAM_SCAN_OFFLOAD_STOP)
-		return QDF_STATUS_SUCCESS;
+	QDF_STATUS status;
 
 	if (!mac_ctx->roam.configParam.per_roam_config.enable) {
-		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			 "PER based roaming is disabled in configuration");
+		sme_debug("PER based roaming ini is disabled");
 		return QDF_STATUS_SUCCESS;
 	}
 
 	req_buf = csr_create_per_roam_request(mac_ctx, session_id);
-	if (!req_buf) {
-		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_ERROR,
-			 "Failed to create req packet");
+	if (!req_buf)
 		return QDF_STATUS_E_FAILURE;
-	}
-	msg.type = WMA_SET_PER_ROAM_CONFIG_CMD;
+
+	msg.type = eWNI_SME_ROAM_SEND_PER_REQ;
 	msg.reserved = 0;
 	msg.bodyptr = req_buf;
-	if (!QDF_IS_STATUS_SUCCESS(scheduler_post_message(QDF_MODULE_ID_SME,
-							  QDF_MODULE_ID_WMA,
-							  QDF_MODULE_ID_WMA,
-							  &msg))) {
-		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			"%s: Unable to post WMA_SET_PER_ROAM_CONFIG_CMD to WMA",
-			__func__);
+
+	status = scheduler_post_message(QDF_MODULE_ID_SME,
+					QDF_MODULE_ID_PE,
+					QDF_MODULE_ID_PE,
+					&msg);
+	if (QDF_IS_STATUS_ERROR(status)) {
+		sme_debug("%s: Unable to post WMA_SET_PER_ROAM_CONFIG_CMD to WMA",
+			  __func__);
 		qdf_mem_free(req_buf);
 	}
 	return QDF_STATUS_SUCCESS;
@@ -21823,6 +21826,13 @@ csr_roam_offload_scan(tpAniSirGlobal mac_ctx, uint8_t session_id,
 	else if (ROAM_SCAN_OFFLOAD_STOP == command)
 		roam_info->b_roam_scan_offload_started = false;
 	policy_mgr_set_pcl_for_existing_combo(mac_ctx->psoc, PM_STA_MODE);
+
+	/* Update PER config to FW. No need to update in case of stop command,
+	 * FW takes care of stopping this internally
+	 */
+	if (command != ROAM_SCAN_OFFLOAD_STOP)
+		csr_roam_offload_per_scan(mac_ctx, session_id);
+
 	if (!QDF_IS_STATUS_SUCCESS(
 		csr_roam_send_rso_cmd(mac_ctx, session_id, req_buf))) {
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_ERROR,
@@ -21836,8 +21846,6 @@ csr_roam_offload_scan(tpAniSirGlobal mac_ctx, uint8_t session_id,
 	/* update the last sent cmd */
 	roam_info->last_sent_cmd = command;
 
-	/* Update PER config to FW after sending the command */
-	csr_roam_offload_per_scan(mac_ctx, session_id);
 	return status;
 }
 
