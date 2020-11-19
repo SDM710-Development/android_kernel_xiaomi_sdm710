@@ -2333,8 +2333,9 @@ static void hdd_send_re_assoc_event(struct net_device *dev,
 		goto done;
 	}
 
-	if (pCsrRoamInfo->nAssocRspLength == 0) {
-		hdd_err("Assoc rsp length is 0");
+	if (pCsrRoamInfo->nAssocRspLength < FT_ASSOC_RSP_IES_OFFSET) {
+		hdd_err("Invalid assoc rsp length %d",
+			pCsrRoamInfo->nAssocRspLength);
 		goto done;
 	}
 
@@ -2367,6 +2368,10 @@ static void hdd_send_re_assoc_event(struct net_device *dev,
 
 	/* Send the Assoc Resp, the supplicant needs this for initial Auth */
 	len = pCsrRoamInfo->nAssocRspLength - FT_ASSOC_RSP_IES_OFFSET;
+	if (len > IW_GENERIC_IE_MAX) {
+		hdd_err("Invalid Assoc resp length %d", len);
+		goto done;
+	}
 	rspRsnLength = len;
 	qdf_mem_copy(rspRsnIe, pFTAssocRsp, len);
 	qdf_mem_zero(rspRsnIe + len, IW_GENERIC_IE_MAX - len);
@@ -3494,8 +3499,18 @@ hdd_association_completion_handler(struct hdd_adapter *adapter,
 		 * eCSR_ROAM_RESULT_SCAN_FOR_SSID_FAILURE that mean HDD is
 		 * waiting on disconnect_comp_var so unblock anyone waiting for
 		 * disconnect to complete.
+		 * Also add eCSR_ROAM_ASSOCIATION_FAILURE and
+		 * eCSR_ROAM_CANCELLED here to handle the following scenarios:
+		 *
+		 * 1. Connection is in progress, but completes with failure
+		 *    before we check the CSR state.
+		 * 2. Connection is in progress. But the connect command is in
+		 *    pending queue and is removed from pending queue as part
+		 *    of csr_roam_disconnect.
 		 */
-		if ((roamResult == eCSR_ROAM_RESULT_SCAN_FOR_SSID_FAILURE) &&
+		if ((roamResult == eCSR_ROAM_RESULT_SCAN_FOR_SSID_FAILURE ||
+		     roamStatus == eCSR_ROAM_ASSOCIATION_FAILURE ||
+		     roamStatus == eCSR_ROAM_CANCELLED) &&
 		    hddDisconInProgress)
 			complete(&adapter->disconnect_comp_var);
 	}
