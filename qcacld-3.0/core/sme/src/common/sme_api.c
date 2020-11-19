@@ -91,6 +91,11 @@ QDF_STATUS sme_acquire_global_lock(tSmeStruct *psSme)
 	return status;
 }
 
+uint32_t sme_get_vht_ch_width(void)
+{
+	return wma_get_vht_ch_width();
+}
+
 void
 sme_store_nss_chains_cfg_in_vdev(struct wlan_objmgr_vdev *vdev,
 				 struct mlme_nss_chains *vdev_ini_cfg)
@@ -4754,14 +4759,8 @@ QDF_STATUS sme_get_wcnss_hardware_version(tHalHandle hHal,
 }
 
 #ifdef FEATURE_OEM_DATA_SUPPORT
-/**
- * sme_oem_data_req() - send oem data request to WMA
- * @hal: HAL handle
- * @hdd_oem_req: OEM data request from HDD
- *
- * Return: QDF_STATUS
- */
-QDF_STATUS sme_oem_data_req(tHalHandle hal, struct oem_data_req *hdd_oem_req)
+QDF_STATUS sme_oem_req_cmd(mac_handle_t mac_handle,
+			   struct oem_data_req *oem_req)
 {
 	QDF_STATUS status = QDF_STATUS_SUCCESS;
 	struct oem_data_req *oem_data_req;
@@ -4780,7 +4779,7 @@ QDF_STATUS sme_oem_data_req(tHalHandle hal, struct oem_data_req *hdd_oem_req)
 		return QDF_STATUS_E_NOMEM;
 	}
 
-	oem_data_req->data_len = hdd_oem_req->data_len;
+	oem_data_req->data_len = oem_req->data_len;
 	oem_data_req->data = qdf_mem_malloc(oem_data_req->data_len);
 	if (!oem_data_req->data) {
 		sme_err("mem alloc failed");
@@ -4788,10 +4787,10 @@ QDF_STATUS sme_oem_data_req(tHalHandle hal, struct oem_data_req *hdd_oem_req)
 		return QDF_STATUS_E_NOMEM;
 	}
 
-	qdf_mem_copy(oem_data_req->data, hdd_oem_req->data,
+	qdf_mem_copy(oem_data_req->data, oem_req->data,
 		     oem_data_req->data_len);
 
-	status = wma_start_oem_data_req(wma_handle, oem_data_req);
+	status = wma_start_oem_req_cmd(wma_handle, oem_data_req);
 
 	if (!QDF_IS_STATUS_SUCCESS(status))
 		sme_err("Post oem data request msg fail");
@@ -4807,6 +4806,29 @@ QDF_STATUS sme_oem_data_req(tHalHandle hal, struct oem_data_req *hdd_oem_req)
 	return status;
 }
 #endif /*FEATURE_OEM_DATA_SUPPORT */
+
+#ifdef FEATURE_OEM_DATA
+QDF_STATUS sme_oem_data_cmd(mac_handle_t mac_handle,
+			    struct oem_data *oem_data)
+{
+	QDF_STATUS status;
+	void *wma_handle;
+
+	SME_ENTER();
+	wma_handle = cds_get_context(QDF_MODULE_ID_WMA);
+	if (!wma_handle) {
+		sme_err("wma_handle is NULL");
+		return QDF_STATUS_E_FAILURE;
+	}
+
+	status = wma_start_oem_data_cmd(wma_handle, oem_data);
+	if (!QDF_IS_STATUS_SUCCESS(status))
+		sme_err("fail to call wma_start_oem_data_cmd.");
+
+	SME_EXIT();
+	return status;
+}
+#endif
 
 QDF_STATUS sme_open_session(tHalHandle hal, struct sme_session_params *params)
 {
@@ -11105,24 +11127,15 @@ QDF_STATUS sme_update_dsc_pto_up_mapping(tHalHandle hHal,
 		sme_release_global_lock(&pMac->sme);
 		return QDF_STATUS_E_FAILURE;
 	}
+
 	for (i = 0; i < SME_QOS_WMM_UP_MAX; i++) {
 		for (j = pSession->QosMapSet.dscp_range[i][0];
-			j <= pSession->QosMapSet.dscp_range[i][1];
-			j++) {
-			if ((pSession->QosMapSet.dscp_range[i][0] == 255)
-				&& (pSession->QosMapSet.dscp_range[i][1] ==
-							255)) {
-				QDF_TRACE(QDF_MODULE_ID_SME,
-					QDF_TRACE_LEVEL_DEBUG,
-					FL("User Priority %d isn't used"), i);
-				break;
-			} else {
+			j <= pSession->QosMapSet.dscp_range[i][1] &&
+			j <= WLAN_MAX_DSCP; j++)
 				dscpmapping[j] = i;
-			}
-		}
 	}
 	for (i = 0; i < pSession->QosMapSet.num_dscp_exceptions; i++)
-		if (pSession->QosMapSet.dscp_exceptions[i][0] != 255)
+		if (pSession->QosMapSet.dscp_exceptions[i][0] <= WLAN_MAX_DSCP)
 			dscpmapping[pSession->QosMapSet.dscp_exceptions[i][0]] =
 				pSession->QosMapSet.dscp_exceptions[i][1];
 
@@ -13906,9 +13919,13 @@ void sme_update_tgt_services(tHalHandle hal, struct wma_tgt_services *cfg)
 	mac_ctx->is_11k_offload_supported =
 				cfg->is_11k_offload_supported;
 	mac_ctx->ft_akm_service_bitmap = cfg->ft_akm_service_bitmap;
-	sme_debug("pmf_offload: %d fils_roam support %d 11k_offload %d ft_service_cap:%d",
+	mac_ctx->is_adaptive_11r_roam_supported =
+			cfg->is_adaptive_11r_roam_supported;
+	sme_debug("pmf_offload: %d fils_roam support %d 11k_offload %d ft_service_cap:%d adapt_11r:%d",
 		  mac_ctx->pmf_offload, mac_ctx->is_fils_roaming_supported,
-		  mac_ctx->is_11k_offload_supported, mac_ctx->ft_akm_service_bitmap);
+		  mac_ctx->is_11k_offload_supported,
+		  mac_ctx->ft_akm_service_bitmap,
+		  mac_ctx->is_adaptive_11r_roam_supported);
 	mac_ctx->bcn_reception_stats = cfg->bcn_reception_stats;
 }
 
@@ -16686,24 +16703,26 @@ static void sme_scan_event_handler(struct wlan_objmgr_vdev *vdev,
 				   void *arg)
 {
 	struct sAniSirGlobal *mac = arg;
-	struct csr_roam_session *session;
+	uint8_t vdev_id;
 
 	if (!mac) {
 		sme_err("Invalid mac context");
 		return;
 	}
 
-	if (!CSR_IS_SESSION_VALID(mac, vdev->vdev_objmgr.vdev_id)) {
-		sme_err("Invalid vdev_id: %d", vdev->vdev_objmgr.vdev_id);
+	if (!mac->sme.beacon_pause_cb)
 		return;
-	}
 
-	session = CSR_GET_SESSION(mac, vdev->vdev_objmgr.vdev_id);
+	if (event->type != SCAN_EVENT_TYPE_STARTED)
+		return;
 
-	if (event->type == SCAN_EVENT_TYPE_STARTED) {
-		if (mac->sme.beacon_pause_cb)
-			mac->sme.beacon_pause_cb(mac->hdd_handle,
-				vdev->vdev_objmgr.vdev_id, event->type, false);
+	for (vdev_id = 0 ; vdev_id < CSR_ROAM_SESSION_MAX ; vdev_id++) {
+		if (CSR_IS_SESSION_VALID(mac, vdev_id) &&
+		    sme_is_beacon_report_started(MAC_HANDLE(mac), vdev_id)) {
+			sme_debug("Send pause ind for vdev_id : %d", vdev_id);
+			mac->sme.beacon_pause_cb(mac->hdd_handle, vdev_id,
+						 event->type, false);
+		}
 	}
 }
 
