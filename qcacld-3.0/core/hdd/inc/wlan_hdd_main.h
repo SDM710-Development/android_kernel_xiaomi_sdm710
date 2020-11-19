@@ -2097,6 +2097,7 @@ struct hdd_context {
 	qdf_mc_timer_t sar_safety_timer;
 	qdf_mc_timer_t sar_safety_unsolicited_timer;
 	qdf_event_t sar_safety_req_resp_event;
+	qdf_atomic_t sar_safety_req_resp_event_in_progress;
 #endif
 	bool roam_ch_from_fw_supported;
 };
@@ -4032,7 +4033,6 @@ bool wlan_hdd_check_mon_concurrency(void);
  * wlan_hdd_add_monitor_check() - check for monitor intf and add if needed
  * @hdd_ctx: pointer to hdd context
  * @adapter: output pointer to hold created monitor adapter
- * @type: type of the interface
  * @name: name of the interface
  * @rtnl_held: True if RTNL lock is held
  * @name_assign_type: the name of assign type of the netdev
@@ -4042,8 +4042,8 @@ bool wlan_hdd_check_mon_concurrency(void);
  */
 int wlan_hdd_add_monitor_check(struct hdd_context *hdd_ctx,
 			       struct hdd_adapter **adapter,
-			       enum nl80211_iftype type, const char *name,
-			       bool rtnl_held, unsigned char name_assign_type);
+			       const char *name, bool rtnl_held,
+			       unsigned char name_assign_type);
 
 /**
  * wlan_hdd_del_monitor() - delete monitor interface
@@ -4073,8 +4073,8 @@ bool wlan_hdd_check_mon_concurrency(void)
 static inline
 int wlan_hdd_add_monitor_check(struct hdd_context *hdd_ctx,
 			       struct hdd_adapter **adapter,
-			       enum nl80211_iftype type, const char *name,
-			       bool rtnl_held, unsigned char name_assign_type)
+			       const char *name, bool rtnl_held,
+			       unsigned char name_assign_type)
 {
 	return 0;
 }
