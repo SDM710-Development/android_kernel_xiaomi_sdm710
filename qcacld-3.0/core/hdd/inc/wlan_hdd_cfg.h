@@ -2058,6 +2058,47 @@ enum hdd_dot11_mode {
 #define CFG_ROAMING_OFFLOAD_MIN                 (0)
 #define CFG_ROAMING_OFFLOAD_MAX                 (1)
 #define CFG_ROAMING_OFFLOAD_DEFAULT             (1)
+
+/*
+ * <ini>
+ * roam_triggers - Bitmap of roaming triggers. Setting this to
+ * zero will disable roaming altogether for the STA interface.
+ * @Min: 0
+ * @Max: 0xFFFFFFFF
+ * @Default: 0xFFFF
+ *
+ * ROAM_TRIGGER_REASON_NONE        BIT 0
+ * ROAM_TRIGGER_REASON_PER         BIT 1
+ * ROAM_TRIGGER_REASON_BMISS       BIT 2
+ * ROAM_TRIGGER_REASON_LOW_RSSI    BIT 3
+ * ROAM_TRIGGER_REASON_HIGH_RSSI   BIT 4
+ * ROAM_TRIGGER_REASON_PERIODIC    BIT 5
+ * ROAM_TRIGGER_REASON_MAWC        BIT 6
+ * ROAM_TRIGGER_REASON_DENSE       BIT 7
+ * ROAM_TRIGGER_REASON_BACKGROUND  BIT 8
+ * ROAM_TRIGGER_REASON_FORCED      BIT 9
+ * ROAM_TRIGGER_REASON_BTM         BIT 10
+ * ROAM_TRIGGER_REASON_UNIT_TEST   BIT 11
+ * ROAM_TRIGGER_REASON_BSS_LOAD    BIT 12
+ * ROAM_TRIGGER_REASON_DEAUTH      BIT 13
+ * ROAM_TRIGGER_REASON_IDLE        BIT 14
+ * ROAM_TRIGGER_REASON_STA_KICKOUT BIT 15
+ * ROAM_TRIGGER_EXT_REASON_MAX     BIT 16
+ * Bitmap corresponds to the enum roam_trigger_reason
+ *
+ * Related: none
+ *
+ * Supported Feature: Roaming
+ *
+ * Usage: Internal
+ *
+ * </ini>
+ */
+#define CFG_ROAM_TRIGGER_BITMAP        "roam_triggers"
+#define CFG_ROAM_TRIGGER_BITMAP_MIN       0
+#define CFG_ROAM_TRIGGER_BITMAP_MAX       0xFFFFFFFF
+#define CFG_ROAM_TRIGGER_BITMAP_DEFAULT   0xFFFF
+
 #endif
 
 /*
@@ -10849,7 +10890,7 @@ enum dot11p_mode {
 #define CFG_DP_PROTO_EVENT_BITMAP		"dp_proto_event_bitmap"
 #define CFG_DP_PROTO_EVENT_BITMAP_MIN		(0x0)
 #define CFG_DP_PROTO_EVENT_BITMAP_MAX		(0x17)
-#define CFG_DP_PROTO_EVENT_BITMAP_DEFAULT	(0x6)
+#define CFG_DP_PROTO_EVENT_BITMAP_DEFAULT	(0x17)
 #endif
 
 /*
@@ -16861,6 +16902,30 @@ enum hdd_external_acs_policy {
 #define CFG_ADAPTIVE_11R_DEFAULT  (false)
 #endif
 
+#if defined(WLAN_SAE_SINGLE_PMK) && defined(WLAN_FEATURE_ROAM_OFFLOAD)
+/*
+ * <ini>
+ * sae_single_pmk_feature_enabled - Enable/disable sae single pmk feature.
+ * @Min: 0
+ * @Max: 1
+ * @Default: 0
+ *
+ * This INI is to enable/disable SAE Roaming with same PMK/PMKID feature support
+ *
+ * Related: None
+ *
+ * Supported Feature: Roaming
+ *
+ * Usage: Internal
+ *
+ * </ini>
+ */
+#define CFG_SAE_SINGLE_PMK          "sae_single_pmk_feature_enabled"
+#define CFG_SAE_SINGLE_PMK_MIN      (false)
+#define CFG_SAE_SINGLE_PMK_MAX      (true)
+#define CFG_SAE_SINGLE_PMK_DEFAULT  (false)
+#endif
+
 /*
  * <ini>
  * bss_load_trigger_5g_rssi_threshold - Current AP minimum RSSI in dBm below
@@ -17497,6 +17562,52 @@ enum hdd_external_acs_policy {
 #define CFG_TIME_SYNC_FTM_ROLE_DEFAULT		(0)
 
 /*
+ * <ini>
+ * bmiss_skip_full_scan - To decide whether firmware does channel map based
+ * partial scan or partial scan followed by full scan in case no candidate is
+ * found in partial scan.
+ * @Min: 0
+ * @Max: 1
+ * @Default: 0
+ *
+ * 0 : Based on the channel map , firmware does scan to find new AP. if AP is
+ *     not found then it does a full scan on all valid channels.
+ * 1 : Firmware does channel map based partial scan only.
+ *
+ * Related: None
+ *
+ * Supported Feature: Roaming
+ *
+ * Usage: External
+ *
+ * </ini>
+ */
+#define CFG_BMISS_SKIP_FULL_SCAN               "bmiss_skip_full_scan"
+#define CFG_BMISS_SKIP_FULL_SCAN_MIN           0
+#define CFG_BMISS_SKIP_FULL_SCAN_MAX           1
+#define CFG_BMISS_SKIP_FULL_SCAN_DEFAULT       0
+
+/*
+ * <ini>
+ * p2p_disable_roam- Disable Roam on sta interface during P2P connection
+ * @Min: 0 - Roam Enabled on sta interface during P2P connection
+ * @Max: 1 - Roam Disabled on sta interface during P2P connection
+ * @Default: 0
+ *
+ * Disable roaming on STA iface to avoid audio glitches on p2p if its connected
+ *
+ * Supported Feature: Disable Roam during P2P
+ *
+ * Usage: Internal
+ *
+ * </ini>
+ */
+#define CFG_P2P_DISABLE_ROAM            "p2p_disable_roam"
+#define CFG_P2P_DISABLE_ROAM_MIN         (0)
+#define CFG_P2P_DISABLE_ROAM_MAX         (1)
+#define CFG_P2P_DISABLE_ROAM_DEFAULT     (0)
+
+/*
  * Type declarations
  */
 
@@ -18006,8 +18117,9 @@ struct hdd_config {
 
 #ifdef WLAN_FEATURE_ROAM_OFFLOAD
 	bool isRoamOffloadEnabled;
+	uint32_t roam_triggers;
 #endif
-
+	bool bmiss_skip_full_scan;
 	uint32_t IpaUcTxBufCount;
 	uint32_t IpaUcTxBufSize;
 	uint32_t IpaUcRxIndRingCount;
@@ -18503,6 +18615,9 @@ struct hdd_config {
 #ifdef WLAN_ADAPTIVE_11R
 	bool enable_adaptive_11r;
 #endif
+#if defined(WLAN_SAE_SINGLE_PMK) && defined(WLAN_FEATURE_ROAM_OFFLOAD)
+	bool sae_single_pmk_feature_enabled;
+#endif
 	uint32_t num_vdevs;
 	bool ShortGI80MhzEnable;
 	bool ShortGI160MhzEnable;
@@ -18530,6 +18645,7 @@ struct hdd_config {
 	bool time_sync_ftm_mode;
 	bool time_sync_ftm_role;
 #endif
+	bool p2p_disable_roam;
 };
 
 #define VAR_OFFSET(_Struct, _Var) (offsetof(_Struct, _Var))

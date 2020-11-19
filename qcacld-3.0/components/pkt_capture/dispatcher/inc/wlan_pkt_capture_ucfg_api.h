@@ -265,6 +265,24 @@ void ucfg_pkt_capture_tx_completion_process(
 			uint8_t *bssid, htt_pdev_handle pdev,
 			uint8_t tx_retry_cnt);
 
+/**
+ * ucfg_pkt_capture_record_channel() - Update Channel Information
+ * for packet capture mode
+ *
+ * Return: None
+ */
+void ucfg_pkt_capture_record_channel(void);
+
+/**
+ * ucfg_pkt_capture_register_callbacks - ucfg API to register WMA callbacks
+ * @psoc - pointer to psoc object
+ * @cb_obj - Pointer to packet capture callback structure
+ *
+ * Return: status of operation
+ */
+int
+ucfg_pkt_capture_register_wma_callbacks(struct wlan_objmgr_psoc *psoc,
+					struct pkt_capture_callbacks *cb_obj);
 #else
 static inline
 QDF_STATUS ucfg_pkt_capture_init(void)
@@ -394,6 +412,11 @@ ucfg_pkt_capture_tx_completion_process(
 			uint8_t tid, uint8_t status, bool pkt_format,
 			uint8_t *bssid, htt_pdev_handle pdev,
 			uint8_t tx_retry_cnt)
+{
+}
+
+static inline void
+ucfg_pkt_capture_record_channel(void)
 {
 }
 #endif /* WLAN_FEATURE_PKT_CAPTURE */

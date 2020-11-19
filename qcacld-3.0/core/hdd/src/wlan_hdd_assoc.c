@@ -66,6 +66,7 @@
 #include "wlan_hdd_nud_tracking.h"
 #include "wlan_mlme_ucfg_api.h"
 #include "wlan_hdd_ftm_time_sync.h"
+#include "wlan_pkt_capture_ucfg_api.h"
 
 /* These are needed to recognize WPA and RSN suite types */
 #define HDD_WPA_OUI_SIZE 4
@@ -927,7 +928,8 @@ static void hdd_save_bss_info(struct hdd_adapter *adapter,
 	} else {
 		hdd_sta_ctx->conn_info.conn_flag.ht_present = false;
 	}
-	if (roam_info->reassoc)
+	if (roam_info->reassoc ||
+	    hdd_is_roam_sync_in_progress(roam_info))
 		hdd_sta_ctx->conn_info.roam_count++;
 	if (roam_info->hs20vendor_ie.present) {
 		hdd_sta_ctx->conn_info.conn_flag.hs20_present = true;
@@ -1457,6 +1459,7 @@ static void hdd_send_association_event(struct net_device *dev,
 		/* start timer in sta/p2p_cli */
 		hdd_bus_bw_compute_prev_txrx_stats(adapter);
 		hdd_bus_bw_compute_timer_start(hdd_ctx);
+		ucfg_pkt_capture_record_channel();
 	} else if (eConnectionState_IbssConnected ==    /* IBss Associated */
 			sta_ctx->conn_info.connState) {
 		policy_mgr_update_connection_info(hdd_ctx->psoc,
@@ -1765,9 +1768,14 @@ static QDF_STATUS hdd_dis_connect_handler(struct hdd_adapter *adapter,
 	hdd_clear_roam_profile_ie(adapter);
 	hdd_wmm_init(adapter);
 	wlan_deregister_txrx_packetdump();
-
 	/* indicate 'disconnect' status to wpa_supplicant... */
 	hdd_send_association_event(dev, roam_info);
+
+	if (hdd_ctx->config->p2p_disable_roam &&
+	    (adapter->device_mode == QDF_P2P_CLIENT_MODE)) {
+		hdd_debug("enable roam");
+		wlan_hdd_enable_roaming(adapter);
+	}
 	/* indicate disconnected event to nl80211 */
 	if (roamStatus != eCSR_ROAM_IBSS_LEAVE) {
 		/*
@@ -2814,12 +2822,17 @@ hdd_association_completion_handler(struct hdd_adapter *adapter,
 						   eConnectionState_Associated);
 		}
 
-		/*
-		 * Enable roaming on other STA iface except this one.
-		 * Firmware dosent support connection on one STA iface while
-		 * roaming on other STA iface
-		 */
-		wlan_hdd_enable_roaming(adapter);
+		if (adapter->device_mode == QDF_P2P_CLIENT_MODE &&
+		    hdd_ctx->config->p2p_disable_roam) {
+			hdd_debug("p2p cli active keep disable roam");
+		} else {
+			/*
+			 * Enable roaming on other STA iface except this one.
+			 * Firmware dosent support connection on one STA iface
+			 * while roaming on other STA iface
+			 */
+			wlan_hdd_enable_roaming(adapter);
+		}
 
 		/* Save the connection info from CSR... */
 		hdd_conn_save_connect_info(adapter, roam_info,

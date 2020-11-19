@@ -10787,6 +10787,7 @@ static int hdd_update_cds_config(struct hdd_context *hdd_ctx)
 	cds_cfg->num_vdevs = hdd_ctx->config->num_vdevs;
 	cds_cfg->enable_peer_unmap_conf_support =
 		hdd_ctx->config->enable_peer_unmap_conf_support;
+	cds_cfg->bmiss_skip_full_scan = hdd_ctx->config->bmiss_skip_full_scan;
 
 	hdd_ra_populate_cds_config(cds_cfg, hdd_ctx);
 	cds_cfg->enable_tx_compl_tsf64 =
@@ -14073,7 +14074,10 @@ static void hdd_driver_unload(void)
 		hdd_psoc_idle_timer_stop(hdd_ctx);
 
 	wlan_hdd_unregister_driver();
-	hdd_context_destroy(hdd_ctx);
+
+	if (hdd_ctx)
+		hdd_context_destroy(hdd_ctx);
+
 	pld_deinit();
 	wlan_hdd_state_ctrl_param_destroy();
 	hdd_set_conparam(0);
