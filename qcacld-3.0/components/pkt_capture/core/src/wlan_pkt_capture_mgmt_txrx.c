@@ -31,6 +31,27 @@
 #include "wlan_utility.h"
 #include "wlan_reg_services_api.h"
 #include "cds_ieee80211_common.h"
+#include "wmi_unified.h"
+
+enum pkt_capture_tx_status
+pkt_capture_mgmt_status_map(uint8_t status)
+{
+	enum pkt_capture_tx_status tx_status;
+
+	switch (status) {
+	case WMI_MGMT_TX_COMP_TYPE_COMPLETE_OK:
+		tx_status = pkt_capture_tx_status_ok;
+		break;
+	case WMI_MGMT_TX_COMP_TYPE_COMPLETE_NO_ACK:
+		tx_status = pkt_capture_tx_status_no_ack;
+		break;
+	default:
+		tx_status = pkt_capture_tx_status_discard;
+	break;
+	}
+
+	return tx_status;
+}
 
 /**
  * pkt_capture_mgmtpkt_cb() - callback to process management packets
@@ -41,13 +62,14 @@
  * @tid:  tid number
  * @status: Tx status
  * @pkt_format: Frame format
+ * @tx_retry_cnt: tx retry count
  *
  * Return: none
  */
 static void
-pkt_capture_mgmtpkt_cb(void *context, void *nbuf_list,
+pkt_capture_mgmtpkt_cb(void *context, void *ppdev, void *nbuf_list,
 		       uint8_t vdev_id, uint8_t tid, uint8_t status,
-		       bool pkt_format)
+		       bool pkt_format, uint8_t *bssid, uint8_t tx_retry_cnt)
 {
 	struct pkt_capture_vdev_priv *vdev_priv;
 	struct wlan_objmgr_psoc *psoc = context;
@@ -232,6 +254,9 @@ pkt_capture_process_mgmt_tx_data(struct wlan_objmgr_pdev *pdev,
 		IEEE80211_CHAN_2GHZ : IEEE80211_CHAN_5GHZ);
 	txrx_status.chan_flags = channel_flags;
 	txrx_status.rate = ((txrx_status.rate == 6 /* Mbps */) ? 0x0c : 0x02);
+	txrx_status.tx_status = status;
+	txrx_status.tx_retry_cnt = params->tx_retry_cnt;
+	txrx_status.add_rtap_ext = true;
 
 	wh = (struct ieee80211_frame *)qdf_nbuf_data(nbuf);
 	wh->i_fc[1] &= ~IEEE80211_FC1_WEP;
@@ -271,7 +296,9 @@ pkt_capture_mgmt_tx_completion(struct wlan_objmgr_pdev *pdev,
 	qdf_mem_copy(qdf_nbuf_data(wbuf), qdf_nbuf_data(nbuf), nbuf_len);
 
 	if (QDF_STATUS_SUCCESS !=
-		pkt_capture_process_mgmt_tx_data(pdev, params, wbuf, status))
+		pkt_capture_process_mgmt_tx_data(
+					pdev, params, wbuf,
+					pkt_capture_mgmt_status_map(status)))
 		qdf_nbuf_free(wbuf);
 }
 
@@ -295,7 +322,7 @@ pkt_capture_mgmt_rx_data_cb(struct wlan_objmgr_psoc *psoc,
 	qdf_nbuf_t nbuf;
 	int buf_len;
 
-	if (!(pkt_capture_get_mode(psoc) & PACKET_CAPTURE_MODE_MGMT_ONLY))
+	if (!(pkt_capture_get_pktcap_mode() & PACKET_CAPTURE_MODE_MGMT_ONLY))
 		return QDF_STATUS_E_FAILURE;
 
 	buf_len = qdf_nbuf_len(wbuf);
@@ -315,6 +342,7 @@ pkt_capture_mgmt_rx_data_cb(struct wlan_objmgr_psoc *psoc,
 	txrx_status.rate = (rx_params->rate / 1000);
 	txrx_status.ant_signal_db = rx_params->snr;
 	txrx_status.rssi_comb = rx_params->snr;
+	txrx_status.chan_noise_floor = NORMALIZED_TO_NOISE_FLOOR;
 	txrx_status.nr_ant = 1;
 	txrx_status.rtap_flags |=
 		((txrx_status.rate == 6 /* Mbps */) ? BIT(1) : 0);
@@ -326,6 +354,7 @@ pkt_capture_mgmt_rx_data_cb(struct wlan_objmgr_psoc *psoc,
 		IEEE80211_CHAN_2GHZ : IEEE80211_CHAN_5GHZ);
 	txrx_status.chan_flags = channel_flags;
 	txrx_status.rate = ((txrx_status.rate == 6 /* Mbps */) ? 0x0c : 0x02);
+	txrx_status.add_rtap_ext = true;
 
 	wh = (struct ieee80211_frame *)qdf_nbuf_data(nbuf);
 	wh->i_fc[1] &= ~IEEE80211_FC1_WEP;
