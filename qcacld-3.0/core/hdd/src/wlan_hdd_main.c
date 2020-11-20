@@ -7419,7 +7419,8 @@ QDF_STATUS hdd_start_all_adapters(struct hdd_context *hdd_ctx)
 	hdd_enter();
 
 	hdd_for_each_adapter(hdd_ctx, adapter) {
-		if (!hdd_is_interface_up(adapter))
+		if (!hdd_is_interface_up(adapter) &&
+		    adapter->device_mode != QDF_NDI_MODE)
 			continue;
 
 		hdd_debug("[SSR] start adapter with device mode %s(%d)",
@@ -7475,6 +7476,14 @@ QDF_STATUS hdd_start_all_adapters(struct hdd_context *hdd_ctx)
 						   GFP_KERNEL, false, 0);
 			}
 
+			if (cds_is_driver_recovering() &&
+			    (adapter->device_mode == QDF_NAN_DISC_MODE ||
+			     (adapter->device_mode == QDF_STA_MODE &&
+			      wlan_hdd_nan_is_supported(hdd_ctx) &&
+			      !(hdd_ctx->nan_seperate_vdev_supported &&
+			      wlan_hdd_nan_separate_iface_supported(hdd_ctx)))))
+				hdd_nan_disable_ind_to_userspace(hdd_ctx);
+
 			hdd_register_tx_flow_control(adapter,
 					hdd_tx_resume_timer_expired_handler,
 					hdd_tx_resume_cb,
@@ -7519,6 +7528,9 @@ QDF_STATUS hdd_start_all_adapters(struct hdd_context *hdd_ctx)
 				wlan_hdd_set_mon_chan(
 						adapter, adapter->mon_chan,
 						adapter->mon_bandwidth);
+			break;
+		case QDF_NDI_MODE:
+			hdd_ndi_start(adapter->dev->name, 0);
 			break;
 		default:
 			break;
