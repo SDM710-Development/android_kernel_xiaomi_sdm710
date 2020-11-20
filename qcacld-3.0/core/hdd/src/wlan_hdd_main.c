@@ -7462,8 +7462,20 @@ QDF_STATUS hdd_start_all_adapters(struct hdd_context *hdd_ctx)
 			}
 			hdd_start_station_adapter(adapter);
 			hdd_set_mon_rx_cb(adapter->dev);
-			wlan_hdd_set_mon_chan(adapter, adapter->mon_chan,
-					      adapter->mon_bandwidth);
+
+			/*
+			 * Do not set channel for monitor mode if monitor iface
+			 * went down during SSR, as for set channels host sends
+			 * vdev start command to FW. For the interfaces went
+			 * down during SSR, host stops those adapters by sending
+			 * vdev stop/down/delete commands to FW. So FW doesn't
+			 * sends response for vdev start and vdev start response
+			 * timer expires and thus host triggers ASSERT.
+			 */
+			if (!test_bit(DOWN_DURING_SSR, &adapter->event_flags))
+				wlan_hdd_set_mon_chan(
+						adapter, adapter->mon_chan,
+						adapter->mon_bandwidth);
 			break;
 		default:
 			break;
@@ -14109,6 +14121,17 @@ static int wlan_hdd_state_ctrl_param_open(struct inode *inode,
 	return 0;
 }
 
+static void hdd_inform_wifi_off(void)
+{
+	struct hdd_context *hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
+
+	if (!hdd_ctx) {
+		hdd_err("Invalid hdd/pdev context");
+		return;
+	}
+	sme_free_blacklist(hdd_ctx->mac_handle);
+}
+
 static ssize_t wlan_hdd_state_ctrl_param_write(struct file *filp,
 						const char __user *user_buf,
 						size_t count,
@@ -14127,6 +14150,7 @@ static ssize_t wlan_hdd_state_ctrl_param_write(struct file *filp,
 
 	if (strncmp(buf, wlan_off_str, strlen(wlan_off_str)) == 0) {
 		pr_debug("Wifi turning off from UI\n");
+		hdd_inform_wifi_off();
 		goto exit;
 	}
 
@@ -16655,7 +16679,6 @@ bool wlan_hdd_check_mon_concurrency(void)
 void wlan_hdd_del_monitor(struct hdd_context *hdd_ctx,
 			  struct hdd_adapter *adapter, bool rtnl_held)
 {
-	ucfg_pkt_capture_deregister_callbacks(adapter->vdev);
 	wlan_hdd_release_intf_addr(hdd_ctx, adapter->mac_addr.bytes);
 	hdd_stop_adapter(hdd_ctx, adapter);
 	hdd_close_adapter(hdd_ctx, adapter, true);
