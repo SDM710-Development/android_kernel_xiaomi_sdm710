@@ -21212,7 +21212,9 @@ static int msm_routing_probe(struct snd_soc_platform *platform)
 			port_multi_channel_map_mixer_controls,
 			ARRAY_SIZE(port_multi_channel_map_mixer_controls));
 
+#ifdef CONFIG_ELLIPTIC_ULTRASOUND
 	elliptic_add_platform_controls(platform);
+#endif
 
 	return 0;
 }
