@@ -690,6 +690,9 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 		goto error_disable_gpio;
 	}
 
+	if (IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710))
+		goto exit;
+
 	rc = dsi_panel_exd_enable(panel);
 	if (rc) {
 		pr_err("[%s] failed to reset panel, rc=%d\n", panel->name, rc);
@@ -719,7 +722,8 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 {
 	int rc = 0;
 
-	dsi_panel_exd_disable(panel);
+	if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710))
+		dsi_panel_exd_disable(panel);
 
 	if (gpio_is_valid(panel->reset_config.disp_en_gpio))
 		gpio_set_value(panel->reset_config.disp_en_gpio, 0);
