@@ -2306,6 +2306,10 @@ BUILD_TAG = "$(TIMESTAMP); cld:$(CLD_IDS); cmn:$(CMN_IDS);"
 CFLAGS_wlan_hdd_main.o += -DBUILD_TAG=\"$(BUILD_TAG)\"
 endif
 
+ifdef CONFIG_ARCH_MDM9607
+ccflags-y += $(call cc-option, -Wframe-larger-than=1536)
+endif
+
 # Module information used by KBuild framework
 obj-$(CONFIG_QCA_CLD_WLAN) += $(MODNAME).o
 $(MODNAME)-y := $(OBJS)
