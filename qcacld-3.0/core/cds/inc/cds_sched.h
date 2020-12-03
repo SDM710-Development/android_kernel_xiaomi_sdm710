@@ -339,6 +339,9 @@ static inline void
 cds_set_rx_thread_ul_cpu_mask(uint8_t cpu_affinity_mask) {}
 
 static inline void
+cds_set_rx_thread_cpu_mask(uint8_t cpu_affinity_mask) {}
+
+static inline void
 cds_sched_handle_rx_thread_affinity_req(bool high_throughput) {}
 
 /**

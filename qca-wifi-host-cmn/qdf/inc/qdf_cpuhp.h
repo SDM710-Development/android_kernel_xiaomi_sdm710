@@ -82,16 +82,19 @@ QDF_STATUS qdf_cpuhp_register(struct qdf_cpuhp_handler **handler,
  */
 void qdf_cpuhp_unregister(struct qdf_cpuhp_handler **handler);
 #else
+static inline
 QDF_STATUS qdf_cpuhp_init(void)
 {
 	return QDF_STATUS_SUCCESS;
 }
 
+static inline
 QDF_STATUS qdf_cpuhp_deinit(void)
 {
 	return QDF_STATUS_SUCCESS;
 }
 
+static inline
 QDF_STATUS qdf_cpuhp_register(struct qdf_cpuhp_handler **handler,
 			      void *context,
 			      qdf_cpuhp_callback up_callback,
@@ -100,6 +103,7 @@ QDF_STATUS qdf_cpuhp_register(struct qdf_cpuhp_handler **handler,
 	return QDF_STATUS_SUCCESS;
 }
 
+static inline
 void qdf_cpuhp_unregister(struct qdf_cpuhp_handler **handler) {}
 #endif /* QCA_CONFIG_SMP */
 

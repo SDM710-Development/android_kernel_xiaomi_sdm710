@@ -1207,6 +1207,7 @@ int cds_get_gfp_flags(void)
 
 void cds_resume_rx_thread(void)
 {
+#ifdef QCA_CONFIG_SMP
 	p_cds_sched_context cds_sched_context = NULL;
 
 	cds_sched_context = get_cds_sched_ctxt();
@@ -1216,4 +1217,5 @@ void cds_resume_rx_thread(void)
 	}
 
 	complete(&cds_sched_context->ol_resume_rx_event);
+#endif
 }
