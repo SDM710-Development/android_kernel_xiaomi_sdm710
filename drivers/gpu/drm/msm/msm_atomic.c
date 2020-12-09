@@ -72,7 +72,7 @@ EXPORT_SYMBOL(msm_drm_unregister_client);
  * @v: notifier data, inculde display id and display blank
  *     event(unblank or power down).
  */
-static int msm_drm_notifier_call_chain(unsigned long val, void *v)
+static int __maybe_unused msm_drm_notifier_call_chain(unsigned long val, void *v)
 {
 	return blocking_notifier_call_chain(&msm_drm_notifier_list, val,
 					    v);
@@ -215,8 +215,11 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 	struct drm_connector_state *old_conn_state;
 	struct drm_crtc *crtc;
 	struct drm_crtc_state *old_crtc_state;
+	int i;
+#ifdef CONFIG_INPUT_HBTP_INPUT
 	struct msm_drm_notifier notifier_data;
-	int i, blank;
+	int blank;
+#endif
 
 	SDE_ATRACE_BEGIN("msm_disable");
 	for_each_connector_in_state(old_state, connector, old_conn_state, i) {
@@ -256,6 +259,7 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 		DRM_DEBUG_ATOMIC("disabling [ENCODER:%d:%s]\n",
 				 encoder->base.id, encoder->name);
 
+#ifdef CONFIG_INPUT_HBTP_INPUT
 		if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710) &&
 		    connector->state->crtc &&
 		    connector->state->crtc->state->active_changed) {
@@ -265,6 +269,7 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 			msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,
 						     &notifier_data);
 		}
+#endif
 		/*
 		 * Each encoder has at most one connector (since we always steal
 		 * it away), so we won't call disable hooks twice.
@@ -280,6 +285,7 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 			funcs->dpms(encoder, DRM_MODE_DPMS_OFF);
 
 		drm_bridge_post_disable(encoder->bridge);
+#ifdef CONFIG_INPUT_HBTP_INPUT
 		if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710) &&
 		    connector->state->crtc &&
 		    connector->state->crtc->state->active_changed) {
@@ -287,6 +293,7 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 			msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK,
 						&notifier_data);
 		}
+#endif
 	}
 
 	for_each_crtc_in_state(old_state, crtc, old_crtc_state, i) {
@@ -426,11 +433,14 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 	struct drm_crtc_state *old_crtc_state;
 	struct drm_connector *connector;
 	struct drm_connector_state *old_conn_state;
-	struct msm_drm_notifier notifier_data;
 	struct msm_drm_private *priv = dev->dev_private;
 	struct msm_kms *kms = priv->kms;
 	int bridge_enable_count = 0;
-	int i, blank;
+	int i;
+#ifdef CONFIG_INPUT_HBTP_INPUT
+	struct msm_drm_notifier notifier_data;
+	int blank;
+#endif
 
 	SDE_ATRACE_BEGIN("msm_enable");
 	for_each_crtc_in_state(old_state, crtc, old_crtc_state, i) {
@@ -483,6 +493,7 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 		DRM_DEBUG_ATOMIC("enabling [ENCODER:%d:%s]\n",
 				 encoder->base.id, encoder->name);
 
+#ifdef CONFIG_INPUT_HBTP_INPUT
 		if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710) &&
 		    connector->state->crtc &&
 		    connector->state->crtc->state->active_changed) {
@@ -494,6 +505,7 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 			msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,
 					    &notifier_data);
 		}
+#endif
 		/*
 		 * Each encoder has at most one connector (since we always steal
 		 * it away), so we won't call enable hooks twice.
@@ -538,6 +550,7 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 				 encoder->base.id, encoder->name);
 
 		drm_bridge_enable(encoder->bridge);
+#ifdef CONFIG_INPUT_HBTP_INPUT
 		if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710) &&
 		    connector->state->crtc &&
 		    connector->state->crtc->state->active_changed) {
@@ -545,6 +558,7 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 			msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK,
 					    &notifier_data);
 		}
+#endif
 	}
 	SDE_ATRACE_END("msm_enable");
 }
