@@ -256,8 +256,9 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 		DRM_DEBUG_ATOMIC("disabling [ENCODER:%d:%s]\n",
 				 encoder->base.id, encoder->name);
 
-		if (connector->state->crtc &&
-			connector->state->crtc->state->active_changed) {
+		if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710) &&
+		    connector->state->crtc &&
+		    connector->state->crtc->state->active_changed) {
 			blank = MSM_DRM_BLANK_POWERDOWN;
 			notifier_data.data = &blank;
 			notifier_data.id = crtc_idx;
@@ -279,8 +280,9 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 			funcs->dpms(encoder, DRM_MODE_DPMS_OFF);
 
 		drm_bridge_post_disable(encoder->bridge);
-		if (connector->state->crtc &&
-			connector->state->crtc->state->active_changed) {
+		if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710) &&
+		    connector->state->crtc &&
+		    connector->state->crtc->state->active_changed) {
 			DRM_DEBUG_ATOMIC("Notify blank\n");
 			msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK,
 						&notifier_data);
@@ -481,8 +483,9 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 		DRM_DEBUG_ATOMIC("enabling [ENCODER:%d:%s]\n",
 				 encoder->base.id, encoder->name);
 
-		if (connector->state->crtc &&
-			connector->state->crtc->state->active_changed) {
+		if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710) &&
+		    connector->state->crtc &&
+		    connector->state->crtc->state->active_changed) {
 			blank = MSM_DRM_BLANK_UNBLANK;
 			notifier_data.data = &blank;
 			notifier_data.id =
@@ -535,8 +538,9 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 				 encoder->base.id, encoder->name);
 
 		drm_bridge_enable(encoder->bridge);
-		if (connector->state->crtc &&
-			connector->state->crtc->state->active_changed) {
+		if (!IS_BUILTIN(CONFIG_MACH_XIAOMI_SDM710) &&
+		    connector->state->crtc &&
+		    connector->state->crtc->state->active_changed) {
 			DRM_DEBUG_ATOMIC("Notify unblank\n");
 			msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK,
 					    &notifier_data);
