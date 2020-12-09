@@ -23,7 +23,7 @@
 #include "dsi_display.h"
 #include "sde_crtc.h"
 #include "sde_rm.h"
-#include <drm/drm_notifier.h>
+#include <linux/msm_drm_notify.h>
 
 #define BL_NODE_NAME_SIZE 32
 
@@ -671,6 +671,7 @@ int sde_connector_update_hbm(struct sde_connector *c_conn)
 	struct dsi_display *dsi_display;
 	int rc = 0;
 	static bool dim_layer_status;
+	int event;
 
 	if (!c_conn) {
 		SDE_ERROR("Invalid params, conn is NULL\n");
@@ -692,13 +693,14 @@ int sde_connector_update_hbm(struct sde_connector *c_conn)
 	if (!dsi_display->panel->fod_dimlayer_enabled)
 		return 0;
 
+	event = sde_connector_get_lp(dsi_display->drm_conn);
 	dim_layer_status = sde_crtc_get_dim_layer_status(c_conn->encoder->crtc->state);
 	if (!dim_layer_status) {
 		if (dsi_display->panel->fod_dimlayer_hbm_enabled) {
 			mutex_lock(&dsi_display->panel->panel_lock);
 			sde_encoder_wait_for_event(c_conn->encoder, MSM_ENC_VBLANK);
-			if (dsi_display->drm_dev && (dsi_display->drm_dev->state == DRM_BLANK_LP1 ||
-			    dsi_display->drm_dev->state == DRM_BLANK_LP2)) {
+			if (dsi_display->drm_dev && (event == MSM_DRM_BLANK_LP1 ||
+			     event == MSM_DRM_BLANK_LP2)) {
 				if (dsi_display->panel->last_bl_lvl >
 				    dsi_display->panel->doze_backlight_threshold) {
 					dsi_display->panel->fod_dimlayer_hbm_enabled = false;
@@ -745,8 +747,7 @@ int sde_connector_update_hbm(struct sde_connector *c_conn)
 			mutex_lock(&dsi_display->panel->panel_lock);
 			sde_encoder_wait_for_event(c_conn->encoder, MSM_ENC_VBLANK);
 			if (dsi_display->panel->last_bl_lvl ||
-			    dsi_display->drm_dev->state == DRM_BLANK_LP1 ||
-			    dsi_display->drm_dev->state == DRM_BLANK_LP2) {
+			    event == MSM_DRM_BLANK_LP1 || event == MSM_DRM_BLANK_LP2) {
 				dsi_display->panel->fod_dimlayer_hbm_enabled = true;
                                 dsi_display->panel->skip_dimmingon = STATE_DIM_BLOCK;
 				rc = dsi_display_write_panel(dsi_display,
@@ -1355,10 +1356,6 @@ static int sde_connector_atomic_set_property(struct drm_connector *connector,
 	/* connector-specific property handling */
 	idx = msm_property_index(&c_conn->property_info, property);
 	switch (idx) {
-	case CONNECTOR_PROP_LP:
-		if (connector->dev)
-			connector->dev->state = val;
-		break;
 	case CONNECTOR_PROP_OUT_FB:
 		/* clear old fb, if present */
 		if (c_state->out_fb)

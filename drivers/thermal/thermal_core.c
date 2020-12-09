@@ -46,7 +46,7 @@
 #include "thermal_hwmon.h"
 
 #ifdef CONFIG_DRM
-#include <drm/drm_notifier.h>
+#include <linux/msm_drm_notify.h>
 #endif
 
 MODULE_AUTHOR("Zhang Rui");
@@ -2770,20 +2770,20 @@ static void destroy_thermal_message_node(void)
 static int screen_state_for_thermal_callback(struct notifier_block *nb, unsigned long val,
 					     void *data)
 {
-	struct drm_notify_data *evdata = data;
+	struct msm_drm_notifier *evdata = data;
 	unsigned int blank;
 
-	if (val != DRM_EVENT_BLANK || !tm || !evdata || !evdata->data)
+	if (val != MSM_DRM_EVENT_BLANK || !tm || !evdata || !evdata->data)
 		return 0;
 
 	blank = *(int *)(evdata->data);
 	switch (blank) {
-	case DRM_BLANK_LP1:
-	case DRM_BLANK_LP2:
-	case DRM_BLANK_POWERDOWN:
+	case MSM_DRM_BLANK_LP1:
+	case MSM_DRM_BLANK_LP2:
+	case MSM_DRM_BLANK_POWERDOWN:
 		sm.screen_state = 0;
 		break;
-	case DRM_BLANK_UNBLANK:
+	case MSM_DRM_BLANK_UNBLANK:
 		sm.screen_state = 1;
 		break;
 	default:
@@ -2835,7 +2835,8 @@ static int __init thermal_init(void)
 
 #ifdef CONFIG_DRM
 	sm.thermal_notifier.notifier_call = screen_state_for_thermal_callback;
-	if (drm_register_client(&sm.thermal_notifier) < 0)
+	result = msm_drm_register_client(&sm.thermal_notifier);
+	if (result < 0)
 		pr_warn("Thermal: register screen state callback failed\n");
 #endif
 
@@ -2859,7 +2860,7 @@ init_exit:
 static void thermal_exit(void)
 {
 #ifdef CONFIG_DRM
-	drm_unregister_client(&sm.thermal_notifier);
+	msm_drm_unregister_client(&sm.thermal_notifier);
 #endif
 	free_thermal_message();
 	unregister_pm_notifier(&thermal_pm_nb);

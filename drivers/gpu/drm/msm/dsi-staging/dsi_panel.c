@@ -23,8 +23,9 @@
 #include "dsi_panel.h"
 #include "dsi_ctrl_hw.h"
 #include "dsi_display.h"
+#include "sde_connector.h"
 
-#include <drm/drm_notifier.h>
+#include <linux/msm_drm_notify.h>
 
 #include "../../../../../kernel/irq/internals.h"
 
@@ -915,6 +916,7 @@ int dsi_panel_set_doze_backlight(struct dsi_display *display)
 	struct dsi_display *dsi_display = display;
 	struct dsi_panel *panel;
 	struct drm_device *drm_dev;
+	int event;
 
 	if (!dsi_display || !dsi_display->panel || !dsi_display->drm_dev) {
 		pr_err("invalid display/panel/drm_dev\n");
@@ -923,13 +925,14 @@ int dsi_panel_set_doze_backlight(struct dsi_display *display)
 
 	panel = dsi_display->panel;
 	drm_dev = dsi_display->drm_dev;
+	event = sde_connector_get_lp(dsi_display->drm_conn);
 
 	mutex_lock(&panel->panel_lock);
 
 	if (!dsi_panel_initialized(panel))
 		goto error;
 
-	if (drm_dev && (drm_dev->state == DRM_BLANK_LP1 || drm_dev->state == DRM_BLANK_LP2)) {
+	if (drm_dev && (event == MSM_DRM_BLANK_LP1 || event == MSM_DRM_BLANK_LP2)) {
 		if (panel->fod_hbm_enabled || panel->fod_dimlayer_hbm_enabled ||
 		    panel->fod_backlight_flag)
 			goto error;
@@ -4361,6 +4364,7 @@ static int panel_disp_param_send_lock(struct dsi_panel *panel, int param)
 	int rc = 0;
 	uint32_t temp;
 	u32 fod_backlight = 0;
+	int event;
 
 	if (host) {
 		display = container_of(host, struct dsi_display, host);
@@ -4454,10 +4458,10 @@ static int panel_disp_param_send_lock(struct dsi_panel *panel, int param)
 		panel->skip_dimmingon = STATE_DIM_RESTORE;
 		panel->fod_hbm_enabled = false;
 		panel->fod_hbm_off_time = ktime_add_ms(ktime_get(), panel->fod_off_dimming_delay);
+		event = sde_connector_get_lp(display->drm_conn);
 
 		if (display->drm_dev) {
-			if (display->drm_dev->state == DRM_BLANK_LP1 ||
-			    display->drm_dev->state == DRM_BLANK_LP2) {
+			if (event == MSM_DRM_BLANK_LP1 || event == MSM_DRM_BLANK_LP2) {
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DOZE_HBM);
 				if (rc)
 					pr_err("[%s] failed to send DSI_CMD_SET_DOZE_HBM cmd, rc=%d\n",
@@ -4539,8 +4543,9 @@ static int panel_disp_param_send_lock(struct dsi_panel *panel, int param)
 			else
 				rc = dsi_panel_update_backlight(panel, panel->last_bl_lvl);
 
-			if (display->drm_dev && (display->drm_dev->state == DRM_BLANK_LP1 ||
-			     display->drm_dev->state == DRM_BLANK_LP2)) {
+			event = sde_connector_get_lp(display->drm_conn);
+			if (display->drm_dev && (event == MSM_DRM_BLANK_LP1 ||
+			     event == MSM_DRM_BLANK_LP2)) {
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DOZE_HBM);
 				if (rc)
 					pr_err("[%s] failed to send DSI_CMD_SET_DOZE_HBM cmd, rc=%d\n",
