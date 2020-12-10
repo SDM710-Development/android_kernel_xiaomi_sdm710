@@ -1078,7 +1078,8 @@ int dsi_display_set_power(struct drm_connector *connector,
 	g_notify_data.data = &power_mode;
 	g_notify_data.id = MSM_DRM_PRIMARY_DISPLAY;
 
-	msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
+	if (connector->state->crtc && connector->state->crtc->state->active_changed)
+		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
 	switch (power_mode) {
 	case SDE_MODE_DPMS_LP1:
 		rc = dsi_panel_set_lp1(display->panel);
@@ -1093,7 +1094,8 @@ int dsi_display_set_power(struct drm_connector *connector,
 			rc = dsi_panel_set_nolp(display->panel);
 		break;
 	}
-	msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
+	if (connector->state->crtc && connector->state->crtc->state->active_changed)
+		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
 	dev->pre_state = power_mode;
 	return rc;
 }

@@ -161,7 +161,9 @@ static void dsi_bridge_pre_enable(struct drm_bridge *bridge)
 	g_notify_data.data = &event;
 	g_notify_data.id = MSM_DRM_PRIMARY_DISPLAY;
 
-	msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
+	if (c_bridge->display->drm_conn->state->crtc &&
+	    c_bridge->display->drm_conn->state->crtc->state->active_changed)
+		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
 	atomic_set(&c_bridge->display->panel->esd_recovery_pending, 0);
 
 	/* By this point mode should have been validated through mode_fixup */
@@ -198,7 +200,9 @@ static void dsi_bridge_pre_enable(struct drm_bridge *bridge)
 	}
 	SDE_ATRACE_END("dsi_display_enable");
 	SDE_ATRACE_END("dsi_bridge_pre_enable");
-	msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
+	if (c_bridge->display->drm_conn->state->crtc &&
+	    c_bridge->display->drm_conn->state->crtc->state->active_changed)
+		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
 
 	rc = dsi_display_splash_res_cleanup(c_bridge->display);
 	if (rc)
@@ -296,12 +300,17 @@ static void dsi_bridge_post_disable(struct drm_bridge *bridge)
 
 	if (event == MSM_DRM_BLANK_LP1 || event == MSM_DRM_BLANK_LP2) {
 		pr_err("%s doze state can't power off panel\n", __func__);
-		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
-		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
+		if (c_bridge->display->drm_conn->state->crtc &&
+		    c_bridge->display->drm_conn->state->crtc->state->active_changed) {
+			msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
+			msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
+		}
 		return;
 	}
 
-	msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
+	if (c_bridge->display->drm_conn->state->crtc &&
+	    c_bridge->display->drm_conn->state->crtc->state->active_changed)
+		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
 	SDE_ATRACE_BEGIN("dsi_bridge_post_disable");
 	SDE_ATRACE_BEGIN("dsi_display_disable");
 	rc = dsi_display_disable(c_bridge->display);
@@ -321,7 +330,9 @@ static void dsi_bridge_post_disable(struct drm_bridge *bridge)
 		return;
 	}
 	SDE_ATRACE_END("dsi_bridge_post_disable");
-	msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
+	if (c_bridge->display->drm_conn->state->crtc &&
+	    c_bridge->display->drm_conn->state->crtc->state->active_changed)
+		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
 }
 
 static void dsi_bridge_mode_set(struct drm_bridge *bridge,
