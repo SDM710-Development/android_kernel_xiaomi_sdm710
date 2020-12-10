@@ -1078,28 +1078,22 @@ int dsi_display_set_power(struct drm_connector *connector,
 	g_notify_data.data = &power_mode;
 	g_notify_data.id = MSM_DRM_PRIMARY_DISPLAY;
 
+	msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
 	switch (power_mode) {
 	case SDE_MODE_DPMS_LP1:
-		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
 		rc = dsi_panel_set_lp1(display->panel);
 		if (!rc)
 			dsi_panel_set_doze_backlight(display);
-		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
 		break;
 	case SDE_MODE_DPMS_LP2:
-		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
 		rc = dsi_panel_set_lp2(display->panel);
-		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
 		break;
 	default:
-		if (dev->pre_state != SDE_MODE_DPMS_LP1 && dev->pre_state != SDE_MODE_DPMS_LP2)
-			break;
-
-		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &g_notify_data);
-		rc = dsi_panel_set_nolp(display->panel);
-		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
+		if (!(dev->pre_state != SDE_MODE_DPMS_LP1 && dev->pre_state != SDE_MODE_DPMS_LP2))
+			rc = dsi_panel_set_nolp(display->panel);
 		break;
 	}
+	msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &g_notify_data);
 	dev->pre_state = power_mode;
 	return rc;
 }
