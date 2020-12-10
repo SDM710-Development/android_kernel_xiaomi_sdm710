@@ -612,56 +612,25 @@ static int _sde_connector_update_dirty_properties(
 	return 0;
 }
 
-static int dsi_display_write_panel(struct dsi_display *display, struct dsi_panel_cmd_set *cmd_sets)
+int dsi_display_write_panel(struct dsi_panel *panel, struct dsi_panel_cmd_set *cmd_sets);
+static int dsi_display_write_panel_sde(struct dsi_display *display,
+				       struct dsi_panel_cmd_set *cmd_sets)
 {
-	int rc, i;
-	ssize_t len;
-	u32 count;
-	struct dsi_cmd_desc *cmds;
-	enum dsi_cmd_set_state state;
-	struct dsi_panel *panel;
-	const struct mipi_dsi_host_ops *ops;
+	int rc;
 
 	rc = dsi_display_clk_ctrl(display->dsi_clk_handle, DSI_CORE_CLK, DSI_CLK_ON);
 	if (rc) {
 		pr_err("[%s] failed to enable DSI core clocks, rc=%d\n", display->name, rc);
-		goto error;
+		return rc;
 	}
 
-	panel = display->panel;
-	ops = panel->host->ops;
-
-	cmds = cmd_sets->cmds;
-	count = cmd_sets->count;
-	state = cmd_sets->state;
-
-	if (count == 0) {
-		pr_debug("[%s] No commands to be sent for state\n", panel->name);
-		goto error;
-	}
-
-	for (i = 0; i < count; i++) {
-		if (state == DSI_CMD_SET_STATE_LP)
-			cmds->msg.flags |= MIPI_DSI_MSG_USE_LPM;
-		if (cmds->last_command)
-			cmds->msg.flags |= MIPI_DSI_MSG_LASTCOMMAND;
-
-		len = ops->transfer(panel->host, &cmds->msg);
-		if (len < 0) {
-			rc = len;
-			pr_err("failed to set cmds, rc=%d\n", rc);
-			goto error;
-		}
-
-		if (cmds->post_wait_ms)
-			usleep_range(cmds->post_wait_ms * 1000, ((cmds->post_wait_ms * 1000) + 10));
-		cmds++;
-	}
+	rc = dsi_display_write_panel(display->panel, cmd_sets);
+	if (rc)
+		return rc;
 
 	rc = dsi_display_clk_ctrl(display->dsi_clk_handle, DSI_CORE_CLK, DSI_CLK_OFF);
 	if (rc)
 		pr_err("[%s] failed to disable DSI core clocks, rc=%d\n", display->name, rc);
-error:
 	return rc;
 }
 
@@ -704,7 +673,7 @@ int sde_connector_update_hbm(struct sde_connector *c_conn)
 				if (dsi_display->panel->last_bl_lvl >
 				    dsi_display->panel->doze_backlight_threshold) {
 					dsi_display->panel->fod_dimlayer_hbm_enabled = false;
-					dsi_display_write_panel(dsi_display,
+					dsi_display_write_panel_sde(dsi_display,
 						&dsi_display->panel->cur_mode->priv_info->cmd_sets[
 							DSI_CMD_SET_DISP_HBM_FOD_OFF_DOZE_HBM_ON]);
 					dsi_display->drm_dev->doze_brightness = DOZE_BRIGHTNESS_HBM;
@@ -712,7 +681,7 @@ int sde_connector_update_hbm(struct sde_connector *c_conn)
 					    dsi_display->panel->doze_backlight_threshold &&
 					   dsi_display->panel->last_bl_lvl > 0) {
 					dsi_display->panel->fod_dimlayer_hbm_enabled = false;
-					dsi_display_write_panel(dsi_display,
+					dsi_display_write_panel_sde(dsi_display,
 						&dsi_display->panel->cur_mode->priv_info->cmd_sets[
 							DSI_CMD_SET_DISP_HBM_FOD_OFF_DOZE_LBM_ON]);
 					dsi_display->drm_dev->doze_brightness = DOZE_BRIGHTNESS_LBM;
@@ -721,7 +690,7 @@ int sde_connector_update_hbm(struct sde_connector *c_conn)
 				dsi_display->panel->skip_dimmingon = STATE_DIM_BLOCK;
 			} else {
 				dsi_display->panel->fod_dimlayer_hbm_enabled = false;
-				rc = dsi_display_write_panel(dsi_display,
+				rc = dsi_display_write_panel_sde(dsi_display,
 					&dsi_display->panel->cur_mode->priv_info->cmd_sets[
 								DSI_CMD_SET_DISP_HBM_FOD_OFF]);
 				dsi_display->panel->skip_dimmingon = STATE_DIM_RESTORE;
@@ -750,7 +719,7 @@ int sde_connector_update_hbm(struct sde_connector *c_conn)
 			    event == MSM_DRM_BLANK_LP1 || event == MSM_DRM_BLANK_LP2) {
 				dsi_display->panel->fod_dimlayer_hbm_enabled = true;
                                 dsi_display->panel->skip_dimmingon = STATE_DIM_BLOCK;
-				rc = dsi_display_write_panel(dsi_display,
+				rc = dsi_display_write_panel_sde(dsi_display,
 						&dsi_display->panel->cur_mode->priv_info->cmd_sets[
 								DSI_CMD_SET_DISP_HBM_FOD_ON]);
                                 sysfs_notify(&dsi_display->drm_conn->kdev->kobj, NULL,
@@ -764,7 +733,7 @@ int sde_connector_update_hbm(struct sde_connector *c_conn)
 			if (dsi_display->panel->dc_enable) {
 				dsi_display->panel->dim_layer_replace_dc = true;
 				dsi_display->panel->dc_enable = false;
-				dsi_display_write_panel(dsi_display,
+				dsi_display_write_panel_sde(dsi_display,
 						&dsi_display->panel->cur_mode->priv_info->cmd_sets[
 									DSI_CMD_SET_DISP_CRC_OFF]);
 			}
