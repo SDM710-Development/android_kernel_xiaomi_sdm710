@@ -15,3 +15,9 @@ obj-$(CONFIG_SMB1390_CHARGE_PUMP)	+= smb1390-charger.o pmic-voter.o
 obj-$(CONFIG_QPNP_VM_BMS) += qpnp-vm-bms.o batterydata-lib.o batterydata-interface.o
 obj-$(CONFIG_QPNP_LINEAR_CHARGER)	+= qpnp-linear-charger.o
 obj-$(CONFIG_CHARGER_BQ25910_SLAVE)    += bq2591x_charger.o
+
+ifeq ($(CONFIG_MACH_XIAOMI_F2),y)
+ifneq ($(shell grep ELLIPTIC_ULTRASOUND $(srctree)/techpack/audio/config/sdm710auto_grus.conf),)
+CFLAGS_smb-lib.o += -DCONFIG_ELLIPTIC_ULTRASOUND
+endif
+endif

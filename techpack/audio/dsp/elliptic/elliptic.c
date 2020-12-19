@@ -176,7 +176,7 @@ static int device_open(struct inode *inode, struct file *filp)
 	struct elliptic_data *elliptic_data;
 
 	if (is_usbc_headset_connected()) {
-		EL_PRINT_I("Denying device opening because an usb-c headset is connected");
+		EL_PRINT_I("Denying device open because a usb-c headset is connected");
 		return -ENODEV;
 	}
 
@@ -435,10 +435,10 @@ int elliptic_data_push(int deviceid,
 
 int elliptic_open_port(int portid)
 {
-        if (is_usbc_headset_connected()) {
-            EL_PRINT_I("Denying port opening because an usb-c headset is connected");
-            return 0;
-        }
+	if (is_usbc_headset_connected()) {
+		EL_PRINT_I("Denying port open because a usb-c headset is connected");
+		return 0;
+	}
 
 	return elliptic_io_open_port(portid);
 }

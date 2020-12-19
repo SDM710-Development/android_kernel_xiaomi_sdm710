@@ -39,9 +39,7 @@
 				__func__, ##__VA_ARGS__);	\
 	} while (0)
 
-int last_charger_type;
-
-extern int elliptic_notify_usbc_headset(int connected);
+int last_typec_mode;
 
 static bool is_secure(struct smb_charger *chg, int addr)
 {
@@ -4937,6 +4935,11 @@ static void smblib_handle_rp_change(struct smb_charger *chg, int typec_mode)
 	vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, rp_ua);
 }
 
+#ifdef CONFIG_ELLIPTIC_ULTRASOUND
+extern int elliptic_notify_usbc_headset(int connected);
+#else
+#define elliptic_notify_usbc_headset(arg...)
+#endif
 static void smblib_handle_typec_cc_state_change(struct smb_charger *chg)
 {
 	int typec_mode;
@@ -4963,15 +4966,13 @@ static void smblib_handle_typec_cc_state_change(struct smb_charger *chg)
 				chg->typec_mode == POWER_SUPPLY_TYPEC_NONE) {
 		chg->typec_present = false;
 
-		if (last_charger_type == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER)
+		if (last_typec_mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER)
 			elliptic_notify_usbc_headset(0);
 
 		smblib_dbg(chg, PR_MISC, "TypeC %s removal\n",
-			smblib_typec_mode_name[last_charger_type]);
+			smblib_typec_mode_name[last_typec_mode]);
 		smblib_handle_typec_removal(chg);
 	}
-
-	last_charger_type = chg->typec_mode;
 
 	/* suspend usb if sink */
 	if ((chg->typec_status[3] & UFP_DFP_MODE_STATUS_BIT)
@@ -4980,6 +4981,7 @@ static void smblib_handle_typec_cc_state_change(struct smb_charger *chg)
 	else
 		vote(chg->usb_icl_votable, OTG_VOTER, false, 0);
 
+	last_typec_mode = chg->typec_mode;
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: cc-state-change; Type-C %s detected\n",
 				smblib_typec_mode_name[chg->typec_mode]);
 }
