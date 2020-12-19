@@ -2678,51 +2678,6 @@ void sde_crtc_complete_commit(struct drm_crtc *crtc,
 	sde_core_perf_crtc_update(crtc, 0, false);
 }
 
-void sde_crtc_fod_ui_ready(struct drm_crtc *crtc, struct drm_crtc_state *old_state)
-{
-	struct sde_crtc *sde_crtc;
-	struct sde_crtc_state *old_cstate;
-	struct sde_crtc_state *cstate;
-	struct dsi_display *dsi_display;
-	static bool fod_status_changed;
-
-	if (!crtc || !crtc->state) {
-		SDE_ERROR("invalid crtc\n");
-		return;
-	}
-
-	dsi_display = get_primary_display();
-	if (!dsi_display || !dsi_display->panel) {
-		SDE_ERROR("dsi display panel is null\n");
-		return;
-	}
-
-	if (!dsi_display->panel->fod_dimlayer_enabled)
-		return;
-
-	sde_crtc = to_sde_crtc(crtc);
-	SDE_EVT32_VERBOSE(DRMID(crtc));
-
-	if (!old_state) {
-		SDE_ERROR("failed to find old cstate");
-		return;
-	}
-
-	old_cstate = to_sde_crtc_state(old_state);
-	cstate = to_sde_crtc_state(crtc->state);
-
-	if (fod_status_changed) {
-		dsi_display->panel->fod_ui_ready = cstate->finger_down;
-		SDE_ATRACE_BEGIN("fod_event_notify");
-		sysfs_notify(&dsi_display->drm_conn->kdev->kobj, NULL, "fod_ui_ready");
-		SDE_ATRACE_END("fod_event_notify");
-		fod_status_changed = false;
-	}
-
-	if (old_cstate->finger_down != cstate->finger_down)
-		fod_status_changed = true;
-}
-
 /**
  * _sde_crtc_set_input_fence_timeout - update ns version of in fence timeout
  * @cstate: Pointer to sde crtc state

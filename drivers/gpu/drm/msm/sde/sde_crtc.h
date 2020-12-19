@@ -823,11 +823,4 @@ uint64_t sde_crtc_get_sbuf_clk(struct drm_crtc_state *state);
  */
 void sde_crtc_misr_setup(struct drm_crtc *crtc, bool enable, u32 frame_count);
 
-/**
- * sde_crtc_fod_ui_ready - callback to notify fod ui ready message
- * @crtc: Pointer to drm crtc object
- * @old_state: Pointer to drm crtc old state object
- */
-void sde_crtc_fod_ui_ready(struct drm_crtc *crtc, struct drm_crtc_state *old_state);
-
 #endif /* _SDE_CRTC_H_ */

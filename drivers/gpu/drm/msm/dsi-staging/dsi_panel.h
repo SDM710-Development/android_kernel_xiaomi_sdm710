@@ -239,7 +239,6 @@ struct dsi_panel {
 	bool fod_hbm_enabled;
 	bool fod_dimlayer_enabled;
  	bool fod_dimlayer_hbm_enabled;
-	bool fod_ui_ready;
 	u32 fod_off_dimming_delay;
 	ktime_t fod_hbm_off_time;
 	ktime_t fod_backlight_off_time;

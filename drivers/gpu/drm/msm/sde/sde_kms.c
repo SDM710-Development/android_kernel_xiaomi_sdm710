@@ -975,7 +975,6 @@ static void sde_kms_commit(struct msm_kms *kms,
 			SDE_EVT32(DRMID(crtc));
 			sde_crtc_commit_kickoff(crtc, old_crtc_state);
 		}
-		sde_crtc_fod_ui_ready(crtc, old_crtc_state);
 	}
 }
 
