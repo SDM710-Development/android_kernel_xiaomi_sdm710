@@ -39,7 +39,7 @@
 				__func__, ##__VA_ARGS__);	\
 	} while (0)
 
-int last_typec_mode;
+static int last_typec_mode;
 
 static bool is_secure(struct smb_charger *chg, int addr)
 {

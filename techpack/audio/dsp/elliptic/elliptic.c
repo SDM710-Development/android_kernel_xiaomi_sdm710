@@ -60,7 +60,7 @@ static dev_t elliptic_major;
 
 static struct wakeup_source *wake_source;
 
-int usbc_headset_connected;
+static int usbc_headset_connected;
 
 void elliptic_notify_usbc_headset(int connected)
 {
