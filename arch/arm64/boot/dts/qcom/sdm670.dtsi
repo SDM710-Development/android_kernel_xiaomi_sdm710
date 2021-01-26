@@ -55,7 +55,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x0>;
 			enable-method = "psci";
-			efficiency = <1024>;
+			efficiency = <612>;
 			cache-size = <0x10000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			next-level-cache = <&L2_0>;
@@ -91,7 +91,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x100>;
 			enable-method = "psci";
-			efficiency = <1024>;
+			efficiency = <612>;
 			cache-size = <0x10000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			next-level-cache = <&L2_100>;
@@ -122,7 +122,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x200>;
 			enable-method = "psci";
-			efficiency = <1024>;
+			efficiency = <612>;
 			cache-size = <0x10000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			next-level-cache = <&L2_200>;
@@ -153,7 +153,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x300>;
 			enable-method = "psci";
-			efficiency = <1024>;
+			efficiency = <612>;
 			cache-size = <0x10000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			next-level-cache = <&L2_300>;
@@ -184,7 +184,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x400>;
 			enable-method = "psci";
-			efficiency = <1024>;
+			efficiency = <612>;
 			cache-size = <0x10000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			next-level-cache = <&L2_400>;
@@ -215,7 +215,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x500>;
 			enable-method = "psci";
-			efficiency = <1024>;
+			efficiency = <612>;
 			cache-size = <0x10000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			next-level-cache = <&L2_500>;
@@ -246,7 +246,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x600>;
 			enable-method = "psci";
-			efficiency = <1740>;
+			efficiency = <1024>;
 			cache-size = <0x20000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			next-level-cache = <&L2_600>;
@@ -277,7 +277,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x700>;
 			enable-method = "psci";
-			efficiency = <1740>;
+			efficiency = <1024>;
 			cache-size = <0x20000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			next-level-cache = <&L2_700>;
@@ -346,15 +346,15 @@
 
 		CPU_COST_0: core-cost0 {
 			busy-cost-data = <
-				 300000    14
-				 576000    25
-				 748800    31
-				 998400    46
-				1209600    57
-				1324800    84
-				1516800    96
-				1612800   114
-				1708800   139
+				 300000    73
+				 576000    81
+				 748800    84
+				 998400   107
+				1209600   110
+				1324800   128
+				1516800   131
+				1612800   142
+				1708800   162
 			>;
 			idle-cost-data = <
 				12 10 8 6 4
@@ -362,26 +362,20 @@
 		};
 		CPU_COST_1: core-cost1 {
 			busy-cost-data = <
-				 300000    256
-				 652800    307
-				 825600    332
-				 979200    382
-				1132800    408
-				1363200    448
-				1536000    586
-				1747200    641
-				1843200    659
-				1996800    696
-				2016000    865
-				2054400    876
-				2169600    900
-				2208000    924
-				2304000    940
-				2361600    948
-				2400000   1170
-				2457600   1200
-				2515200   1300
-				2611200   1400
+				 300000     82
+				 652800    123
+				 825600    170
+				 979200    180
+				1132800    210
+				1363200    267
+				1536000    323
+				1747200    394
+				1843200    403
+				1996800    472
+				2054400    510
+				2169600    614
+				2208000    591
+				2304000    692
 			>;
 			idle-cost-data = <
 				100 80 60 40 20
@@ -415,16 +409,10 @@
 				1747200    64
 				1843200    65
 				1996800    69
-				2016000    85
 				2054400    87
 				2169600    90
 				2208000    92
 				2304000    93
-				2361600    94
-				2400000   117
-				2457600   120
-				2515200   130
-				2611200   140
 			>;
 			idle-cost-data = <
 				5 4 3 2 1
