@@ -592,7 +592,7 @@
 
 				qcom,speed-bin = <128>;
 
-				qcom,initial-pwrlevel = <5>;
+				qcom,initial-pwrlevel = <4>;
 				qcom,ca-target-pwrlevel = <3>;
 
 				/* NOM_L1 */
