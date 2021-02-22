@@ -15,43 +15,37 @@
 
 #define MAX_MSGSIZE 32
 
+static struct sock *nl_sk;
 static int pid = -1;
-struct sock *nl_sk;
 
-void sendnlmsg(char *message)
+int sendnlmsg(const char *message)
 {
-	struct sk_buff *skb_1;
 	struct nlmsghdr *nlh;
-	int len = NLMSG_SPACE(MAX_MSGSIZE);
-	int slen = 0;
-	int ret = 0;
+	struct sk_buff *skb;
+	int rc;
 
-	if (!message || !nl_sk || !pid) {
-		return;
+	if (!message)
+		return -EINVAL;
+
+	if (pid < 1) {
+		pr_info("cannot send msg... no receiver\n");
+		return 0;
 	}
 
-	skb_1 = alloc_skb(len, GFP_KERNEL);
-	if (!skb_1) {
-		pr_err("alloc_skb error\n");
-		return;
-	}
+	skb = nlmsg_new(MAX_MSGSIZE, GFP_KERNEL);
+	if (!skb)
+		return -ENOMEM;
 
-	slen = strlen(message);
-	nlh = nlmsg_put(skb_1, 0, 0, 0, MAX_MSGSIZE, 0);
+	nlh = nlmsg_put(skb, 0, 0, 0, MAX_MSGSIZE, 0);
+	NETLINK_CB(skb).portid = 0;
+	NETLINK_CB(skb).dst_group = 0;
+	strlcpy(nlmsg_data(nlh), message, MAX_MSGSIZE);
 
-	NETLINK_CB(skb_1).portid = 0;
-	NETLINK_CB(skb_1).dst_group = 0;
+	rc = netlink_unicast(nl_sk, skb, pid, MSG_DONTWAIT);
+	if (rc < 0)
+		pr_err("failed to send msg to userspace. rc = %d\n", rc);
 
-	message[slen] = '\0';
-	memcpy(NLMSG_DATA(nlh), message, slen + 1);
-
-	ret = netlink_unicast(nl_sk, skb_1, pid, MSG_DONTWAIT);
-	if (!ret) {
-		/*kfree_skb(skb_1); */
-		pr_err("send msg from kernel to usespace failed ret 0x%x\n",
-		       ret);
-	}
-
+	return rc;
 }
 
 static void gf_netlink_rcv(struct sk_buff *skb)
