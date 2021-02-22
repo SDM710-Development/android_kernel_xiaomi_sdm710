@@ -16,8 +16,6 @@
 #define NETLINK_TEST 25
 #define MAX_MSGSIZE 32
 
-int stringlength(char *s);
-void sendnlmsg(char *message);
 static int pid = -1;
 struct sock *nl_sk;
 
