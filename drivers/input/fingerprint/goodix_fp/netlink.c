@@ -18,7 +18,7 @@
 static struct sock *nl_sk;
 static int pid = -1;
 
-int sendnlmsg(const char *message)
+int gf_sendnlmsg(const char *message)
 {
 	struct nlmsghdr *nlh;
 	struct sk_buff *skb;

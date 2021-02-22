@@ -500,7 +500,7 @@ static irqreturn_t gf_irq(int irq, void *handle)
 	char temp[4] = { GF_NET_EVENT_IRQ, };
 
 	__pm_wakeup_event(&fp_wakelock, WAKELOCK_HOLD_TIME);
-	sendnlmsg(temp);
+	gf_sendnlmsg(temp);
 #elif defined (GF_FASYNC)
 	struct gf_dev *gf_dev = &gf;
 
@@ -689,7 +689,7 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 				gf_dev->wait_finger_down = true;
 #if defined(GF_NETLINK_ENABLE)
 				temp[0] = GF_NET_EVENT_FB_BLACK;
-				sendnlmsg(temp);
+				gf_sendnlmsg(temp);
 #elif defined (GF_FASYNC)
 				if (gf_dev->async) {
 					kill_fasync(&gf_dev->async, SIGIO,
@@ -703,7 +703,7 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 				gf_dev->fb_black = 0;
 #if defined(GF_NETLINK_ENABLE)
 				temp[0] = GF_NET_EVENT_FB_UNBLACK;
-				sendnlmsg(temp);
+				gf_sendnlmsg(temp);
 #elif defined (GF_FASYNC)
 				if (gf_dev->async) {
 					kill_fasync(&gf_dev->async, SIGIO,
