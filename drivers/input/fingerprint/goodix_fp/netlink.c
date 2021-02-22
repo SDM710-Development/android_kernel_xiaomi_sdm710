@@ -1,8 +1,9 @@
 /*
  * netlink interface
  *
- * Copyright (c) 2017 Goodix
+ * Copyright (C) 2017 Goodix
  * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (C) 2021 Ivan Vecera <ivan@cera.cz>
  */
 #include <linux/init.h>
 #include <linux/module.h>
@@ -14,6 +15,7 @@
 
 #define NETLINK_TEST 25
 #define MAX_MSGSIZE 32
+
 int stringlength(char *s);
 void sendnlmsg(char *message);
 static int pid = -1;
@@ -26,14 +28,17 @@ void sendnlmsg(char *message)
 	int len = NLMSG_SPACE(MAX_MSGSIZE);
 	int slen = 0;
 	int ret = 0;
+
 	if (!message || !nl_sk || !pid) {
 		return;
 	}
+
 	skb_1 = alloc_skb(len, GFP_KERNEL);
 	if (!skb_1) {
 		pr_err("alloc_skb error\n");
 		return;
 	}
+
 	slen = strlen(message);
 	nlh = nlmsg_put(skb_1, 0, 0, 0, MAX_MSGSIZE, 0);
 
@@ -57,6 +62,7 @@ void nl_data_ready(struct sk_buff *__skb)
 	struct sk_buff *skb;
 	struct nlmsghdr *nlh;
 	char str[100];
+
 	skb = skb_get(__skb);
 	if (skb->len >= NLMSG_SPACE(0)) {
 		nlh = nlmsg_hdr(skb);
@@ -77,19 +83,20 @@ int netlink_init(void)
 	netlink_cfg.cb_mutex = NULL;
 
 	nl_sk = netlink_kernel_create(&init_net, NETLINK_TEST, &netlink_cfg);
-
 	if (!nl_sk) {
 		pr_err("create netlink socket error\n");
 		return 1;
 	}
+
 	return 0;
 }
 
 void netlink_exit(void)
 {
-	if (nl_sk != NULL) {
+	if (nl_sk) {
 		netlink_kernel_release(nl_sk);
 		nl_sk = NULL;
 	}
+
 	pr_info("self module exited\n");
 }

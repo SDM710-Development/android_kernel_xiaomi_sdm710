@@ -29,7 +29,7 @@ int gf_parse_dts(struct gf_dev *gf_dev)
 {
 #ifdef GF_PW_CTL
 	int rc = 0;
-	/*get pwr resource */
+	/* get pwr resource */
 	gf_dev->pwr_gpio =
 	    of_get_named_gpio(gf_dev->spi->dev.of_node, "fp-gpio-pwr", 0);
 	if (!gpio_is_valid(gf_dev->pwr_gpio)) {
@@ -44,7 +44,7 @@ int gf_parse_dts(struct gf_dev *gf_dev)
 	}
 #endif
 
-	/*get reset resource */
+	/* get reset resource */
 	gf_dev->reset_gpio =
 	    of_get_named_gpio(gf_dev->spi->dev.of_node, "goodix,gpio-reset", 0);
 	if (!gpio_is_valid(gf_dev->reset_gpio)) {
@@ -52,7 +52,7 @@ int gf_parse_dts(struct gf_dev *gf_dev)
 		return -EPERM;
 	}
 
-	/*get irq resourece */
+	/* get irq resourece */
 	gf_dev->irq_gpio =
 	    of_get_named_gpio(gf_dev->spi->dev.of_node, "goodix,gpio-irq", 0);
 	pr_info("gf::irq_gpio:%d\n", gf_dev->irq_gpio);
