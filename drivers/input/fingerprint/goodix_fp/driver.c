@@ -183,13 +183,13 @@ static int gfspi_ioctl_clk_init(struct gf_dev *data)
 
 	data->clk_enabled = 0;
 
-	data->core_clk = clk_get(&data->bus->dev, "core_clk");
+	data->core_clk = clk_get(data->dev, "core_clk");
 	if (IS_ERR_OR_NULL(data->core_clk)) {
 		pr_err("%s: fail to get core_clk\n", __func__);
 		return -EPERM;
 	}
 
-	data->iface_clk = clk_get(&data->bus->dev, "iface_clk");
+	data->iface_clk = clk_get(data->dev, "iface_clk");
 	if (IS_ERR_OR_NULL(data->iface_clk)) {
 		pr_err("%s: fail to get iface_clk\n", __func__);
 		clk_put(data->core_clk);
@@ -530,9 +530,9 @@ static int gf_open(struct inode *inode, struct file *filp)
 #ifdef CONFIG_FINGERPRINT_FP_VREG_CONTROL
 	pr_info("Try to enable fp_vdd_vreg\n");
 
-	gf_dev->vreg = regulator_get(&gf_dev->bus->dev, "fp_vdd_vreg");
+	gf_dev->vreg = regulator_get(&gf_dev->dev, "fp_vdd_vreg");
 	if (gf_dev->vreg == NULL) {
-		dev_err(&gf_dev->spi->dev,
+		dev_err(&gf_dev->dev,
 			"fp_vdd_vreg regulator get failed!\n");
 		mutex_unlock(&device_list_lock);
 		return -EPERM;
@@ -543,7 +543,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 	} else {
 		rc = regulator_enable(gf_dev->vreg);
 		if (rc) {
-			dev_err(&gf_dev->spi->dev,
+			dev_err(&gf_dev->dev,
 				"error enabling fp_vdd_vreg!\n");
 			regulator_put(gf_dev->vreg);
 			gf_dev->vreg = NULL;
@@ -557,7 +557,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 	if (status == 0) {
 		rc = gpio_request(gf_dev->reset_gpio, "goodix_reset");
 		if (rc) {
-			dev_err(&gf_dev->spi->dev,
+			dev_err(gf_dev->dev,
 				"Failed to request RESET GPIO. rc = %d\n", rc);
 			mutex_unlock(&device_list_lock);
 			return -EPERM;
@@ -566,7 +566,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 
 		rc = gpio_request(gf_dev->irq_gpio, "goodix_irq");
 		if (rc) {
-			dev_err(&gf_dev->spi->dev,
+			dev_err(gf_dev->dev,
 				"Failed to request IRQ GPIO. rc = %d\n", rc);
 			mutex_unlock(&device_list_lock);
 			return -EPERM;
@@ -729,9 +729,9 @@ static struct notifier_block goodix_noti_block = {
 static struct class *gf_class;
 
 #if defined(USE_SPI_BUS)
-static int gf_probe(struct spi_device *spi)
+static int gf_probe(struct spi_device *dev)
 #elif defined(USE_PLATFORM_BUS)
-static int gf_probe(struct platform_device *pdev)
+static int gf_probe(struct platform_device *dev)
 #endif
 {
 	struct gf_dev *gf_dev = &gf;
@@ -741,11 +741,7 @@ static int gf_probe(struct platform_device *pdev)
 
 	/* Initialize the driver data */
 	INIT_LIST_HEAD(&gf_dev->device_entry);
-#if defined(USE_SPI_BUS)
-	gf_dev->spi = spi;
-#elif defined(USE_PLATFORM_BUS)
-	gf_dev->spi = pdev;
-#endif
+	gf_dev->dev = &dev->dev;
 	gf_dev->irq_gpio = -EINVAL;
 	gf_dev->reset_gpio = -EINVAL;
 	gf_dev->pwr_gpio = -EINVAL;
@@ -769,11 +765,11 @@ static int gf_probe(struct platform_device *pdev)
 		struct device *dev;
 
 		gf_dev->devt = MKDEV(SPIDEV_MAJOR, minor);
-		dev = device_create(gf_class, &gf_dev->spi->dev, gf_dev->devt,
+		dev = device_create(gf_class, gf_dev->dev, gf_dev->devt,
 				    gf_dev, GF_DEV_NAME);
 		status = IS_ERR(dev) ? PTR_ERR(dev) : 0;
 	} else {
-		dev_dbg(&gf_dev->spi->dev, "no minor number available!\n");
+		dev_dbg(gf_dev->dev, "no minor number available!\n");
 		status = -ENODEV;
 		mutex_unlock(&device_list_lock);
 		goto error_hw;
@@ -858,12 +854,12 @@ error_hw:
 }
 
 #if defined(USE_SPI_BUS)
-static int gf_remove(struct spi_device *spi)
+static int gf_remove(struct spi_device *dev)
 #elif defined(USE_PLATFORM_BUS)
-static int gf_remove(struct platform_device *pdev)
+static int gf_remove(struct platform_device *dev)
 #endif
 {
-	struct gf_dev *gf_dev = &gf;
+	struct gf_dev *gf_dev = dev_get_drvdata(&dev->dev);
 
 	wakeup_source_trash(&fp_wakelock);
 

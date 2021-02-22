@@ -111,11 +111,7 @@ struct gf_ioc_chip_info {
 struct gf_dev {
 	dev_t devt;
 	struct list_head device_entry;
-#if defined(USE_SPI_BUS)
-	struct spi_device *spi;
-#elif defined(USE_PLATFORM_BUS)
-	struct platform_device *spi;
-#endif
+	struct device *dev;
 	struct clk *core_clk;
 	struct clk *iface_clk;
 
