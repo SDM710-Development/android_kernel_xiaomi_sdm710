@@ -15,11 +15,12 @@
 
 #define MAX_MSGSIZE 32
 
-static struct sock *nl_sk;
+static struct sock *nl_sk __maybe_unused;
 static int pid = -1;
 
 int gf_sendnlmsg(const char *message)
 {
+#ifdef GF_NETLINK_ENABLE
 	struct nlmsghdr *nlh;
 	struct sk_buff *skb;
 	int rc;
@@ -46,8 +47,12 @@ int gf_sendnlmsg(const char *message)
 		pr_err("failed to send msg to userspace. rc = %d\n", rc);
 
 	return rc;
+#else
+	return 0;
+#endif
 }
 
+__maybe_unused
 static void gf_netlink_rcv(struct sk_buff *skb)
 {
 	struct nlmsghdr *nlh;
@@ -70,8 +75,9 @@ static void gf_netlink_rcv(struct sk_buff *skb)
 	}
 }
 
-int netlink_init(void)
+int gf_netlink_init(void)
 {
+#ifdef GF_NETLINK_ENABLE
 	struct netlink_kernel_cfg cfg = {
 		.input = gf_netlink_rcv,
 	};
@@ -81,14 +87,16 @@ int netlink_init(void)
 		pr_err("goodix_fp: cannot create netlink socket\n");
 		return -EIO;
 	}
-
+#endif
 	return 0;
 }
 
-void netlink_exit(void)
+void gf_netlink_exit(void)
 {
+#ifdef GF_NETLINK_ENABLE
 	if (nl_sk) {
 		netlink_kernel_release(nl_sk);
 		nl_sk = NULL;
 	}
+#endif
 }

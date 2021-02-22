@@ -71,14 +71,14 @@
 #define GF_DEV_NAME		"goodix_fp"
 #define GF_INPUT_NAME		"uinput-goodix"	/* "goodix_fp" */
 
-#define	CHRD_DRIVER_NAME	"goodix_fp_spi"
-#define	CLASS_NAME		"goodix_fp"
+#define GF_CHRDEV_NAME		"goodix_fp_spi"
+#define GF_CLASS_NAME		"goodix_fp"
 
-#define N_SPI_MINORS		32	/* ... up to 256 */
+#define GF_MAX_DEVS		32	/* ... up to 256 */
 
-static int SPIDEV_MAJOR;
+static int gf_dev_major;
 
-static DECLARE_BITMAP(minors, N_SPI_MINORS);
+static DECLARE_BITMAP(minors, GF_MAX_DEVS);
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 static struct wakeup_source fp_wakelock;
@@ -496,12 +496,12 @@ static void notification_work(struct work_struct *work)
 
 static irqreturn_t gf_irq(int irq, void *handle)
 {
-#if defined(GF_NETLINK_ENABLE)
 	char temp[4] = { GF_NET_EVENT_IRQ, };
 
 	__pm_wakeup_event(&fp_wakelock, WAKELOCK_HOLD_TIME);
 	gf_sendnlmsg(temp);
-#elif defined (GF_FASYNC)
+
+#if defined (GF_FASYNC)
 	struct gf_dev *gf_dev = &gf;
 
 	if (gf_dev->async)
@@ -687,10 +687,9 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 			if (gf_dev->device_available == 1) {
 				gf_dev->fb_black = 1;
 				gf_dev->wait_finger_down = true;
-#if defined(GF_NETLINK_ENABLE)
 				temp[0] = GF_NET_EVENT_FB_BLACK;
 				gf_sendnlmsg(temp);
-#elif defined (GF_FASYNC)
+#if defined (GF_FASYNC)
 				if (gf_dev->async) {
 					kill_fasync(&gf_dev->async, SIGIO,
 						    POLL_IN);
@@ -701,10 +700,9 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 		case DRM_BLANK_UNBLANK:
 			if (gf_dev->device_available == 1) {
 				gf_dev->fb_black = 0;
-#if defined(GF_NETLINK_ENABLE)
 				temp[0] = GF_NET_EVENT_FB_UNBLACK;
 				gf_sendnlmsg(temp);
-#elif defined (GF_FASYNC)
+#if defined (GF_FASYNC)
 				if (gf_dev->async) {
 					kill_fasync(&gf_dev->async, SIGIO,
 						    POLL_IN);
@@ -760,11 +758,11 @@ static int gf_probe(struct platform_device *dev)
 	 * Reusing minors is fine so long as udev or mdev is working.
 	 */
 	mutex_lock(&device_list_lock);
-	minor = find_first_zero_bit(minors, N_SPI_MINORS);
-	if (minor < N_SPI_MINORS) {
+	minor = find_first_zero_bit(minors, GF_MAX_DEVS);
+	if (minor < GF_MAX_DEVS) {
 		struct device *dev;
 
-		gf_dev->devt = MKDEV(SPIDEV_MAJOR, minor);
+		gf_dev->devt = MKDEV(gf_dev_major, minor);
 		dev = device_create(gf_class, gf_dev->dev, gf_dev->devt,
 				    gf_dev, GF_DEV_NAME);
 		status = IS_ERR(dev) ? PTR_ERR(dev) : 0;
@@ -909,57 +907,72 @@ static struct platform_driver gf_driver = {
 
 static int __init gf_init(void)
 {
-	int status;
+	int rc;
 
-	/* Claim our 256 reserved device numbers.  Then register a class
-	 * that will key udev/mdev to add/remove /dev nodes.  Last, register
-	 * the driver which manages those device numbers.
-	 */
-
-	BUILD_BUG_ON(N_SPI_MINORS > 256);
-	status = register_chrdev(SPIDEV_MAJOR, CHRD_DRIVER_NAME, &gf_fops);
-	if (status < 0) {
-		pr_warn("Failed to register char device!\n");
-		return status;
+	/* Allocate chardev region and assign major number */
+	BUILD_BUG_ON(GF_MAX_DEVS > 256);
+	rc = __register_chrdev(gf_dev_major, 0, GF_MAX_DEVS, GF_CHRDEV_NAME,
+			       &gf_fops);
+	if (rc < 0) {
+		pr_warn("failed to register char device\n");
+		return rc;
 	}
-	SPIDEV_MAJOR = status;
-	gf_class = class_create(THIS_MODULE, CLASS_NAME);
+	gf_dev_major = rc;
+
+	/* Create class */
+	gf_class = class_create(THIS_MODULE, GF_CLASS_NAME);
 	if (IS_ERR(gf_class)) {
-		unregister_chrdev(SPIDEV_MAJOR, gf_driver.driver.name);
-		pr_warn("Failed to create class.\n");
-		return PTR_ERR(gf_class);
+		pr_warn("failed to create class.\n");
+		rc = PTR_ERR(gf_class);
+		goto error_class;
 	}
+
 #if defined(USE_PLATFORM_BUS)
-	status = platform_driver_register(&gf_driver);
+	rc = platform_driver_register(&gf_driver);
 #elif defined(USE_SPI_BUS)
-	status = spi_register_driver(&gf_driver);
+	rc = spi_register_driver(&gf_driver);
 #endif
-	if (status < 0) {
-		class_destroy(gf_class);
-		unregister_chrdev(SPIDEV_MAJOR, gf_driver.driver.name);
-		pr_warn("Failed to register SPI driver.\n");
+	if (rc < 0) {
+		pr_warn("failed to register driver\n");
+		goto error_register;
 	}
-#ifdef GF_NETLINK_ENABLE
-	netlink_init();
-#endif
-	pr_debug("goodix fingerprint fod init status = 0x%x\n", status);
+
+	rc = gf_netlink_init();
+	if (rc < 0) {
+		pr_warn("failed to initialize netlink\n");
+		goto error_netlink;
+	}
+
+	pr_debug("initialization successfully done\n");
+
 	return 0;
+
+error_netlink:
+#if defined(USE_PLATFORM_BUS)
+        platform_driver_unregister(&gf_driver);
+#elif defined(USE_SPI_BUS)
+        spi_unregister_driver(&gf_driver);
+#endif
+error_register:
+	class_destroy(gf_class);
+error_class:
+	unregister_chrdev(gf_dev_major, GF_CHRDEV_NAME);
+
+	return rc;
 }
 
 module_init(gf_init);
 
 static void __exit gf_exit(void)
 {
-#ifdef GF_NETLINK_ENABLE
-	netlink_exit();
-#endif
+	gf_netlink_exit();
 #if defined(USE_PLATFORM_BUS)
 	platform_driver_unregister(&gf_driver);
 #elif defined(USE_SPI_BUS)
 	spi_unregister_driver(&gf_driver);
 #endif
 	class_destroy(gf_class);
-	unregister_chrdev(SPIDEV_MAJOR, gf_driver.driver.name);
+	unregister_chrdev(gf_dev_major, gf_driver.driver.name);
 }
 
 module_exit(gf_exit);

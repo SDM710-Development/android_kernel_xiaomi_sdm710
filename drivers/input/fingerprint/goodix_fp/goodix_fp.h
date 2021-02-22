@@ -147,7 +147,7 @@ int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
 int gf_irq_num(struct gf_dev *gf_dev);
 
 void gf_sendnlmsg(char *message);
-int netlink_init(void);
-void netlink_exit(void);
+int gf_netlink_init(void);
+void gf_netlink_exit(void);
 
 #endif /*__GF_SPI_H*/
