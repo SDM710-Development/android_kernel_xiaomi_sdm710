@@ -13,7 +13,6 @@
 #include <net/sock.h>
 #include <net/netlink.h>
 
-#define NETLINK_TEST 25
 #define MAX_MSGSIZE 32
 
 static int pid = -1;
@@ -80,7 +79,8 @@ int netlink_init(void)
 	netlink_cfg.input = nl_data_ready;
 	netlink_cfg.cb_mutex = NULL;
 
-	nl_sk = netlink_kernel_create(&init_net, NETLINK_TEST, &netlink_cfg);
+	nl_sk = netlink_kernel_create(&init_net, NETLINK_GOODIX_FP,
+				      &netlink_cfg);
 	if (!nl_sk) {
 		pr_err("create netlink socket error\n");
 		return 1;

@@ -49,6 +49,7 @@
 #ifndef GOODIX_DRM_INTERFACE_WA
 #include <drm/drm_notifier.h>
 #endif
+#include <net/netlink.h>
 
 #include "goodix_fp.h"
 
@@ -363,7 +364,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	gf_nav_event_t nav_event __maybe_unused;
 	void __user *uptr = (void __user *)arg;
-	u8 netlink_route = NETLINK_TEST;
+	u8 netlink_route = NETLINK_GOODIX_FP;
 	struct gf_ioc_chip_info info;
 	struct gf_dev *gf_dev = &gf;
 	struct gf_key gf_key;

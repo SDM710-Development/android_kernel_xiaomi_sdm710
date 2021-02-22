@@ -107,7 +107,6 @@ struct gf_ioc_chip_info {
 #define GF_NET_EVENT_IRQ	1
 #define GF_NET_EVENT_FB_BLACK	2
 #define GF_NET_EVENT_FB_UNBLACK	3
-#define NETLINK_TEST		25
 
 struct gf_dev {
 	dev_t devt;
