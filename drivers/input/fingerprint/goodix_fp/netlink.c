@@ -71,19 +71,14 @@ void nl_data_ready(struct sk_buff *__skb)
 
 int netlink_init(void)
 {
-	struct netlink_kernel_cfg netlink_cfg;
-	memset(&netlink_cfg, 0, sizeof(struct netlink_kernel_cfg));
+	struct netlink_kernel_cfg cfg = {
+		.input = nl_data_ready,
+	};
 
-	netlink_cfg.groups = 0;
-	netlink_cfg.flags = 0;
-	netlink_cfg.input = nl_data_ready;
-	netlink_cfg.cb_mutex = NULL;
-
-	nl_sk = netlink_kernel_create(&init_net, NETLINK_GOODIX_FP,
-				      &netlink_cfg);
+	nl_sk = netlink_kernel_create(&init_net, NETLINK_GOODIX_FP, &cfg);
 	if (!nl_sk) {
-		pr_err("create netlink socket error\n");
-		return 1;
+		pr_err("goodix_fp: cannot create netlink socket\n");
+		return -EIO;
 	}
 
 	return 0;
@@ -95,6 +90,4 @@ void netlink_exit(void)
 		netlink_kernel_release(nl_sk);
 		nl_sk = NULL;
 	}
-
-	pr_info("self module exited\n");
 }
