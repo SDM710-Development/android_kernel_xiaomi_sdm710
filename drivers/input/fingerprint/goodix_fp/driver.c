@@ -741,9 +741,6 @@ int gf_probe_common(struct device *dev)
 	gf_dev->irq_gpio = -EINVAL;
 	gf_dev->reset_gpio = -EINVAL;
 	gf_dev->pwr_gpio = -EINVAL;
-	gf_dev->avail = false;
-	gf_dev->fb_black = 0;
-	gf_dev->wait_finger_down = false;
 
 #ifndef GOODIX_DRM_INTERFACE_WA
 	INIT_WORK(&gf_dev->work, notification_work);
