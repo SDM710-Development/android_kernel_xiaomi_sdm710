@@ -82,7 +82,6 @@ static DECLARE_BITMAP(minors, GF_MAX_DEVS);
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 static struct wakeup_source fp_wakelock;
-static struct gf_dev gf;
 
 struct gf_key_map maps[] = {
 	{EV_KEY, GF_KEY_INPUT_HOME},
@@ -362,11 +361,11 @@ static void gf_kernel_key_input(struct gf_dev *gf_dev, struct gf_key *gf_key)
 
 static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
+	struct gf_dev *gf_dev = filp->private_data;
 	gf_nav_event_t nav_event __maybe_unused;
 	void __user *uptr = (void __user *)arg;
 	u8 netlink_route = NETLINK_GOODIX_FP;
 	struct gf_ioc_chip_info info;
-	struct gf_dev *gf_dev = &gf;
 	struct gf_key gf_key;
 	int retval = 0;
 
@@ -732,10 +731,19 @@ static int gf_probe(struct spi_device *dev)
 static int gf_probe(struct platform_device *dev)
 #endif
 {
-	struct gf_dev *gf_dev = &gf;
-	int status = -EINVAL;
+	struct gf_dev *gf_dev;
 	unsigned long minor;
+	int rc;
 	int i;
+
+	/* Allocate device instance */
+	gf_dev = devm_kzalloc(&dev->dev, sizeof(struct gf_dev), GFP_KERNEL);
+	if (!gf_dev) {
+		dev_err(&dev->dev, "failed to allocate device data\n");
+		return -ENOMEM;
+	}
+
+	dev_set_drvdata(&dev->dev, gf_dev);
 
 	/* Initialize the driver data */
 	INIT_LIST_HEAD(&gf_dev->device_entry);
@@ -751,104 +759,109 @@ static int gf_probe(struct platform_device *dev)
 	INIT_WORK(&gf_dev->work, notification_work);
 #endif
 
-	if (gf_parse_dts(gf_dev))
-		goto error_hw;
+	rc = gf_parse_dts(gf_dev);
+	if (rc < 0)
+		return rc;
 
 	/* If we can allocate a minor number, hook up this device.
 	 * Reusing minors is fine so long as udev or mdev is working.
 	 */
 	mutex_lock(&device_list_lock);
+
 	minor = find_first_zero_bit(minors, GF_MAX_DEVS);
 	if (minor < GF_MAX_DEVS) {
-		struct device *dev;
+		struct device *classdev;
 
 		gf_dev->devt = MKDEV(gf_dev_major, minor);
-		dev = device_create(gf_class, gf_dev->dev, gf_dev->devt,
-				    gf_dev, GF_DEV_NAME);
-		status = IS_ERR(dev) ? PTR_ERR(dev) : 0;
+		classdev = device_create(gf_class, gf_dev->dev, gf_dev->devt,
+					 gf_dev, GF_DEV_NAME);
+		if (!IS_ERR(dev)) {
+			set_bit(minor, minors);
+			list_add(&gf_dev->device_entry, &device_list);
+		} else {
+			dev_err(gf_dev->dev, "failed to create class device\n");
+			gf_dev->devt = 0;
+			rc = PTR_ERR(dev);
+		}
 	} else {
-		dev_dbg(gf_dev->dev, "no minor number available!\n");
-		status = -ENODEV;
-		mutex_unlock(&device_list_lock);
-		goto error_hw;
+		dev_err(gf_dev->dev, "no minor number available\n");
+		rc = -ENODEV;
 	}
 
-	if (status == 0) {
-		set_bit(minor, minors);
-		list_add(&gf_dev->device_entry, &device_list);
-	} else {
-		gf_dev->devt = 0;
-	}
 	mutex_unlock(&device_list_lock);
 
-	if (status == 0) {
-		/* input device subsystem */
-		gf_dev->input = input_allocate_device();
-		if (gf_dev->input == NULL) {
-			pr_err("%s, failed to allocate input device\n",
-			       __func__);
-			status = -ENOMEM;
-			goto error_dev;
-		}
-		for (i = 0; i < ARRAY_SIZE(maps); i++)
-			input_set_capability(gf_dev->input, maps[i].type,
-					     maps[i].code);
+	if (rc < 0)
+		return rc;
 
-		gf_dev->input->name = GF_INPUT_NAME;
-		status = input_register_device(gf_dev->input);
-		if (status) {
-			pr_err("failed to register input device\n");
-			goto error_input;
-		}
+	/* input device subsystem */
+	gf_dev->input = input_allocate_device();
+	if (!gf_dev->input) {
+		dev_err(gf_dev->dev, "failed to allocate input device\n");
+		rc = -ENOMEM;
+		goto error_input_alloc;
 	}
+
+	for (i = 0; i < ARRAY_SIZE(maps); i++)
+		input_set_capability(gf_dev->input, maps[i].type, maps[i].code);
+
+	gf_dev->input->name = GF_INPUT_NAME;
+	rc = input_register_device(gf_dev->input);
+	if (rc) {
+		dev_err(gf_dev->dev, "failed to register input device\n");
+		goto error_input_reg;
+	}
+
 #ifdef AP_CONTROL_CLK
-	pr_debug("Get the clk resource.\n");
+	dev_dbg(gf_dev->dev, "get the clk resource\n");
 
 	/* Enable spi clock */
 	if (gfspi_ioctl_clk_init(gf_dev))
-		goto gfspi_probe_clk_init_failed;
+		goto error_clk_init;
 
 	if (gfspi_ioctl_clk_enable(gf_dev))
-		goto gfspi_probe_clk_enable_failed;
+		goto error_clk_enable;
 
 	spi_clock_set(gf_dev, 1000000);
 #endif
 
 #ifndef GOODIX_DRM_INTERFACE_WA
 	gf_dev->notifier = goodix_noti_block;
-	drm_register_client(&gf_dev->notifier);
+	rc = drm_register_client(&gf_dev->notifier);
+	if (rc < 0) {
+		dev_err(gf_dev->dev, "failed to register DRM client\n");
+		goto error_drm_reg;
+	}
 #endif
 
 	gf_dev->irq = gf_irq_num(gf_dev);
 
 	wakeup_source_init(&fp_wakelock, "fp_wakelock");
-	pr_debug("version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR, PATCH_LEVEL);
 
-	return status;
+	dev_dbg(gf_dev->dev, "version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR,
+		PATCH_LEVEL);
 
+	return rc;
+
+#ifndef GOODIX_DRM_INTERFACE_WA
+error_drm_reg:
+#endif
 #ifdef AP_CONTROL_CLK
-gfspi_probe_clk_enable_failed:
+error_clk_enable:
 	gfspi_ioctl_clk_uninit(gf_dev);
-gfspi_probe_clk_init_failed:
+error_clk_init:
 #endif
 	input_unregister_device(gf_dev->input);
-error_input:
+error_input_reg:
 	if (gf_dev->input != NULL)
 		input_free_device(gf_dev->input);
-error_dev:
-	if (gf_dev->devt != 0) {
-		pr_debug("Err: status = %d\n", status);
-		mutex_lock(&device_list_lock);
-		list_del(&gf_dev->device_entry);
-		device_destroy(gf_class, gf_dev->devt);
-		clear_bit(MINOR(gf_dev->devt), minors);
-		mutex_unlock(&device_list_lock);
-	}
-error_hw:
-	gf_cleanup(gf_dev);
-	gf_dev->device_available = 0;
+error_input_alloc:
+	mutex_lock(&device_list_lock);
+	list_del(&gf_dev->device_entry);
+	clear_bit(MINOR(gf_dev->devt), minors);
+	mutex_unlock(&device_list_lock);
+	device_destroy(gf_class, gf_dev->devt);
 
-	return status;
+	return rc;
 }
 
 #if defined(USE_SPI_BUS)
