@@ -13,64 +13,57 @@
 
 #include "goodix_fp.h"
 
-#define FAIL (-1)
-
 int gf_parse_dts(struct gf_dev *gf_dev)
 {
+	int rc;
+
 #ifdef CONFIG_FINGERPRINT_GOODIX_FP_POWER_CTRL
-	int rc = 0;
 	/* get pwr resource */
-	gf_dev->pwr_gpio =
-	    of_get_named_gpio(gf_dev->dev->of_node, "fp-gpio-pwr", 0);
-	if (!gpio_is_valid(gf_dev->pwr_gpio)) {
-		dev_info(gf_dev->dev, "PWR GPIO is invalid.\n");
-		return FAIL;
-	}
-	rc = gpio_request(gf_dev->pwr_gpio, "goodix_pwr");
-	if (rc) {
-		dev_err(gf_dev->dev,
-			"Failed to request PWR GPIO. rc = %d\n", rc);
-		return FAIL;
+	rc = of_get_named_gpio(gf_dev->dev->of_node, "fp-gpio-pwr", 0);
+	if (gpio_is_valid(rc)) {
+		gf_dev->pwr_gpio = rc;
+
+		rc = devm_gpio_request(gf_dev->dev, gf_dev->pwr_gpio,
+				       "goodix_pwr");
+		if (rc < 0) {
+			dev_err(gf_dev->dev, "failed to request PWR GPIO\n");
+			return rc;
+		}
+	} else {
+		gf_dev->pwr_gpio = -1; /* do not use pwr gpio */
 	}
 #endif
 
 	/* get reset resource */
-	gf_dev->reset_gpio =
-	    of_get_named_gpio(gf_dev->dev->of_node, "goodix,gpio-reset", 0);
-	if (!gpio_is_valid(gf_dev->reset_gpio)) {
-		dev_info(gf_dev->dev, "RESET GPIO is invalid.\n");
-		return -EPERM;
+	rc = of_get_named_gpio(gf_dev->dev->of_node, "goodix,gpio-reset", 0);
+	if (!gpio_is_valid(rc)) {
+		dev_err(gf_dev->dev, "RESET GPIO is invalid\n");
+		return rc;
 	}
+	gf_dev->reset_gpio = rc;
 
 	/* get irq resourece */
-	gf_dev->irq_gpio =
-	    of_get_named_gpio(gf_dev->dev->of_node, "goodix,gpio-irq", 0);
-	dev_info(gf_dev->dev, "irq_gpio: %d\n", gf_dev->irq_gpio);
-	if (!gpio_is_valid(gf_dev->irq_gpio)) {
-		dev_info(gf_dev->dev, "IRQ GPIO is invalid.\n");
-		return -EPERM;
+	rc = of_get_named_gpio(gf_dev->dev->of_node, "goodix,gpio-irq", 0);
+	if (!gpio_is_valid(rc)) {
+		dev_info(gf_dev->dev, "IRQ GPIO is invalid\n");
+		return rc;
 	}
+	gf_dev->irq_gpio = rc;
 
 	return 0;
 }
 
 void gf_cleanup(struct gf_dev *gf_dev)
 {
-	dev_info(gf_dev->dev, "[info] %s\n", __func__);
 	if (gpio_is_valid(gf_dev->irq_gpio)) {
 		gpio_free(gf_dev->irq_gpio);
 		dev_info(gf_dev->dev, "remove irq_gpio success\n");
 	}
+
 	if (gpio_is_valid(gf_dev->reset_gpio)) {
 		gpio_free(gf_dev->reset_gpio);
 		dev_info(gf_dev->dev, "remove reset_gpio success\n");
 	}
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_POWER_CTRL
-	if (gpio_is_valid(gf_dev->pwr_gpio)) {
-		gpio_free(gf_dev->pwr_gpio);
-		dev_info(gf_dev->dev, "remove pwr_gpio success\n");
-	}
-#endif
 }
 
 int gf_set_power(struct gf_dev *gf_dev, bool enable)
