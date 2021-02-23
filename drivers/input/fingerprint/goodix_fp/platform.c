@@ -17,7 +17,7 @@
 
 int gf_parse_dts(struct gf_dev *gf_dev)
 {
-#ifdef GF_PW_CTL
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_POWER_CTRL
 	int rc = 0;
 	/* get pwr resource */
 	gf_dev->pwr_gpio =
@@ -65,7 +65,7 @@ void gf_cleanup(struct gf_dev *gf_dev)
 		gpio_free(gf_dev->reset_gpio);
 		dev_info(gf_dev->dev, "remove reset_gpio success\n");
 	}
-#ifdef GF_PW_CTL
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_POWER_CTRL
 	if (gpio_is_valid(gf_dev->pwr_gpio)) {
 		gpio_free(gf_dev->pwr_gpio);
 		dev_info(gf_dev->dev, "remove pwr_gpio success\n");
@@ -77,7 +77,7 @@ int gf_set_power(struct gf_dev *gf_dev, bool enable)
 {
 	int rc = 0;
 
-#ifdef GF_PW_CTL
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_POWER_CTRL
 	if (gpio_is_valid(gf_dev->pwr_gpio)) {
 		rc = gpio_direction_output(gf_dev->pwr_gpio, enable ? 1 : 0);
 		dev_info(gf_dev->dev, "set_power(%s) %s\n",

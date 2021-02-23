@@ -35,3 +35,10 @@ config FINGERPRINT_GOODIX_FP_NAV_EVENT
 	help
 	  Say Y here if you want to enable support for navigation events
 	  in Goodix fingerprint sensor driver
+
+config FINGERPRINT_GOODIX_FP_POWER_CTRL
+	bool "Goodix fingerprint sensor power control"
+	depends on FINGERPRINT_GOODIX_FP
+	help
+	  Say Y here if you want to enable power control in Goodix
+	  fingerprint sensor driver.
