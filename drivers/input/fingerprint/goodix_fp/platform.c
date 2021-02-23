@@ -16,10 +16,10 @@
 
 #include "goodix_fp.h"
 
-#if defined(USE_SPI_BUS)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
 #include <linux/spi/spi.h>
 #include <linux/spi/spidev.h>
-#elif defined(USE_PLATFORM_BUS)
+#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 #include <linux/platform_device.h>
 #endif
 

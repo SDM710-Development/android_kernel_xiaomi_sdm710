@@ -99,8 +99,6 @@ struct gf_ioc_chip_info {
 #endif
 
 /*#define AP_CONTROL_CLK       1*/
-#define  USE_PLATFORM_BUS     1
-/*#define  USE_SPI_BUS	1*/
 /*#define GF_FASYNC   1*/ /*If support fasync mechanism. */
 #define GF_PW_CTL		1
 #define GF_NETLINK_ENABLE	1

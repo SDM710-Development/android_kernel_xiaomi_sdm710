@@ -53,10 +53,10 @@
 
 #include "goodix_fp.h"
 
-#if defined(USE_SPI_BUS)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
 #include <linux/spi/spi.h>
 #include <linux/spi/spidev.h>
-#elif defined(USE_PLATFORM_BUS)
+#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 #include <linux/platform_device.h>
 #endif
 
@@ -725,9 +725,9 @@ static struct notifier_block goodix_noti_block = {
 
 static struct class *gf_class;
 
-#if defined(USE_SPI_BUS)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
 static int gf_probe(struct spi_device *dev)
-#elif defined(USE_PLATFORM_BUS)
+#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 static int gf_probe(struct platform_device *dev)
 #endif
 {
@@ -864,9 +864,9 @@ error_input_alloc:
 	return rc;
 }
 
-#if defined(USE_SPI_BUS)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
 static int gf_remove(struct spi_device *dev)
-#elif defined(USE_PLATFORM_BUS)
+#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 static int gf_remove(struct platform_device *dev)
 #endif
 {
@@ -904,9 +904,9 @@ static struct of_device_id gx_match_table[] = {
 	{},
 };
 
-#if defined(USE_SPI_BUS)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
 static struct spi_driver gf_driver = {
-#elif defined(USE_PLATFORM_BUS)
+#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 static struct platform_driver gf_driver = {
 #endif
 	.driver = {
@@ -940,9 +940,9 @@ static int __init gf_init(void)
 		goto error_class;
 	}
 
-#if defined(USE_PLATFORM_BUS)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 	rc = platform_driver_register(&gf_driver);
-#elif defined(USE_SPI_BUS)
+#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
 	rc = spi_register_driver(&gf_driver);
 #endif
 	if (rc < 0) {
@@ -961,9 +961,9 @@ static int __init gf_init(void)
 	return 0;
 
 error_netlink:
-#if defined(USE_PLATFORM_BUS)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
         platform_driver_unregister(&gf_driver);
-#elif defined(USE_SPI_BUS)
+#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
         spi_unregister_driver(&gf_driver);
 #endif
 error_register:
@@ -979,9 +979,9 @@ module_init(gf_init);
 static void __exit gf_exit(void)
 {
 	gf_netlink_exit();
-#if defined(USE_PLATFORM_BUS)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 	platform_driver_unregister(&gf_driver);
-#elif defined(USE_SPI_BUS)
+#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
 	spi_unregister_driver(&gf_driver);
 #endif
 	class_destroy(gf_class);
