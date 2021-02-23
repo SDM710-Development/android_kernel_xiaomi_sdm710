@@ -28,3 +28,10 @@ config FINGERPRINT_GOODIX_FP_PLATFORM
 	  sensor through platform bus.
 
 endchoice
+
+config FINGERPRINT_GOODIX_FP_NAV_EVENT
+	bool "Goodix fingerprint sensor navigation events"
+	depends on FINGERPRINT_GOODIX_FP
+	help
+	  Say Y here if you want to enable support for navigation events
+	  in Goodix fingerprint sensor driver

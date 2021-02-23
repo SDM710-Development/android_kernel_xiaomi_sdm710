@@ -67,7 +67,7 @@ struct gf_key_map maps[] = {
 	{EV_KEY, GF_KEY_INPUT_MENU},
 	{EV_KEY, GF_KEY_INPUT_BACK},
 	{EV_KEY, GF_KEY_INPUT_POWER},
-#if defined(SUPPORT_NAV_EVENT)
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_NAV_EVENT)
 	{EV_KEY, GF_NAV_INPUT_UP},
 	{EV_KEY, GF_NAV_INPUT_DOWN},
 	{EV_KEY, GF_NAV_INPUT_RIGHT},
@@ -397,14 +397,16 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			return -EFAULT;
 		gf_kernel_key_input(gf_dev, &gf_key);
 		break;
-#if defined(SUPPORT_NAV_EVENT)
 	case GF_IOC_NAV_EVENT:
-		pr_debug("%s GF_IOC_NAV_EVENT\n", __func__);
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_NAV_EVENT)
+		dev_dbg(gf_dev->dev, "GF_IOC_NAV_EVENT\n");
 		if (copy_from_user(&nav_event, uptr, sizeof(nav_event)))
 			return -EFAULT;
 		nav_event_input(gf_dev, nav_event);
-		break;
+#else
+		dev_warn(gf_dev->dev, "navigation event is not enabled\n");
 #endif
+		break;
 	case GF_IOC_ENABLE_SPI_CLK:
 #ifdef AP_CONTROL_CLK
 		gfspi_ioctl_clk_enable(gf_dev);
