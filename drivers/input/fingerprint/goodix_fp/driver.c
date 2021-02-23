@@ -354,6 +354,32 @@ static int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
 	return 0;
 }
 
+static int gf_set_power(struct gf_dev *gf_dev, bool enable)
+{
+	int rc = 0;
+
+	/* No change? */
+	if (!(gf_dev->avail ^ enable)) {
+		dev_dbg(gf_dev->dev, "sensor has already powered-%s\n",
+			enable ? "on" : "off");
+
+		return 0;
+	}
+
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_POWER_CTRL
+	if (gpio_is_valid(gf_dev->pwr_gpio)) {
+		rc = gpio_direction_output(gf_dev->pwr_gpio, enable ? 1 : 0);
+		dev_info(gf_dev->dev, "set_power(%s) %s\n",
+			 enable ? "on" : "off", !rc ? "succeeded" : "failed");
+	}
+	msleep(10);
+#endif
+
+	gf_dev->avail = enable;
+
+	return rc;
+}
+
 static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct gf_dev *gf_dev = filp->private_data;
@@ -374,7 +400,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	if (retval)
 		return -EFAULT;
 
-	if (gf_dev->device_available == 0) {
+	if (!gf_dev->avail) {
 		switch (cmd) {
 		case GF_IOC_ENABLE_POWER:
 		case GF_IOC_DISABLE_POWER:
@@ -435,19 +461,11 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case GF_IOC_ENABLE_POWER:
 		dev_dbg(gf_dev->dev, "GF_IOC_ENABLE_POWER\n");
-		if (gf_dev->device_available == 1)
-			dev_dbg(gf_dev->dev, "Sensor has already powered-on.\n");
-		else
-			gf_set_power(gf_dev, true);
-		gf_dev->device_available = 1;
+		gf_set_power(gf_dev, true);
 		break;
 	case GF_IOC_DISABLE_POWER:
 		dev_dbg(gf_dev->dev, "GF_IOC_DISABLE_POWER\n");
-		if (gf_dev->device_available == 0)
-			dev_dbg(gf_dev->dev, "Sensor has already powered-off.\n");
-		else
-			gf_set_power(gf_dev, false);
-		gf_dev->device_available = 0;
+		gf_set_power(gf_dev, false);
 		break;
 	case GF_IOC_ENTER_SLEEP_MODE:
 		dev_dbg(gf_dev->dev, "GF_IOC_ENTER_SLEEP_MODE\n");
@@ -619,7 +637,6 @@ static int gf_release(struct inode *inode, struct file *filp)
 		dev_dbg(gf_dev->dev, "disable_irq. irq = %d\n", gf_dev->irq);
 		gf_disable_irq(gf_dev);
 		/* power off the sensor */
-		gf_dev->device_available = 0;
 		free_irq(gf_dev->irq, gf_dev);
 		gpio_free(gf_dev->irq_gpio);
 		gpio_free(gf_dev->reset_gpio);
@@ -666,7 +683,7 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 
 		switch (blank) {
 		case DRM_BLANK_POWERDOWN:
-			if (gf_dev->device_available == 1) {
+			if (gf_dev->avail) {
 				gf_dev->fb_black = 1;
 				gf_dev->wait_finger_down = true;
 				temp[0] = GF_NET_EVENT_FB_BLACK;
@@ -677,7 +694,7 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 			}
 			break;
 		case DRM_BLANK_UNBLANK:
-			if (gf_dev->device_available == 1) {
+			if (gf_dev->avail) {
 				gf_dev->fb_black = 0;
 				temp[0] = GF_NET_EVENT_FB_UNBLACK;
 				gf_sendnlmsg(temp);
@@ -724,7 +741,7 @@ int gf_probe_common(struct device *dev)
 	gf_dev->irq_gpio = -EINVAL;
 	gf_dev->reset_gpio = -EINVAL;
 	gf_dev->pwr_gpio = -EINVAL;
-	gf_dev->device_available = 0;
+	gf_dev->avail = false;
 	gf_dev->fb_black = 0;
 	gf_dev->wait_finger_down = false;
 

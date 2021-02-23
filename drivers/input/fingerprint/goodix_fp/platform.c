@@ -66,22 +66,6 @@ void gf_cleanup(struct gf_dev *gf_dev)
 	}
 }
 
-int gf_set_power(struct gf_dev *gf_dev, bool enable)
-{
-	int rc = 0;
-
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_POWER_CTRL
-	if (gpio_is_valid(gf_dev->pwr_gpio)) {
-		rc = gpio_direction_output(gf_dev->pwr_gpio, enable ? 1 : 0);
-		dev_info(gf_dev->dev, "set_power(%s) %s\n",
-			 enable ? "on" : "off", !rc ? "succeeded" : "failed");
-	}
-	msleep(10);
-#endif
-
-	return rc;
-}
-
 #if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 
 static int gf_probe_platform(struct platform_device *pdev)

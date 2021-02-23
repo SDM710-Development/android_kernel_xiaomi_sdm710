@@ -115,7 +115,7 @@ struct gf_dev {
 	int clk_enabled;
 	struct fasync_struct *async;
 	struct notifier_block notifier;
-	char device_available;
+	bool avail;
 	char fb_black;
 	char wait_finger_down;
 	struct work_struct work;
@@ -129,8 +129,6 @@ int gf_remove_common(struct device *dev);
 
 int gf_parse_dts(struct gf_dev *gf_dev);
 void gf_cleanup(struct gf_dev *gf_dev);
-
-int gf_set_power(struct gf_dev *gf_dev, bool enable);
 
 #ifdef CONFIG_FINGERPRINT_GOODIX_FP_SPI
 
