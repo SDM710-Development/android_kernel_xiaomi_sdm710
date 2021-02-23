@@ -101,7 +101,6 @@ struct gf_ioc_chip_info {
 #endif
 
 /*#define AP_CONTROL_CLK       1*/
-/*#define GF_FASYNC   1*/ /*If support fasync mechanism. */
 #define GF_PW_CTL		1
 #define GF_NETLINK_ENABLE	1
 #define GF_NET_EVENT_IRQ	1
@@ -124,9 +123,7 @@ struct gf_dev {
 	int irq;
 	int irq_enabled;
 	int clk_enabled;
-#ifdef GF_FASYNC
 	struct fasync_struct *async;
-#endif
 	struct notifier_block notifier;
 	char device_available;
 	char fb_black;

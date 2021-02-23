@@ -488,16 +488,13 @@ static void notification_work(struct work_struct *work)
 static irqreturn_t gf_irq(int irq, void *handle)
 {
 	char temp[4] = { GF_NET_EVENT_IRQ, };
+	struct gf_dev *gf_dev = handle;
 
 	__pm_wakeup_event(&fp_wakelock, WAKELOCK_HOLD_TIME);
 	gf_sendnlmsg(temp);
 
-#if defined (GF_FASYNC)
-	struct gf_dev *gf_dev = &gf;
-
 	if (gf_dev->async)
 		kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
-#endif
 
 	return IRQ_HANDLED;
 }
@@ -586,17 +583,12 @@ static int gf_open(struct inode *inode, struct file *filp)
 	return status;
 }
 
-#ifdef GF_FASYNC
 static int gf_fasync(int fd, struct file *filp, int mode)
 {
 	struct gf_dev *gf_dev = filp->private_data;
-	int ret;
 
-	ret = fasync_helper(fd, filp, mode, &gf_dev->async);
-	pr_debug("ret = %d\n", ret);
-	return ret;
+	return fasync_helper(fd, filp, mode, &gf_dev->async);
 }
-#endif
 
 static int gf_release(struct inode *inode, struct file *filp)
 {
@@ -649,9 +641,7 @@ static const struct file_operations gf_fops = {
 #endif /*CONFIG_COMPAT */
 	.open = gf_open,
 	.release = gf_release,
-#ifdef GF_FASYNC
 	.fasync = gf_fasync,
-#endif
 };
 
 #ifndef GOODIX_DRM_INTERFACE_WA
@@ -680,12 +670,10 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 				gf_dev->wait_finger_down = true;
 				temp[0] = GF_NET_EVENT_FB_BLACK;
 				gf_sendnlmsg(temp);
-#if defined (GF_FASYNC)
 				if (gf_dev->async) {
 					kill_fasync(&gf_dev->async, SIGIO,
 						    POLL_IN);
 				}
-#endif
 			}
 			break;
 		case DRM_BLANK_UNBLANK:
@@ -693,12 +681,10 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 				gf_dev->fb_black = 0;
 				temp[0] = GF_NET_EVENT_FB_UNBLACK;
 				gf_sendnlmsg(temp);
-#if defined (GF_FASYNC)
 				if (gf_dev->async) {
 					kill_fasync(&gf_dev->async, SIGIO,
 						    POLL_IN);
 				}
-#endif
 			}
 			break;
 		default:
