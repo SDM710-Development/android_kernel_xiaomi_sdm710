@@ -1,1 +1,3 @@
-obj-$(CONFIG_FINGERPRINT_GOODIX_FP) += driver.o platform.o netlink.o
+obj-$(CONFIG_FINGERPRINT_GOODIX_FP) += goodix_fp.o
+
+goodix_fp-objs := driver.o netlink.o platform.o
