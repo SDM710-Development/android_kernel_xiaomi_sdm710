@@ -103,16 +103,6 @@ int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
 	return 0;
 }
 
-int gf_irq_num(struct gf_dev *gf_dev)
-{
-	if (gf_dev == NULL) {
-		dev_info(gf_dev->dev, "Input buff is NULL.\n");
-		return -EPERM;
-	} else {
-		return gpio_to_irq(gf_dev->irq_gpio);
-	}
-}
-
 #if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 
 static int gf_probe_platform(struct platform_device *pdev)

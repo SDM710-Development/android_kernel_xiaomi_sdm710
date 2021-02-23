@@ -792,7 +792,7 @@ int gf_probe_common(struct device *dev)
 	}
 #endif
 
-	gf_dev->irq = gf_irq_num(gf_dev);
+	gf_dev->irq = gpio_to_irq(gf_dev->irq_gpio);
 
 	wakeup_source_init(&fp_wakelock, "fp_wakelock");
 
