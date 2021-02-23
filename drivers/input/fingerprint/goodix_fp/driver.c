@@ -442,7 +442,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (gf_dev->device_available == 1)
 			pr_debug("Sensor has already powered-on.\n");
 		else
-			gf_power_on(gf_dev);
+			gf_set_power(gf_dev, true);
 		gf_dev->device_available = 1;
 		break;
 	case GF_IOC_DISABLE_POWER:
@@ -450,7 +450,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (gf_dev->device_available == 0)
 			pr_debug("Sensor has already powered-off.\n");
 		else
-			gf_power_off(gf_dev);
+			gf_set_power(gf_dev, false);
 		gf_dev->device_available = 0;
 		break;
 	case GF_IOC_ENTER_SLEEP_MODE:
@@ -639,7 +639,7 @@ static int gf_release(struct inode *inode, struct file *filp)
 		free_irq(gf_dev->irq, gf_dev);
 		gpio_free(gf_dev->irq_gpio);
 		gpio_free(gf_dev->reset_gpio);
-		gf_power_off(gf_dev);
+		gf_set_power(gf_dev, false);
 	}
 	mutex_unlock(&device_list_lock);
 

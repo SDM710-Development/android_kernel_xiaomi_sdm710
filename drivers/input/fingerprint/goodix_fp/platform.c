@@ -83,33 +83,17 @@ void gf_cleanup(struct gf_dev *gf_dev)
 #endif
 }
 
-int gf_power_on(struct gf_dev *gf_dev)
+int gf_set_power(struct gf_dev *gf_dev, bool enable)
 {
 	int rc = 0;
 
 #ifdef GF_PW_CTL
 	if (gpio_is_valid(gf_dev->pwr_gpio)) {
-		rc = gpio_direction_output(gf_dev->pwr_gpio, 1);
-		pr_info("---- power on result: %d----\n", rc);
-	} else {
-		pr_info("%s: gpio_is_invalid\n", __func__);
+		rc = gpio_direction_output(gf_dev->pwr_gpio, enable ? 1 : 0);
+		dev_info(gf_dev->dev, "set_power(%s) %s\n",
+			 enable ? "on" : "off", !rc ? "succeeded" : "failed");
 	}
-#endif
-
 	msleep(10);
-	return rc;
-}
-
-int gf_power_off(struct gf_dev *gf_dev)
-{
-	int rc = 0;
-#ifdef GF_PW_CTL
-	if (gpio_is_valid(gf_dev->pwr_gpio)) {
-		rc = gpio_direction_output(gf_dev->pwr_gpio, 0);
-		pr_info("---- power off result: %d----\n", rc);
-	} else {
-		pr_info("%s: gpio_is_invalid\n", __func__);
-	}
 #endif
 
 	return rc;
