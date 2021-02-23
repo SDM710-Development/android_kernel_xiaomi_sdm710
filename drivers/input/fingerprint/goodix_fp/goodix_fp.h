@@ -9,6 +9,8 @@
 #include <linux/types.h>
 #include <linux/notifier.h>
 
+#define GF_DEV_NAME	"goodix_fp"
+
 enum FP_MODE {
 	GF_IMAGE_MODE = 0,
 	GF_KEY_MODE,
@@ -135,6 +137,9 @@ struct gf_dev {
 #endif
 };
 
+int gf_probe_common(struct device *dev);
+int gf_remove_common(struct device *dev);
+
 int gf_parse_dts(struct gf_dev *gf_dev);
 void gf_cleanup(struct gf_dev *gf_dev);
 
@@ -142,6 +147,46 @@ int gf_set_power(struct gf_dev *gf_dev, bool enable);
 
 int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
 int gf_irq_num(struct gf_dev *gf_dev);
+
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_SPI
+
+int gf_register_spi_driver(struct of_device_id *match_table);
+void gf_unregister_spi_driver(void);
+
+#else
+
+static inline
+int gf_register_spi_driver(struct of_device_id *match_table)
+{
+	return 0;
+}
+
+static inline
+void gf_unregister_spi_driver(void)
+{
+}
+
+#endif
+
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM
+
+int gf_register_platform_driver(struct of_device_id *match_table);
+void gf_unregister_platform_driver(void);
+
+#else
+
+static inline
+int gf_register_platform_driver(struct of_device_id *match_table)
+{
+	return 0;
+}
+
+static inline
+void gf_unregister_platform_driver(void)
+{
+}
+
+#endif
 
 void gf_sendnlmsg(char *message);
 int gf_netlink_init(void);

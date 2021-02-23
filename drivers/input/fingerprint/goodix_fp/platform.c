@@ -7,21 +7,15 @@
 #define pr_fmt(fmt)		"gf_platform: " fmt
 
 #include <linux/delay.h>
-#include <linux/workqueue.h>
-#include <linux/of_gpio.h>
+#include <linux/err.h>
 #include <linux/gpio.h>
+#include <linux/of_gpio.h>
+#include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <linux/timer.h>
-#include <linux/err.h>
+#include <linux/workqueue.h>
 
 #include "goodix_fp.h"
-
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
-#include <linux/spi/spi.h>
-#include <linux/spi/spidev.h>
-#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-#include <linux/platform_device.h>
-#endif
 
 #define FAIL (-1)
 
@@ -122,3 +116,44 @@ int gf_irq_num(struct gf_dev *gf_dev)
 		return gpio_to_irq(gf_dev->irq_gpio);
 	}
 }
+
+#if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
+
+static int gf_probe_platform(struct platform_device *pdev)
+{
+	return gf_probe_common(&pdev->dev);
+}
+
+static int gf_remove_platform(struct platform_device *pdev)
+{
+	return gf_remove_common(&pdev->dev);
+}
+
+static struct platform_driver gf_platform_driver = {
+	.driver = {
+		.name = GF_DEV_NAME,
+		.owner = THIS_MODULE,
+	},
+	.probe = gf_probe_platform,
+	.remove = gf_remove_platform,
+};
+
+int gf_register_platform_driver(struct of_device_id *match_table)
+{
+	int rc;
+
+	gf_platform_driver.driver.of_match_table = match_table;
+
+	rc = platform_driver_register(&gf_platform_driver);
+	if (rc < 0)
+		pr_err("failed to register platform driver\n");
+
+	return rc;
+}
+
+void gf_unregister_platform_driver(void)
+{
+	platform_driver_unregister(&gf_platform_driver);
+}
+
+#endif

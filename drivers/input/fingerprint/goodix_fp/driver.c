@@ -53,13 +53,6 @@
 
 #include "goodix_fp.h"
 
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
-#include <linux/spi/spi.h>
-#include <linux/spi/spidev.h>
-#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-#include <linux/platform_device.h>
-#endif
-
 #define VER_MAJOR	1
 #define VER_MINOR	2
 #define PATCH_LEVEL	1
@@ -67,8 +60,7 @@
 #define WAKELOCK_HOLD_TIME		2000	/* in ms */
 #define FP_UNLOCK_REJECTION_TIMEOUT	(WAKELOCK_HOLD_TIME - 500)
 
-#define GF_SPIDEV_NAME		"goodix,fingerprint"
-#define GF_DEV_NAME		"goodix_fp"
+#define GF_OF_DEV_NAME		"goodix,fingerprint"
 #define GF_INPUT_NAME		"uinput-goodix"	/* "goodix_fp" */
 
 #define GF_CHRDEV_NAME		"goodix_fp_spi"
@@ -725,11 +717,7 @@ static struct notifier_block goodix_noti_block = {
 
 static struct class *gf_class;
 
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
-static int gf_probe(struct spi_device *dev)
-#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-static int gf_probe(struct platform_device *dev)
-#endif
+int gf_probe_common(struct device *dev)
 {
 	struct gf_dev *gf_dev;
 	unsigned long minor;
@@ -737,17 +725,17 @@ static int gf_probe(struct platform_device *dev)
 	int i;
 
 	/* Allocate device instance */
-	gf_dev = devm_kzalloc(&dev->dev, sizeof(struct gf_dev), GFP_KERNEL);
+	gf_dev = devm_kzalloc(dev, sizeof(struct gf_dev), GFP_KERNEL);
 	if (!gf_dev) {
-		dev_err(&dev->dev, "failed to allocate device data\n");
+		dev_err(dev, "failed to allocate device data\n");
 		return -ENOMEM;
 	}
 
-	dev_set_drvdata(&dev->dev, gf_dev);
+	dev_set_drvdata(dev, gf_dev);
 
 	/* Initialize the driver data */
 	INIT_LIST_HEAD(&gf_dev->device_entry);
-	gf_dev->dev = &dev->dev;
+	gf_dev->dev = dev;
 	gf_dev->irq_gpio = -EINVAL;
 	gf_dev->reset_gpio = -EINVAL;
 	gf_dev->pwr_gpio = -EINVAL;
@@ -864,13 +852,9 @@ error_input_alloc:
 	return rc;
 }
 
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
-static int gf_remove(struct spi_device *dev)
-#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-static int gf_remove(struct platform_device *dev)
-#endif
+int gf_remove_common(struct device *dev)
 {
-	struct gf_dev *gf_dev = dev_get_drvdata(&dev->dev);
+	struct gf_dev *gf_dev = dev_get_drvdata(dev);
 
 	wakeup_source_trash(&fp_wakelock);
 
@@ -899,23 +883,9 @@ static int gf_remove(struct platform_device *dev)
 	return 0;
 }
 
-static struct of_device_id gx_match_table[] = {
-	{.compatible = GF_SPIDEV_NAME},
-	{},
-};
-
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
-static struct spi_driver gf_driver = {
-#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-static struct platform_driver gf_driver = {
-#endif
-	.driver = {
-		   .name = GF_DEV_NAME,
-		   .owner = THIS_MODULE,
-		   .of_match_table = gx_match_table,
-		   },
-	.probe = gf_probe,
-	.remove = gf_remove,
+static struct of_device_id gf_match_table[] = {
+	{ .compatible = GF_OF_DEV_NAME },
+	{ },
 };
 
 static int __init gf_init(void)
@@ -940,16 +910,21 @@ static int __init gf_init(void)
 		goto error_class;
 	}
 
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-	rc = platform_driver_register(&gf_driver);
-#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
-	rc = spi_register_driver(&gf_driver);
-#endif
+	/* Register platform driver */
+	rc = gf_register_platform_driver(gf_match_table);
 	if (rc < 0) {
-		pr_warn("failed to register driver\n");
-		goto error_register;
+		pr_err("failed to register platform driver\n");
+		goto error_plat;
 	}
 
+	/* Register SPI driver */
+	rc = gf_register_spi_driver(gf_match_table);
+	if (rc < 0) {
+		pr_err("failed to register SPI driver\n");
+		goto error_spi;
+	}
+
+	/* Initialize netlink interface */
 	rc = gf_netlink_init();
 	if (rc < 0) {
 		pr_warn("failed to initialize netlink\n");
@@ -961,12 +936,10 @@ static int __init gf_init(void)
 	return 0;
 
 error_netlink:
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-        platform_driver_unregister(&gf_driver);
-#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
-        spi_unregister_driver(&gf_driver);
-#endif
-error_register:
+	gf_unregister_spi_driver();
+error_spi:
+	gf_unregister_platform_driver();
+error_plat:
 	class_destroy(gf_class);
 error_class:
 	unregister_chrdev(gf_dev_major, GF_CHRDEV_NAME);
@@ -979,13 +952,10 @@ module_init(gf_init);
 static void __exit gf_exit(void)
 {
 	gf_netlink_exit();
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-	platform_driver_unregister(&gf_driver);
-#elif defined(CONFIG_FINGERPRINT_GOODIX_FP_SPI)
-	spi_unregister_driver(&gf_driver);
-#endif
+	gf_unregister_spi_driver();
+	gf_unregister_platform_driver();
 	class_destroy(gf_class);
-	unregister_chrdev(gf_dev_major, gf_driver.driver.name);
+	unregister_chrdev(gf_dev_major, GF_CHRDEV_NAME);
 }
 
 module_exit(gf_exit);
