@@ -3,17 +3,13 @@
  *
  * Coypritht (c) 2017 Goodix
  */
-#define DEBUG
-#define pr_fmt(fmt)		"gf_platform: " fmt
+#define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
 
 #include <linux/delay.h>
 #include <linux/err.h>
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
-#include <linux/regulator/consumer.h>
-#include <linux/timer.h>
-#include <linux/workqueue.h>
 
 #include "goodix_fp.h"
 

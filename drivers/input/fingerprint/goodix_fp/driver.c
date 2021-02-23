@@ -13,43 +13,30 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-#define DEBUG
 #define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
 
 #define GOODIX_DRM_INTERFACE_WA
 
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/ioctl.h>
-#include <linux/fs.h>
-#include <linux/device.h>
-#include <linux/input.h>
 #include <linux/clk.h>
-#include <linux/err.h>
-#include <linux/list.h>
-#include <linux/errno.h>
-#include <linux/mutex.h>
-#include <linux/slab.h>
 #include <linux/compat.h>
-#include <linux/delay.h>
-#include <linux/uaccess.h>
-#include <linux/ktime.h>
-#include <linux/interrupt.h>
-#include <linux/irq.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <linux/fs.h>
 #include <linux/gpio.h>
-#include <linux/regulator/consumer.h>
-#include <linux/of_gpio.h>
-#include <linux/timer.h>
-#include <linux/notifier.h>
-#include <linux/fb.h>
-#include <linux/pm_qos.h>
-#include <linux/cpufreq.h>
+#include <linux/input.h>
+#include <linux/interrupt.h>
+#include <linux/ioctl.h>
+#include <linux/irq.h>
+#include <linux/module.h>
+#include <linux/mutex.h>
 #include <linux/pm_wakeup.h>
-#include <drm/drm_bridge.h>
+#include <net/netlink.h>
+
 #ifndef GOODIX_DRM_INTERFACE_WA
+#include <linux/fb.h>
+#include <drm/drm_bridge.h>
 #include <drm/drm_notifier.h>
 #endif
-#include <net/netlink.h>
 
 #include "goodix_fp.h"
 
