@@ -493,8 +493,8 @@ static irqreturn_t gf_irq(int irq, void *handle)
 	__pm_wakeup_event(&fp_wakelock, WAKELOCK_HOLD_TIME);
 	gf_sendnlmsg(temp);
 
-	if (gf_dev->async)
-		kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
+	/* Send fasync notification */
+	kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
 
 	return IRQ_HANDLED;
 }
@@ -670,10 +670,9 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 				gf_dev->wait_finger_down = true;
 				temp[0] = GF_NET_EVENT_FB_BLACK;
 				gf_sendnlmsg(temp);
-				if (gf_dev->async) {
-					kill_fasync(&gf_dev->async, SIGIO,
-						    POLL_IN);
-				}
+
+				/* Send fasync notification */
+				kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
 			}
 			break;
 		case DRM_BLANK_UNBLANK:
@@ -681,10 +680,9 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 				gf_dev->fb_black = 0;
 				temp[0] = GF_NET_EVENT_FB_UNBLACK;
 				gf_sendnlmsg(temp);
-				if (gf_dev->async) {
-					kill_fasync(&gf_dev->async, SIGIO,
-						    POLL_IN);
-				}
+
+				/* Send fasync notification */
+				kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
 			}
 			break;
 		default:
