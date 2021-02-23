@@ -132,8 +132,6 @@ void gf_cleanup(struct gf_dev *gf_dev);
 
 int gf_set_power(struct gf_dev *gf_dev, bool enable);
 
-int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
-
 #ifdef CONFIG_FINGERPRINT_GOODIX_FP_SPI
 
 int gf_register_spi_driver(struct of_device_id *match_table);

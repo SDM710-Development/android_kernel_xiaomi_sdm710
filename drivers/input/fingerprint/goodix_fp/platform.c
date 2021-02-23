@@ -82,20 +82,6 @@ int gf_set_power(struct gf_dev *gf_dev, bool enable)
 	return rc;
 }
 
-int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
-{
-	if (gf_dev == NULL) {
-		dev_info(gf_dev->dev, "Input buff is NULL.\n");
-		return -EPERM;
-	}
-	gpio_direction_output(gf_dev->reset_gpio, 0);
-	mdelay(3);
-	gpio_set_value(gf_dev->reset_gpio, 1);
-	mdelay(delay_ms);
-	dev_info(gf_dev->dev, "%s success\n", __func__);
-	return 0;
-}
-
 #if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
 
 static int gf_probe_platform(struct platform_device *pdev)

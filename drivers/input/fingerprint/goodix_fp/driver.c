@@ -19,6 +19,7 @@
 
 #include <linux/clk.h>
 #include <linux/compat.h>
+#include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/errno.h>
 #include <linux/fs.h>
@@ -338,6 +339,19 @@ static void gf_kernel_key_input(struct gf_dev *gf_dev, struct gf_key *gf_key)
 		input_report_key(gf_dev->input, key_input, gf_key->value);
 		input_sync(gf_dev->input);
 	}
+}
+
+static int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
+{
+	dev_info(gf_dev->dev, "performing HW reset\n");
+
+	gpio_direction_output(gf_dev->reset_gpio, 0);
+	mdelay(3);
+
+	gpio_set_value(gf_dev->reset_gpio, 1);
+	mdelay(delay_ms);
+
+	return 0;
 }
 
 static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
