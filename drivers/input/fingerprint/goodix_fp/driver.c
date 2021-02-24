@@ -789,10 +789,48 @@ static void gf_del_cdev(struct gf_dev *gf_dev)
 	cdev_del(&gf_dev->cdev);
 }
 
+static int gf_add_input(struct gf_dev *gf_dev)
+{
+	int rc, i;
+
+	/* Allocate associated input device */
+	gf_dev->input = input_allocate_device();
+	if (!gf_dev->input) {
+		dev_err(gf_dev->dev, "failed to allocate input device\n");
+
+		return -ENOMEM;
+	}
+
+	/* Set input device name */
+	gf_dev->input->name = GF_INPUT_NAME;
+
+	/* Set capabilities */
+	for (i = 0; i < ARRAY_SIZE(maps); i++)
+		input_set_capability(gf_dev->input, maps[i].type, maps[i].code);
+
+	/* Register input device */
+	rc = input_register_device(gf_dev->input);
+	if (rc) {
+		dev_err(gf_dev->dev, "failed to register input device\n");
+		input_free_device(gf_dev->input);
+	}
+
+	return rc;
+}
+
+static void gf_del_input(struct gf_dev *gf_dev)
+{
+	/* Unregister input device from system */
+	input_unregister_device(gf_dev->input);
+
+	/* Free input device */
+	input_free_device(gf_dev->input);
+}
+
 int gf_probe_common(struct device *dev)
 {
 	struct gf_dev *gf_dev;
-	int rc, i;
+	int rc;
 
 	/* Allocate device instance */
 	gf_dev = devm_kzalloc(dev, sizeof(struct gf_dev), GFP_KERNEL);
@@ -823,23 +861,10 @@ int gf_probe_common(struct device *dev)
 	if (rc < 0)
 		return rc;
 
-	/* input device subsystem */
-	gf_dev->input = input_allocate_device();
-	if (!gf_dev->input) {
-		dev_err(gf_dev->dev, "failed to allocate input device\n");
-		rc = -ENOMEM;
-		goto error_input_alloc;
-	}
-
-	for (i = 0; i < ARRAY_SIZE(maps); i++)
-		input_set_capability(gf_dev->input, maps[i].type, maps[i].code);
-
-	gf_dev->input->name = GF_INPUT_NAME;
-	rc = input_register_device(gf_dev->input);
-	if (rc) {
-		dev_err(gf_dev->dev, "failed to register input device\n");
-		goto error_input_reg;
-	}
+	/* Create and associate input device */
+	rc = gf_add_input(gf_dev);
+	if (rc < 0)
+		goto error_input;
 
 #ifdef AP_CONTROL_CLK
 	dev_dbg(gf_dev->dev, "get the clk resource\n");
@@ -880,11 +905,8 @@ error_clk_enable:
 	gfspi_ioctl_clk_uninit(gf_dev);
 error_clk_init:
 #endif
-	input_unregister_device(gf_dev->input);
-error_input_reg:
-	if (gf_dev->input != NULL)
-		input_free_device(gf_dev->input);
-error_input_alloc:
+	gf_del_input(gf_dev);
+error_input:
 	gf_del_cdev(gf_dev);
 
 	return rc;
@@ -900,10 +922,8 @@ int gf_remove_common(struct device *dev)
 	if (gf_dev->irq)
 		free_irq(gf_dev->irq, gf_dev);
 
-	if (gf_dev->input != NULL)
-		input_unregister_device(gf_dev->input);
-
-	input_free_device(gf_dev->input);
+	/* Unregister and delete associated input device */
+	gf_del_input(gf_dev);
 
 	/* Unregister and delete associated char device */
 	gf_del_cdev(gf_dev);
