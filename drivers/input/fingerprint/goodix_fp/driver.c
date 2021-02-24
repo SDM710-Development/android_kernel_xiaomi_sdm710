@@ -141,22 +141,6 @@ static long spi_clk_max_rate(struct clk *clk, unsigned long rate)
 	return nearest_low;
 }
 
-static void spi_clock_set(struct gf_dev *gf_dev, int speed)
-{
-	long rate;
-	int rc;
-
-	rate = spi_clk_max_rate(gf_dev->core_clk, speed);
-	if (rate < 0) {
-		dev_dbg(gf_dev->dev,
-			"no match found for requested clock frequency:%d",
-			speed);
-		return;
-	}
-
-	rc = clk_set_rate(gf_dev->core_clk, rate);
-}
-
 static int gfspi_ioctl_clk_enable(struct gf_dev *gf_dev)
 {
 	int rc;
@@ -196,7 +180,8 @@ static int gfspi_ioctl_clk_disable(struct gf_dev *gf_dev)
 
 static int gfspi_ioctl_clk_init(struct gf_dev *gf_dev)
 {
-	gf_dev->clk_enabled = 0;
+	int rc;
+	long rate;
 
 	gf_dev->core_clk = clk_get(gf_dev->dev, "core_clk");
 	if (IS_ERR(gf_dev->core_clk)) {
@@ -212,7 +197,33 @@ static int gfspi_ioctl_clk_init(struct gf_dev *gf_dev)
 		return PTR_ERR(gf_dev->iface_clk);
 	}
 
-	return 0;
+	rc = gfspi_ioctl_clk_enable(gf_dev);
+	if (rc < 0) {
+		dev_err(gf_dev->dev, "failed to enable clock\n");
+		goto error_clk_enable;
+	}
+
+	rate = spi_clk_max_rate(gf_dev->core_clk, 1000000);
+	if (rate < 0) {
+		dev_err(gf_dev->dev,
+			"no match found for requested clock frequency\n");
+		rc = rate;
+		goto error_clk_set;
+	}
+
+	rc = clk_set_rate(gf_dev->core_clk, rate);
+	if (rc < 0) {
+		dev_err(gf_dev->dev, "failed to set clock rate\n");
+		goto error_clk_set;
+	}
+
+error_clk_set:
+	gfspi_ioctl_clk_disable(gf_dev);
+error_clk_enable:
+	clk_put(gf_dev->iface_clk);
+	clk_put(gf_dev->core_clk);
+
+	return rc;
 }
 
 static int gfspi_ioctl_clk_uninit(struct gf_dev *gf_dev)
@@ -864,11 +875,6 @@ int gf_probe_common(struct device *dev)
 	/* Enable spi clock */
 	if (gfspi_ioctl_clk_init(gf_dev))
 		goto error_clk_init;
-
-	if (gfspi_ioctl_clk_enable(gf_dev))
-		goto error_clk_enable;
-
-	spi_clock_set(gf_dev, 1000000);
 #endif
 
 #ifndef GOODIX_DRM_INTERFACE_WA
@@ -893,7 +899,6 @@ int gf_probe_common(struct device *dev)
 error_drm_reg:
 #endif
 #ifdef AP_CONTROL_CLK
-error_clk_enable:
 	gfspi_ioctl_clk_uninit(gf_dev);
 error_clk_init:
 #endif
