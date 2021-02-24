@@ -157,29 +157,6 @@ static void spi_clock_set(struct gf_dev *gf_dev, int speed)
 	rc = clk_set_rate(gf_dev->core_clk, rate);
 }
 
-static int gfspi_ioctl_clk_init(struct gf_dev *data)
-{
-	dev_dbg(gf_dev->dev, "initialize clock\n");
-
-	data->clk_enabled = 0;
-
-	data->core_clk = clk_get(data->dev, "core_clk");
-	if (IS_ERR(data->core_clk)) {
-		dev_err(gf_dev->dev, "failed to get core_clk\n");
-		return PTR_ERR(data->core_clk);
-	}
-
-	data->iface_clk = clk_get(data->dev, "iface_clk");
-	if (IS_ERR(data->iface_clk)) {
-		dev_err(gf_dev->dev, "fail to get iface_clk\n");
-		clk_put(data->core_clk);
-		data->core_clk = NULL;
-		return PTR_ERR(data->iface_clk);
-	}
-
-	return 0;
-}
-
 static int gfspi_ioctl_clk_enable(struct gf_dev *data)
 {
 	int rc;
@@ -217,6 +194,29 @@ static int gfspi_ioctl_clk_disable(struct gf_dev *data)
 	clk_disable_unprepare(data->core_clk);
 	clk_disable_unprepare(data->iface_clk);
 	data->clk_enabled = 0;
+
+	return 0;
+}
+
+static int gfspi_ioctl_clk_init(struct gf_dev *data)
+{
+	dev_dbg(gf_dev->dev, "initialize clock\n");
+
+	data->clk_enabled = 0;
+
+	data->core_clk = clk_get(data->dev, "core_clk");
+	if (IS_ERR(data->core_clk)) {
+		dev_err(gf_dev->dev, "failed to get core_clk\n");
+		return PTR_ERR(data->core_clk);
+	}
+
+	data->iface_clk = clk_get(data->dev, "iface_clk");
+	if (IS_ERR(data->iface_clk)) {
+		dev_err(gf_dev->dev, "fail to get iface_clk\n");
+		clk_put(data->core_clk);
+		data->core_clk = NULL;
+		return PTR_ERR(data->iface_clk);
+	}
 
 	return 0;
 }
