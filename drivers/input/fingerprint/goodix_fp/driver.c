@@ -101,7 +101,7 @@ static void gf_disable_irq(struct gf_dev *gf_dev)
 	}
 }
 
-#ifdef AP_CONTROL_CLK
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_CLK_CTRL
 static long spi_clk_max_rate(struct clk *clk, unsigned long rate)
 {
 	long lowest_available, nearest_low, step_size, cur;
@@ -140,9 +140,11 @@ static long spi_clk_max_rate(struct clk *clk, unsigned long rate)
 
 	return nearest_low;
 }
+#endif
 
-static int gfspi_ioctl_clk_enable(struct gf_dev *gf_dev)
+static int gf_clk_enable(struct gf_dev *gf_dev)
 {
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_CLK_CTRL
 	int rc;
 
 	if (gf_dev->clk_enabled)
@@ -162,25 +164,27 @@ static int gfspi_ioctl_clk_enable(struct gf_dev *gf_dev)
 	}
 
 	gf_dev->clk_enabled = 1;
-
+#endif
 	return 0;
 }
 
-static int gfspi_ioctl_clk_disable(struct gf_dev *gf_dev)
+static int gf_clk_disable(struct gf_dev *gf_dev)
 {
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_CLK_CTRL
 	if (!gf_dev->clk_enabled)
 		return 0;
 
 	clk_disable_unprepare(gf_dev->core_clk);
 	clk_disable_unprepare(gf_dev->iface_clk);
 	gf_dev->clk_enabled = 0;
-
+#endif
 	return 0;
 }
 
-static int gfspi_ioctl_clk_init(struct gf_dev *gf_dev)
+static int gf_clk_init(struct gf_dev *gf_dev)
 {
-	int rc;
+	int rc = 0;
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_CLK_CTRL
 	long rate;
 
 	gf_dev->core_clk = clk_get(gf_dev->dev, "core_clk");
@@ -197,7 +201,7 @@ static int gfspi_ioctl_clk_init(struct gf_dev *gf_dev)
 		return PTR_ERR(gf_dev->iface_clk);
 	}
 
-	rc = gfspi_ioctl_clk_enable(gf_dev);
+	rc = gf_clk_enable(gf_dev);
 	if (rc < 0) {
 		dev_err(gf_dev->dev, "failed to enable clock\n");
 		goto error_clk_enable;
@@ -218,18 +222,19 @@ static int gfspi_ioctl_clk_init(struct gf_dev *gf_dev)
 	}
 
 error_clk_set:
-	gfspi_ioctl_clk_disable(gf_dev);
+	gf_clk_disable(gf_dev);
 error_clk_enable:
 	clk_put(gf_dev->iface_clk);
 	clk_put(gf_dev->core_clk);
-
+#endif
 	return rc;
 }
 
-static int gfspi_ioctl_clk_uninit(struct gf_dev *gf_dev)
+static int gf_clk_fini(struct gf_dev *gf_dev)
 {
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_CLK_CTRL
 	if (gf_dev->clk_enabled)
-		gfspi_ioctl_clk_disable(gf_dev);
+		gf_clk_disable(gf_dev);
 
 	if (!IS_ERR_OR_NULL(gf_dev->core_clk)) {
 		clk_put(gf_dev->core_clk);
@@ -240,10 +245,9 @@ static int gfspi_ioctl_clk_uninit(struct gf_dev *gf_dev)
 		clk_put(gf_dev->iface_clk);
 		gf_dev->iface_clk = NULL;
 	}
-
+#endif
 	return 0;
 }
-#endif
 
 static void nav_event_input(struct gf_dev *gf_dev, gf_nav_event_t nav_event)
 {
@@ -453,14 +457,10 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 		break;
 	case GF_IOC_ENABLE_SPI_CLK:
-#ifdef AP_CONTROL_CLK
-		gfspi_ioctl_clk_enable(gf_dev);
-#endif
+		gf_clk_enable(gf_dev);
 		break;
 	case GF_IOC_DISABLE_SPI_CLK:
-#ifdef AP_CONTROL_CLK
-		gfspi_ioctl_clk_disable(gf_dev);
-#endif
+		gf_clk_disable(gf_dev);
 		break;
 	case GF_IOC_ENABLE_POWER:
 		dev_dbg(gf_dev->dev, "GF_IOC_ENABLE_POWER\n");
@@ -869,13 +869,9 @@ int gf_probe_common(struct device *dev)
 	if (rc < 0)
 		goto error_input;
 
-#ifdef AP_CONTROL_CLK
-	dev_dbg(gf_dev->dev, "get the clk resource\n");
-
-	/* Enable spi clock */
-	if (gfspi_ioctl_clk_init(gf_dev))
+	/* Initialize and enable SPI clock */
+	if (gf_clk_init(gf_dev))
 		goto error_clk_init;
-#endif
 
 #ifndef GOODIX_DRM_INTERFACE_WA
 	gf_dev->notifier = goodix_noti_block;
@@ -898,10 +894,8 @@ int gf_probe_common(struct device *dev)
 #ifndef GOODIX_DRM_INTERFACE_WA
 error_drm_reg:
 #endif
-#ifdef AP_CONTROL_CLK
-	gfspi_ioctl_clk_uninit(gf_dev);
+	gf_clk_fini(gf_dev);
 error_clk_init:
-#endif
 	gf_del_input(gf_dev);
 error_input:
 	gf_del_cdev(gf_dev);
