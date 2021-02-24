@@ -541,31 +541,6 @@ static int gf_open(struct inode *inode, struct file *filp)
 		}
 	}
 
-#ifdef CONFIG_FINGERPRINT_FP_VREG_CONTROL
-	pr_info("Try to enable fp_vdd_vreg\n");
-
-	gf_dev->vreg = regulator_get(&gf_dev->dev, "fp_vdd_vreg");
-	if (gf_dev->vreg == NULL) {
-		dev_err(&gf_dev->dev, "fp_vdd_vreg regulator get failed!\n");
-		mutex_unlock(&device_list_lock);
-		return -EPERM;
-	}
-
-	if (regulator_is_enabled(gf_dev->vreg)) {
-		pr_info("fp_vdd_vreg is already enabled!\n");
-	} else {
-		rc = regulator_enable(gf_dev->vreg);
-		if (rc) {
-			dev_err(&gf_dev->dev, "error enabling fp_vdd_vreg!\n");
-			regulator_put(gf_dev->vreg);
-			gf_dev->vreg = NULL;
-			mutex_unlock(&device_list_lock);
-			return -EPERM;
-		}
-	}
-	pr_info("fp_vdd_vreg is enabled!\n");
-#endif
-
 	if (status == 0) {
 		rc = gpio_request(gf_dev->reset_gpio, "goodix_reset");
 		if (rc) {
@@ -621,18 +596,6 @@ static int gf_release(struct inode *inode, struct file *filp)
 
 	mutex_lock(&device_list_lock);
 	filp->private_data = NULL;
-
-	/*
-	 * Disable fp_vdd_vreg regulator
-	 */
-#ifdef CONFIG_FINGERPRINT_FP_VREG_CONTROL
-	pr_info("disable fp_vdd_vreg!\n");
-	if (regulator_is_enabled(gf_dev->vreg)) {
-		regulator_disable(gf_dev->vreg);
-		regulator_put(gf_dev->vreg);
-		gf_dev->vreg = NULL;
-	}
-#endif
 
 	/* last close?? */
 	gf_dev->users--;
