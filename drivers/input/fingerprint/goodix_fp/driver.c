@@ -719,12 +719,80 @@ static struct notifier_block goodix_noti_block = {
 
 static struct class *gf_class;
 
+static int gf_add_cdev(struct gf_dev *gf_dev)
+{
+	struct device *classdev;
+	unsigned long minor;
+	int rc = -ENODEV;
+
+	/* Get first available minor */
+	mutex_lock(&device_list_lock);
+	minor = find_first_zero_bit(minors, GF_MAX_DEVS);
+	if (minor < GF_MAX_DEVS)
+		set_bit(minor, minors);
+	mutex_unlock(&device_list_lock);
+
+	if (minor == GF_MAX_DEVS) {
+		dev_err(gf_dev->dev, "no minor number available\n");
+		return -ENODEV;
+	}
+
+	/* Initialize char device structure */
+	cdev_init(&gf_dev->cdev, &gf_fops);
+	gf_dev->cdev.owner = THIS_MODULE;
+
+	/* Add the char device to system */
+	rc = cdev_add(&gf_dev->cdev, MKDEV(gf_dev_major, minor), 1);
+	if (rc < 0) {
+		dev_err(gf_dev->dev, "failed to add char device to system\n");
+		goto error_cdev;
+	}
+
+	/* Create class device */
+	classdev = device_create(gf_class, gf_dev->dev,
+				 MKDEV(gf_dev_major, minor), gf_dev,
+				 GF_DEV_NAME);
+	if (IS_ERR(classdev)) {
+		dev_err(gf_dev->dev, "failed to create class device\n");
+		rc = PTR_ERR(classdev);
+		goto error_class;
+	}
+
+	mutex_lock(&device_list_lock);
+	list_add(&gf_dev->device_entry, &device_list);
+	mutex_unlock(&device_list_lock);
+
+	return 0;
+
+error_class:
+	cdev_del(&gf_dev->cdev);
+error_cdev:
+	clear_bit(minor, minors);
+
+	return rc;
+}
+
+static void gf_del_cdev(struct gf_dev *gf_dev)
+{
+	/* Remove device from the list */
+	mutex_lock(&device_list_lock);
+	list_del(&gf_dev->device_entry);
+	mutex_unlock(&device_list_lock);
+
+	/* Free minor number */
+	clear_bit(MINOR(gf_dev->cdev.dev), minors);
+
+	/* Destroy device */
+	device_destroy(gf_class, gf_dev->cdev.dev);
+
+	/* Delete char device structure from system */
+	cdev_del(&gf_dev->cdev);
+}
+
 int gf_probe_common(struct device *dev)
 {
 	struct gf_dev *gf_dev;
-	unsigned long minor;
-	int rc;
-	int i;
+	int rc, i;
 
 	/* Allocate device instance */
 	gf_dev = devm_kzalloc(dev, sizeof(struct gf_dev), GFP_KERNEL);
@@ -750,47 +818,10 @@ int gf_probe_common(struct device *dev)
 	if (rc < 0)
 		return rc;
 
-	/* If we can allocate a minor number, hook up this device.
-	 * Reusing minors is fine so long as udev or mdev is working.
-	 */
-	mutex_lock(&device_list_lock);
-
-	minor = find_first_zero_bit(minors, GF_MAX_DEVS);
-	if (minor < GF_MAX_DEVS) {
-		struct device *classdev;
-
-		/* Initialize char device structure */
-		cdev_init(&gf_dev->cdev, &gf_fops);
-		gf_dev->cdev.owner = THIS_MODULE;
-
-		/* Add the char device to system */
-		rc = cdev_add(&gf_dev->cdev, MKDEV(gf_dev_major, minor), 1);
-		if (rc < 0) {
-			dev_err(gf_dev->dev,
-				"failed to add char device to system\n");
-			mutex_unlock(&device_list_lock);
-			return rc;
-		}
-
-		/* Create class device */
-		classdev = device_create(gf_class, gf_dev->dev,
-					 MKDEV(gf_dev_major, minor),
-					 gf_dev, GF_DEV_NAME);
-		if (IS_ERR(dev)) {
-			dev_err(gf_dev->dev, "failed to create class device\n");
-			mutex_unlock(&device_list_lock);
-			goto error_class;
-		}
-
-		set_bit(minor, minors);
-		list_add(&gf_dev->device_entry, &device_list);
-	} else {
-		dev_err(gf_dev->dev, "no minor number available\n");
-		mutex_unlock(&device_list_lock);
-		return -ENODEV;
-	}
-
-	mutex_unlock(&device_list_lock);
+	/* Create and associate char device */
+	rc = gf_add_cdev(gf_dev);
+	if (rc < 0)
+		return rc;
 
 	/* input device subsystem */
 	gf_dev->input = input_allocate_device();
@@ -854,13 +885,7 @@ error_input_reg:
 	if (gf_dev->input != NULL)
 		input_free_device(gf_dev->input);
 error_input_alloc:
-	mutex_lock(&device_list_lock);
-	list_del(&gf_dev->device_entry);
-	clear_bit(MINOR(gf_dev->cdev.dev), minors);
-	mutex_unlock(&device_list_lock);
-	device_destroy(gf_class, gf_dev->cdev.dev);
-error_class:
-	cdev_del(&gf_dev->cdev);
+	gf_del_cdev(gf_dev);
 
 	return rc;
 }
@@ -880,13 +905,9 @@ int gf_remove_common(struct device *dev)
 
 	input_free_device(gf_dev->input);
 
-	/* prevent new opens */
-	mutex_lock(&device_list_lock);
-	list_del(&gf_dev->device_entry);
-	clear_bit(MINOR(gf_dev->cdev.dev), minors);
-	mutex_unlock(&device_list_lock);
-	device_destroy(gf_class, gf_dev->cdev.dev);
-	cdev_del(&gf_dev->cdev);
+	/* Unregister and delete associated char device */
+	gf_del_cdev(gf_dev);
+
 	if (gf_dev->users == 0)
 		gf_cleanup(gf_dev);
 
