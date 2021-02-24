@@ -117,7 +117,9 @@ struct gf_dev {
 	bool avail;
 	char fb_black;
 	char wait_finger_down;
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
 	struct work_struct work;
+#endif
 #ifdef CONFIG_FINGERPRINT_FP_VREG_CONTROL
 	struct regulator *vreg;
 #endif

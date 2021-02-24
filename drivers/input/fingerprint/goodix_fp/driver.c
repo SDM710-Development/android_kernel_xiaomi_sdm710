@@ -15,8 +15,6 @@
  */
 #define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
 
-#define GOODIX_DRM_INTERFACE_WA
-
 #include <linux/clk.h>
 #include <linux/compat.h>
 #include <linux/delay.h>
@@ -34,7 +32,7 @@
 #include <linux/pm_wakeup.h>
 #include <net/netlink.h>
 
-#ifndef GOODIX_DRM_INTERFACE_WA
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
 #include <linux/fb.h>
 #include <drm/drm_bridge.h>
 #include <drm/drm_notifier.h>
@@ -504,7 +502,7 @@ static long gf_compat_ioctl(struct file *filp, unsigned int cmd,
 }
 #endif /* CONFIG_COMPAT */
 
-#ifndef GOODIX_DRM_INTERFACE_WA
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
 static void notification_work(struct work_struct *work)
 {
 	pr_debug("unblank\n");
@@ -633,7 +631,7 @@ static const struct file_operations gf_fops = {
 	.fasync = gf_fasync,
 };
 
-#ifndef GOODIX_DRM_INTERFACE_WA
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
 static int gf_drm_notify(struct notifier_block *nb, unsigned long val,
 			 void *data)
 {
@@ -867,7 +865,7 @@ int gf_probe_common(struct device *dev)
 	gf_dev->pwr_gpio = -EINVAL;
 	atomic_set(&gf_dev->users, 0);
 
-#ifndef GOODIX_DRM_INTERFACE_WA
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
 	INIT_WORK(&gf_dev->work, notification_work);
 #endif
 
@@ -889,7 +887,7 @@ int gf_probe_common(struct device *dev)
 	if (gf_clk_init(gf_dev))
 		goto error_clk_init;
 
-#ifndef GOODIX_DRM_INTERFACE_WA
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
 	gf_dev->notifier = goodix_noti_block;
 	rc = drm_register_client(&gf_dev->notifier);
 	if (rc < 0) {
@@ -905,7 +903,7 @@ int gf_probe_common(struct device *dev)
 
 	return rc;
 
-#ifndef GOODIX_DRM_INTERFACE_WA
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
 error_drm_reg:
 #endif
 	gf_clk_fini(gf_dev);
@@ -933,7 +931,8 @@ int gf_remove_common(struct device *dev)
 	/* Unregister and delete associated char device */
 	gf_del_cdev(gf_dev);
 
-#ifndef GOODIX_DRM_INTERFACE_WA
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
+	/* Unregister DRM notifier */
 	drm_unregister_client(&gf_dev->notifier);
 #endif
 

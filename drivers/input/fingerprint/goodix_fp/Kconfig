@@ -56,3 +56,10 @@ config FINGERPRINT_GOODIX_FP_NETLINK
 	help
 	  Say Y here if you want to enable notification support through
 	  netlink in Goodix fingerprint sensor driver.
+
+config FINGERPRINT_GOODIX_FP_DRM_EVENTS
+	bool "Handle blank/unblank events sent by DRM"
+	depends on FINGERPRINT_GOODIX_FP
+	help
+	  Say Y here if you want Goodix fingerprint sensor driver
+	  to listen and handle blank/unblank events sent by DRM
