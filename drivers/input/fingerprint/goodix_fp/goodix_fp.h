@@ -92,7 +92,6 @@ struct gf_ioc_chip_info {
 #define GF_IOC_CHIP_INFO	_IOW(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
 #define GF_IOC_NAV_EVENT	_IOW(GF_IOC_MAGIC, 14, gf_nav_event_t)
 
-#define GF_NETLINK_ENABLE	1
 #define GF_NET_EVENT_IRQ	1
 #define GF_NET_EVENT_FB_BLACK	2
 #define GF_NET_EVENT_FB_UNBLACK	3

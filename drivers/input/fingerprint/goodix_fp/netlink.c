@@ -20,7 +20,7 @@ static int pid = -1;
 
 int gf_sendnlmsg(const char *message)
 {
-#ifdef GF_NETLINK_ENABLE
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_NETLINK
 	struct nlmsghdr *nlh;
 	struct sk_buff *skb;
 	int rc;
@@ -77,7 +77,7 @@ static void gf_netlink_rcv(struct sk_buff *skb)
 
 int gf_netlink_init(void)
 {
-#ifdef GF_NETLINK_ENABLE
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_NETLINK
 	struct netlink_kernel_cfg cfg = {
 		.input = gf_netlink_rcv,
 	};
@@ -93,7 +93,7 @@ int gf_netlink_init(void)
 
 void gf_netlink_exit(void)
 {
-#ifdef GF_NETLINK_ENABLE
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_NETLINK
 	if (nl_sk) {
 		netlink_kernel_release(nl_sk);
 		nl_sk = NULL;

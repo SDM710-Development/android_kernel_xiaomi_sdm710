@@ -49,3 +49,10 @@ config FINGERPRINT_GOODIX_FP_CLK_CTRL
 	help
 	  Say Y here if you want to enable SPI clock control support
 	  in Goodix fingerprint sensor driver.
+
+config FINGERPRINT_GOODIX_FP_NETLINK
+	bool "Goodix fingerprint sensor netlink notification support"
+	depends on FINGERPRINT_GOODIX_FP
+	help
+	  Say Y here if you want to enable notification support through
+	  netlink in Goodix fingerprint sensor driver.
