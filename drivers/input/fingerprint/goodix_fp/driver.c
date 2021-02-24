@@ -531,7 +531,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 	mutex_lock(&device_list_lock);
 
 	list_for_each_entry(gf_dev, &device_list, device_entry) {
-		if (gf_dev->devt == inode->i_rdev) {
+		if (gf_dev->cdev.dev == inode->i_rdev) {
 			dev_dbg(gf_dev->dev, "Found\n");
 			status = 0;
 			break;
@@ -759,26 +759,38 @@ int gf_probe_common(struct device *dev)
 	if (minor < GF_MAX_DEVS) {
 		struct device *classdev;
 
-		gf_dev->devt = MKDEV(gf_dev_major, minor);
-		classdev = device_create(gf_class, gf_dev->dev, gf_dev->devt,
-					 gf_dev, GF_DEV_NAME);
-		if (!IS_ERR(dev)) {
-			set_bit(minor, minors);
-			list_add(&gf_dev->device_entry, &device_list);
-		} else {
-			dev_err(gf_dev->dev, "failed to create class device\n");
-			gf_dev->devt = 0;
-			rc = PTR_ERR(dev);
+		/* Initialize char device structure */
+		cdev_init(&gf_dev->cdev, &gf_fops);
+		gf_dev->cdev.owner = THIS_MODULE;
+
+		/* Add the char device to system */
+		rc = cdev_add(&gf_dev->cdev, MKDEV(gf_dev_major, minor), 1);
+		if (rc < 0) {
+			dev_err(gf_dev->dev,
+				"failed to add char device to system\n");
+			mutex_unlock(&device_list_lock);
+			return rc;
 		}
+
+		/* Create class device */
+		classdev = device_create(gf_class, gf_dev->dev,
+					 MKDEV(gf_dev_major, minor),
+					 gf_dev, GF_DEV_NAME);
+		if (IS_ERR(dev)) {
+			dev_err(gf_dev->dev, "failed to create class device\n");
+			mutex_unlock(&device_list_lock);
+			goto error_class;
+		}
+
+		set_bit(minor, minors);
+		list_add(&gf_dev->device_entry, &device_list);
 	} else {
 		dev_err(gf_dev->dev, "no minor number available\n");
-		rc = -ENODEV;
+		mutex_unlock(&device_list_lock);
+		return -ENODEV;
 	}
 
 	mutex_unlock(&device_list_lock);
-
-	if (rc < 0)
-		return rc;
 
 	/* input device subsystem */
 	gf_dev->input = input_allocate_device();
@@ -844,9 +856,11 @@ error_input_reg:
 error_input_alloc:
 	mutex_lock(&device_list_lock);
 	list_del(&gf_dev->device_entry);
-	clear_bit(MINOR(gf_dev->devt), minors);
+	clear_bit(MINOR(gf_dev->cdev.dev), minors);
 	mutex_unlock(&device_list_lock);
-	device_destroy(gf_class, gf_dev->devt);
+	device_destroy(gf_class, gf_dev->cdev.dev);
+error_class:
+	cdev_del(&gf_dev->cdev);
 
 	return rc;
 }
@@ -869,15 +883,16 @@ int gf_remove_common(struct device *dev)
 	/* prevent new opens */
 	mutex_lock(&device_list_lock);
 	list_del(&gf_dev->device_entry);
-	device_destroy(gf_class, gf_dev->devt);
-	clear_bit(MINOR(gf_dev->devt), minors);
+	clear_bit(MINOR(gf_dev->cdev.dev), minors);
+	mutex_unlock(&device_list_lock);
+	device_destroy(gf_class, gf_dev->cdev.dev);
+	cdev_del(&gf_dev->cdev);
 	if (gf_dev->users == 0)
 		gf_cleanup(gf_dev);
 
 #ifndef GOODIX_DRM_INTERFACE_WA
 	drm_unregister_client(&gf_dev->notifier);
 #endif
-	mutex_unlock(&device_list_lock);
 
 	return 0;
 }
@@ -889,17 +904,17 @@ static struct of_device_id gf_match_table[] = {
 
 static int __init gf_init(void)
 {
+	dev_t dev;
 	int rc;
 
 	/* Allocate chardev region and assign major number */
 	BUILD_BUG_ON(GF_MAX_DEVS > 256);
-	rc = __register_chrdev(gf_dev_major, 0, GF_MAX_DEVS, GF_CHRDEV_NAME,
-			       &gf_fops);
+	rc = alloc_chrdev_region(&dev, 0, GF_MAX_DEVS, GF_CHRDEV_NAME);
 	if (rc < 0) {
-		pr_err("failed to register char device\n");
+		pr_err("failed to alloc char device region\n");
 		return rc;
 	}
-	gf_dev_major = rc;
+	gf_dev_major = MAJOR(dev);
 
 	/* Create class */
 	gf_class = class_create(THIS_MODULE, GF_CLASS_NAME);
@@ -941,7 +956,7 @@ error_spi:
 error_plat:
 	class_destroy(gf_class);
 error_class:
-	unregister_chrdev(gf_dev_major, GF_CHRDEV_NAME);
+	unregister_chrdev_region(MKDEV(gf_dev_major, 0), GF_MAX_DEVS);
 
 	return rc;
 }
@@ -954,7 +969,7 @@ static void __exit gf_exit(void)
 	gf_unregister_spi_driver();
 	gf_unregister_platform_driver();
 	class_destroy(gf_class);
-	unregister_chrdev(gf_dev_major, GF_CHRDEV_NAME);
+	unregister_chrdev_region(MKDEV(gf_dev_major, 0), GF_MAX_DEVS);
 }
 
 module_exit(gf_exit);

@@ -6,6 +6,7 @@
 #ifndef __GF_SPI_H
 #define __GF_SPI_H
 
+#include <linux/cdev.h>
 #include <linux/types.h>
 #include <linux/notifier.h>
 
@@ -98,9 +99,9 @@ struct gf_ioc_chip_info {
 #define GF_NET_EVENT_FB_UNBLACK	3
 
 struct gf_dev {
-	dev_t devt;
 	struct list_head device_entry;
 	struct device *dev;
+	struct cdev cdev;
 	struct clk *core_clk;
 	struct clk *iface_clk;
 
