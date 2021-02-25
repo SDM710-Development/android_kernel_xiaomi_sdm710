@@ -528,58 +528,41 @@ static irqreturn_t gf_irq(int irq, void *handle)
 static int gf_open(struct inode *inode, struct file *filp)
 {
 	struct gf_dev *gf_dev;
-	int status = -ENXIO;
-	int rc = 0;
+	int rc;
 
-	mutex_lock(&device_list_lock);
+	gf_dev = container_of(inode->i_cdev, struct gf_dev, cdev);
 
-	list_for_each_entry(gf_dev, &device_list, device_entry) {
-		if (gf_dev->cdev.dev == inode->i_rdev) {
-			dev_dbg(gf_dev->dev, "Found\n");
-			status = 0;
-			break;
-		}
+	rc = gpio_request(gf_dev->reset_gpio, "goodix_reset");
+	if (rc) {
+		dev_err(gf_dev->dev, "failed to request RESET GPIO. rc = %d\n",
+			rc);
+		return -EPERM;
+	}
+	gpio_direction_output(gf_dev->reset_gpio, 0);
+
+	rc = gpio_request(gf_dev->irq_gpio, "goodix_irq");
+	if (rc) {
+		dev_err(gf_dev->dev, "failed to request IRQ GPIO. rc = %d\n",
+			rc);
+		return -EPERM;
+	}
+	gpio_direction_input(gf_dev->irq_gpio);
+
+	rc = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
+				  IRQF_TRIGGER_RISING | IRQF_ONESHOT, "gf",
+				  gf_dev);
+	if (!rc) {
+		enable_irq_wake(gf_dev->irq);
+		gf_dev->irq_enabled = 1;
+		gf_disable_irq(gf_dev);
 	}
 
-	if (status == 0) {
-		rc = gpio_request(gf_dev->reset_gpio, "goodix_reset");
-		if (rc) {
-			dev_err(gf_dev->dev,
-				"failed to request RESET GPIO. rc = %d\n", rc);
-			mutex_unlock(&device_list_lock);
-			return -EPERM;
-		}
-		gpio_direction_output(gf_dev->reset_gpio, 0);
+	gf_dev->users++;
+	filp->private_data = gf_dev;
+	nonseekable_open(inode, filp);
+	dev_dbg(gf_dev->dev, "Succeed to open device. irq = %d\n", gf_dev->irq);
 
-		rc = gpio_request(gf_dev->irq_gpio, "goodix_irq");
-		if (rc) {
-			dev_err(gf_dev->dev,
-				"Failed to request IRQ GPIO. rc = %d\n", rc);
-			mutex_unlock(&device_list_lock);
-			return -EPERM;
-		}
-		gpio_direction_input(gf_dev->irq_gpio);
-
-		rc = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
-					  IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-					  "gf", gf_dev);
-
-		if (!rc) {
-			enable_irq_wake(gf_dev->irq);
-			gf_dev->irq_enabled = 1;
-			gf_disable_irq(gf_dev);
-		}
-
-		gf_dev->users++;
-		filp->private_data = gf_dev;
-		nonseekable_open(inode, filp);
-		dev_dbg(gf_dev->dev, "Succeed to open device. irq = %d\n", gf_dev->irq);
-	} else {
-		dev_dbg(gf_dev->dev, "No device for minor %d\n", iminor(inode));
-	}
-	mutex_unlock(&device_list_lock);
-
-	return status;
+	return rc;
 }
 
 static int gf_fasync(int fd, struct file *filp, int mode)
@@ -594,7 +577,6 @@ static int gf_release(struct inode *inode, struct file *filp)
 	struct gf_dev *gf_dev = filp->private_data;
 	int status = 0;
 
-	mutex_lock(&device_list_lock);
 	filp->private_data = NULL;
 
 	/* last close?? */
@@ -608,7 +590,6 @@ static int gf_release(struct inode *inode, struct file *filp)
 		gpio_free(gf_dev->reset_gpio);
 		gf_set_power(gf_dev, false);
 	}
-	mutex_unlock(&device_list_lock);
 
 	return status;
 }
