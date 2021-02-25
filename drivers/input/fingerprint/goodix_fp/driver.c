@@ -30,6 +30,7 @@
 #include <linux/irq.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
+#include <linux/of_gpio.h>
 #include <linux/pm_wakeup.h>
 #include <net/netlink.h>
 
@@ -772,6 +773,59 @@ static void gf_del_input(struct gf_dev *gf_dev)
 
 	/* Free input device */
 	input_free_device(gf_dev->input);
+}
+
+static int gf_parse_dts(struct gf_dev *gf_dev)
+{
+	int rc;
+
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_POWER_CTRL
+	/* get pwr resource */
+	rc = of_get_named_gpio(gf_dev->dev->of_node, "fp-gpio-pwr", 0);
+	if (gpio_is_valid(rc)) {
+		gf_dev->pwr_gpio = rc;
+
+		rc = devm_gpio_request(gf_dev->dev, gf_dev->pwr_gpio,
+				       "goodix_pwr");
+		if (rc < 0) {
+			dev_err(gf_dev->dev, "failed to request PWR GPIO\n");
+			return rc;
+		}
+	} else {
+		gf_dev->pwr_gpio = -1; /* do not use pwr gpio */
+	}
+#endif
+
+	/* get reset resource */
+	rc = of_get_named_gpio(gf_dev->dev->of_node, "goodix,gpio-reset", 0);
+	if (!gpio_is_valid(rc)) {
+		dev_err(gf_dev->dev, "RESET GPIO is invalid\n");
+		return rc;
+	}
+	gf_dev->reset_gpio = rc;
+
+	/* get irq resourece */
+	rc = of_get_named_gpio(gf_dev->dev->of_node, "goodix,gpio-irq", 0);
+	if (!gpio_is_valid(rc)) {
+		dev_info(gf_dev->dev, "IRQ GPIO is invalid\n");
+		return rc;
+	}
+	gf_dev->irq_gpio = rc;
+
+	return 0;
+}
+
+static void gf_cleanup(struct gf_dev *gf_dev)
+{
+	if (gpio_is_valid(gf_dev->irq_gpio)) {
+		gpio_free(gf_dev->irq_gpio);
+		dev_info(gf_dev->dev, "remove irq_gpio success\n");
+	}
+
+	if (gpio_is_valid(gf_dev->reset_gpio)) {
+		gpio_free(gf_dev->reset_gpio);
+		dev_info(gf_dev->dev, "remove reset_gpio success\n");
+	}
 }
 
 int gf_probe_common(struct device *dev)

@@ -126,9 +126,6 @@ struct gf_dev {
 int gf_probe_common(struct device *dev);
 int gf_remove_common(struct device *dev);
 
-int gf_parse_dts(struct gf_dev *gf_dev);
-void gf_cleanup(struct gf_dev *gf_dev);
-
 #ifdef CONFIG_FINGERPRINT_GOODIX_FP_SPI
 
 int gf_register_spi_driver(struct of_device_id *match_table);
