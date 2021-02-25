@@ -1,4 +1,4 @@
-config FINGERPRINT_GOODIX_FOD
+config FINGERPRINT_GOODIX_FP
 	tristate "Finger print card goodix fod"
 	depends on INPUT_FINGERPRINT
 	help

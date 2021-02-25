@@ -50,7 +50,7 @@
 #include <drm/drm_notifier.h>
 #endif
 
-#include "gf_spi.h"
+#include "goodix_fp.h"
 
 #if defined(USE_SPI_BUS)
 #include <linux/spi/spi.h>
