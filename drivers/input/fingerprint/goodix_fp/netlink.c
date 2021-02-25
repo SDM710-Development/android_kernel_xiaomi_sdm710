@@ -20,7 +20,6 @@ static int pid = -1;
 
 int gf_sendnlmsg(const char *message)
 {
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_NETLINK
 	struct nlmsghdr *nlh;
 	struct sk_buff *skb;
 	int rc;
@@ -47,12 +46,8 @@ int gf_sendnlmsg(const char *message)
 		pr_err("failed to send msg to userspace. rc = %d\n", rc);
 
 	return rc;
-#else
-	return 0;
-#endif
 }
 
-__maybe_unused
 static void gf_netlink_rcv(struct sk_buff *skb)
 {
 	struct nlmsghdr *nlh;
@@ -77,7 +72,6 @@ static void gf_netlink_rcv(struct sk_buff *skb)
 
 int gf_netlink_init(void)
 {
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_NETLINK
 	struct netlink_kernel_cfg cfg = {
 		.input = gf_netlink_rcv,
 	};
@@ -87,16 +81,14 @@ int gf_netlink_init(void)
 		pr_err("goodix_fp: cannot create netlink socket\n");
 		return -EIO;
 	}
-#endif
+
 	return 0;
 }
 
 void gf_netlink_exit(void)
 {
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_NETLINK
 	if (nl_sk) {
 		netlink_kernel_release(nl_sk);
 		nl_sk = NULL;
 	}
-#endif
 }

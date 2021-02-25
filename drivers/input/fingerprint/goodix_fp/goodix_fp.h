@@ -166,8 +166,28 @@ void gf_unregister_platform_driver(void)
 
 #endif
 
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_NETLINK
+
 void gf_sendnlmsg(char *message);
 int gf_netlink_init(void);
 void gf_netlink_exit(void);
+
+#else
+
+static inline
+void gf_sendnlmsg(char *message)
+{
+}
+
+int gf_netlink_init(void)
+{
+	return 0;
+}
+
+void gf_netlink_exit(void)
+{
+}
+
+#endif
 
 #endif /*__GF_SPI_H*/
