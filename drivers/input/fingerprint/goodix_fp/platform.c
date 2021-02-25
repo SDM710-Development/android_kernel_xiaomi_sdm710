@@ -10,8 +10,6 @@
 
 #include "goodix_fp.h"
 
-#if defined(CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM)
-
 static int gf_probe_platform(struct platform_device *pdev)
 {
 	return gf_probe_common(&pdev->dev);
@@ -48,5 +46,3 @@ void gf_unregister_platform_driver(void)
 {
 	platform_driver_unregister(&gf_platform_driver);
 }
-
-#endif
