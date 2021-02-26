@@ -633,8 +633,8 @@ static const struct file_operations gf_fops = {
 };
 
 #ifndef GOODIX_DRM_INTERFACE_WA
-static int goodix_fb_state_chg_callback(struct notifier_block *nb,
-					unsigned long val, void *data)
+static int gf_drm_notify(struct notifier_block *nb, unsigned long val,
+			 void *data)
 {
 	struct fb_event *evdata = data;
 	char temp[4] = { 0x0 };
@@ -644,16 +644,19 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 	if (val != DRM_EVENT_BLANK)
 		return 0;
 
-	dev_dbg(gf_dev->dev, "[info] %s go to the goodix_fb_state_chg_callback value = %d\n",
-		 __func__, (int)val);
+	dev_dbg(gf_dev->dev, "DRM notification with value: %lu\n", val);
 
 	gf_dev = container_of(nb, struct gf_dev, notifier);
-	if (evdata && evdata->data && val == DRM_EVENT_BLANK && gf_dev) {
-		blank = *(int *)(evdata->data);
+
+	if (evdata && evdata->data) {
+		blank = *(unsigned int *)(evdata->data);
 
 		switch (blank) {
 		case DRM_BLANK_POWERDOWN:
 			if (gf_dev->avail) {
+				dev_info(gf_dev->dev,
+					 "received DRM_BLANK_POWERDOWN\n");
+
 				gf_dev->fb_black = 1;
 				gf_dev->wait_finger_down = true;
 				temp[0] = GF_NET_EVENT_FB_BLACK;
@@ -665,6 +668,9 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 			break;
 		case DRM_BLANK_UNBLANK:
 			if (gf_dev->avail) {
+				dev_info(gf_dev->dev,
+					 "received DRM_BLANK_UNBLANK\n");
+
 				gf_dev->fb_black = 0;
 				temp[0] = GF_NET_EVENT_FB_UNBLACK;
 				gf_sendnlmsg(temp);
@@ -674,7 +680,7 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 			}
 			break;
 		default:
-			dev_dbg(gf_dev->dev, "default\n");
+			dev_dbg(gf_dev->dev, "received blank: %u\n", blank);
 			break;
 		}
 	}
@@ -683,7 +689,7 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 }
 
 static struct notifier_block goodix_noti_block = {
-	.notifier_call = goodix_fb_state_chg_callback,
+	.notifier_call = gf_drm_notify,
 };
 #endif
 
