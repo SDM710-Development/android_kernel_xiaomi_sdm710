@@ -514,13 +514,14 @@ static void notification_work(struct work_struct *work)
 
 static irqreturn_t gf_irq(int irq, void *handle)
 {
-	char temp[4] = { GF_NET_EVENT_IRQ, };
 	struct gf_dev *gf_dev = handle;
 
 	dev_info(gf_dev->dev, "interrupt received\n");
 
 	__pm_wakeup_event(&fp_wakelock, WAKELOCK_HOLD_TIME);
-	gf_sendnlmsg(temp);
+
+	/* Sent netlink message */
+	gf_sendnlmsg(GF_NET_EVENT_IRQ);
 
 	/* Send fasync notification */
 	kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
@@ -637,7 +638,6 @@ static int gf_drm_notify(struct notifier_block *nb, unsigned long val,
 			 void *data)
 {
 	struct fb_event *evdata = data;
-	char temp[4] = { 0x0 };
 	struct gf_dev *gf_dev;
 	unsigned int blank;
 
@@ -659,8 +659,9 @@ static int gf_drm_notify(struct notifier_block *nb, unsigned long val,
 
 				gf_dev->fb_black = 1;
 				gf_dev->wait_finger_down = true;
-				temp[0] = GF_NET_EVENT_FB_BLACK;
-				gf_sendnlmsg(temp);
+
+				/* Send netlink message */
+				gf_sendnlmsg(GF_NET_EVENT_FB_BLACK);
 
 				/* Send fasync notification */
 				kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
@@ -672,8 +673,9 @@ static int gf_drm_notify(struct notifier_block *nb, unsigned long val,
 					 "received DRM_BLANK_UNBLANK\n");
 
 				gf_dev->fb_black = 0;
-				temp[0] = GF_NET_EVENT_FB_UNBLACK;
-				gf_sendnlmsg(temp);
+
+				/* Send netlink message */
+				gf_sendnlmsg(GF_NET_EVENT_FB_UNBLACK);
 
 				/* Send fasync notification */
 				kill_fasync(&gf_dev->async, SIGIO, POLL_IN);

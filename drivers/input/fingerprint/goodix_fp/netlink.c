@@ -13,19 +13,19 @@
 #include <net/sock.h>
 #include <net/netlink.h>
 
+#include "goodix_fp.h"
+
 #define MAX_MSGSIZE 32
 
 static struct sock *nl_sk __maybe_unused;
 static int pid = -1;
 
-int gf_sendnlmsg(const char *message)
+int gf_sendnlmsg(char message)
 {
 	struct nlmsghdr *nlh;
 	struct sk_buff *skb;
+	char *buf;
 	int rc;
-
-	if (!message)
-		return -EINVAL;
 
 	if (pid < 1) {
 		pr_info("cannot send msg... no receiver\n");
@@ -39,7 +39,12 @@ int gf_sendnlmsg(const char *message)
 	nlh = nlmsg_put(skb, 0, 0, 0, MAX_MSGSIZE, 0);
 	NETLINK_CB(skb).portid = 0;
 	NETLINK_CB(skb).dst_group = 0;
-	strlcpy(nlmsg_data(nlh), message, MAX_MSGSIZE);
+
+	buf = nlmsg_data(nlh);
+	buf[0] = message;
+	buf[1] = '\0';
+
+	pr_info("goodix_fp: sending message %d to pid %d\n", message, pid);
 
 	rc = netlink_unicast(nl_sk, skb, pid, MSG_DONTWAIT);
 	if (rc < 0)
