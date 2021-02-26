@@ -517,6 +517,8 @@ static irqreturn_t gf_irq(int irq, void *handle)
 	char temp[4] = { GF_NET_EVENT_IRQ, };
 	struct gf_dev *gf_dev = handle;
 
+	dev_info(gf_dev->dev, "interrupt received\n");
+
 	__pm_wakeup_event(&fp_wakelock, WAKELOCK_HOLD_TIME);
 	gf_sendnlmsg(temp);
 
