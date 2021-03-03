@@ -644,9 +644,9 @@ static int gf_drm_notify(struct notifier_block *nb, unsigned long val,
 	if (val != DRM_EVENT_BLANK)
 		return 0;
 
-	dev_dbg(gf_dev->dev, "DRM notification with value: %lu\n", val);
-
 	gf_dev = container_of(nb, struct gf_dev, notifier);
+
+	dev_dbg(gf_dev->dev, "DRM notification with value: %lu\n", val);
 
 	if (evdata && evdata->data) {
 		blank = *(unsigned int *)(evdata->data);
