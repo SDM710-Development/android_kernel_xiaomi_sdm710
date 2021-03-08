@@ -2,7 +2,8 @@
 # Makefile for the fingerprint drivers.
 #
 
-subdir-ccflags-y := -finline-functions -ftree-vectorize -funroll-loops
+subdir-ccflags-y := \
+    -fdata-sections -ffunction-sections -finline-functions -ftree-vectorize -funroll-loops
 
 # Each configuration option enables a list of files.
 
