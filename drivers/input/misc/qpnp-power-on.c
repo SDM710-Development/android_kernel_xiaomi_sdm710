@@ -437,7 +437,7 @@ static int qpnp_pon_set_dbc(struct qpnp_pon *pon, u32 delay)
 	}
 
 	pon->dbc_time_us = delay;
-	dev_err(&pon->pdev->dev, "pon dbc_time_us = %d\n", pon->dbc_time_us);
+	dev_info(&pon->pdev->dev, "pon dbc_time_us = %d\n", pon->dbc_time_us);
 
 unlock:
 	if (pon->pon_input)
@@ -2262,7 +2262,7 @@ static int debug_pon_on_off_reg(struct qpnp_pon *pon)
 	if (to_spmi_device(pon->pdev->dev.parent)->usid)
 		return 0;
 
-	printk("power-on reg:");
+	dev_dbg(&pon->pdev->dev, "power-on reg:");
 	for (i = QPNP_PON_REASON1(pon); i <= QPNP_S3_RESET_REASON(pon); i++) {
 		rc = regmap_read(pon->regmap, i, &pon_sts);
 		if (rc) {
@@ -2271,7 +2271,7 @@ static int debug_pon_on_off_reg(struct qpnp_pon *pon)
 					rc);
 			return rc;
 		}
-		printk("0x%x:0x%x ", i, pon_sts);
+		dev_dbg(&pon->pdev->dev, "0x%x:0x%x ", i, pon_sts);
 	}
 	rc = regmap_read(pon->regmap, QPNP_PON_KPDPWR_S2_CNTL(pon), &pon_sts);
 	if (rc) {
@@ -2280,7 +2280,8 @@ static int debug_pon_on_off_reg(struct qpnp_pon *pon)
 				rc);
 		return rc;
 	}
-	printk("\n0x%x:0x%x ", QPNP_PON_KPDPWR_S2_CNTL(pon), pon_sts);
+	dev_dbg(&pon->pdev->dev, "\n0x%x:0x%x ", QPNP_PON_KPDPWR_S2_CNTL(pon),
+		pon_sts);
 
 	rc = regmap_read(pon->regmap, QPNP_PON_KPDPWR_RESIN_S2_CNTL(pon), &pon_sts);
 	if (rc) {
@@ -2289,7 +2290,8 @@ static int debug_pon_on_off_reg(struct qpnp_pon *pon)
 				rc);
 		return rc;
 	}
-	printk("0x%x:0x%x ", QPNP_PON_KPDPWR_RESIN_S2_CNTL(pon), pon_sts);
+	dev_dbg(&pon->pdev->dev, "0x%x:0x%x ",
+		QPNP_PON_KPDPWR_RESIN_S2_CNTL(pon), pon_sts);
 
 	rc = regmap_read(pon->regmap, QPNP_PON_PS_HOLD_RST_CTL(pon), &pon_sts);
 	if (rc) {
@@ -2298,7 +2300,8 @@ static int debug_pon_on_off_reg(struct qpnp_pon *pon)
 				rc);
 		return rc;
 	}
-	printk("0x%x:0x%x\n", QPNP_PON_PS_HOLD_RST_CTL(pon), pon_sts);
+	dev_dbg(&pon->pdev->dev, "0x%x:0x%x\n", QPNP_PON_PS_HOLD_RST_CTL(pon),
+		pon_sts);
 
 	rc = regmap_read(pon->regmap, 0x5953, &pon_sts);
 	if (rc) {
@@ -2318,7 +2321,8 @@ static int debug_pon_on_off_reg(struct qpnp_pon *pon)
 		}
 
 		 /*slave id save in 0x5953[6:0],periph index save in 0x5952*/
-		printk("OCP slave id = 0x%x, index = 0x%x", data & 0x7F, pon_sts);
+		dev_dbg(&pon->pdev->dev, "OCP slave id = 0x%x, index = 0x%x",
+			data & 0x7F, pon_sts);
 	}
 
 
@@ -2724,7 +2728,7 @@ static int qpnp_pon_probe(struct platform_device *pdev)
 
 	pon->kpdpwr_dbc_enable = of_property_read_bool(pon->pdev->dev.of_node,
 					"qcom,kpdpwr-sw-debounce");
-	dev_err(&pdev->dev, "pon kpdpwr_dbc_enable = %d\n", pon->kpdpwr_dbc_enable);
+	dev_info(&pdev->dev, "pon kpdpwr_dbc_enable = %d\n", pon->kpdpwr_dbc_enable);
 
 	rc = of_property_read_u32(pon->pdev->dev.of_node,
 				"qcom,warm-reset-poweroff-type",
