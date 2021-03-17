@@ -1355,7 +1355,7 @@ static struct device_type rc_dev_type = {
 	.uevent		= rc_dev_uevent,
 };
 
-struct rc_dev *rc_allocate_device(void)
+struct rc_dev *rc_allocate_device(enum rc_driver_type type)
 {
 	struct rc_dev *dev;
 
@@ -1363,24 +1363,30 @@ struct rc_dev *rc_allocate_device(void)
 	if (!dev)
 		return NULL;
 
-	dev->input_dev = input_allocate_device();
-	if (!dev->input_dev) {
-		kfree(dev);
-		return NULL;
+	if (type != RC_DRIVER_IR_RAW_TX) {
+		dev->input_dev = input_allocate_device();
+		if (!dev->input_dev) {
+			kfree(dev);
+			return NULL;
+		}
+
+		dev->input_dev->getkeycode = ir_getkeycode;
+		dev->input_dev->setkeycode = ir_setkeycode;
+		input_set_drvdata(dev->input_dev, dev);
+
+		setup_timer(&dev->timer_keyup, ir_timer_keyup,
+			    (unsigned long)dev);
+
+		spin_lock_init(&dev->rc_map.lock);
+		spin_lock_init(&dev->keylock);
 	}
-
-	dev->input_dev->getkeycode = ir_getkeycode;
-	dev->input_dev->setkeycode = ir_setkeycode;
-	input_set_drvdata(dev->input_dev, dev);
-
-	spin_lock_init(&dev->rc_map.lock);
-	spin_lock_init(&dev->keylock);
 	mutex_init(&dev->lock);
-	setup_timer(&dev->timer_keyup, ir_timer_keyup, (unsigned long)dev);
 
 	dev->dev.type = &rc_dev_type;
 	dev->dev.class = &rc_class;
 	device_initialize(&dev->dev);
+
+	dev->driver_type = type;
 
 	__module_get(THIS_MODULE);
 	return dev;
@@ -1403,17 +1409,42 @@ void rc_free_device(struct rc_dev *dev)
 }
 EXPORT_SYMBOL_GPL(rc_free_device);
 
-int rc_register_device(struct rc_dev *dev)
+static void devm_rc_alloc_release(struct device *dev, void *res)
 {
-	static bool raw_init = false; /* raw decoders loaded? */
-	struct rc_map *rc_map;
-	const char *path;
-	int attr = 0;
-	int minor;
+	rc_free_device(*(struct rc_dev **)res);
+}
+
+struct rc_dev *devm_rc_allocate_device(struct device *dev,
+				       enum rc_driver_type type)
+{
+	struct rc_dev **dr, *rc;
+
+	dr = devres_alloc(devm_rc_alloc_release, sizeof(*dr), GFP_KERNEL);
+	if (!dr)
+		return NULL;
+
+	rc = rc_allocate_device(type);
+	if (!rc) {
+		devres_free(dr);
+		return NULL;
+	}
+
+	rc->dev.parent = dev;
+	rc->managed_alloc = true;
+	*dr = rc;
+	devres_add(dev, dr);
+
+	return rc;
+}
+EXPORT_SYMBOL_GPL(devm_rc_allocate_device);
+
+static int rc_setup_rx_device(struct rc_dev *dev)
+{
 	int rc;
+	struct rc_map *rc_map;
 	u64 rc_type;
 
-	if (!dev || !dev->map_name)
+	if (!dev->map_name)
 		return -EINVAL;
 
 	rc_map = rc_map_get(dev->map_name);
@@ -1421,6 +1452,21 @@ int rc_register_device(struct rc_dev *dev)
 		rc_map = rc_map_get(RC_MAP_EMPTY);
 	if (!rc_map || !rc_map->scan || rc_map->size == 0)
 		return -EINVAL;
+
+	rc = ir_setkeytable(dev, rc_map);
+	if (rc)
+		return rc;
+
+	rc_type = BIT_ULL(rc_map->rc_type);
+
+	if (dev->change_protocol) {
+		u64 rc_type = (1ll << rc_map->rc_type);
+
+		rc = dev->change_protocol(dev, &rc_type);
+		if (rc < 0)
+			goto out_table;
+		dev->enabled_protocols = rc_type;
+	}
 
 	set_bit(EV_KEY, dev->input_dev->evbit);
 	set_bit(EV_REP, dev->input_dev->evbit);
@@ -1430,42 +1476,6 @@ int rc_register_device(struct rc_dev *dev)
 		dev->input_dev->open = ir_open;
 	if (dev->close)
 		dev->input_dev->close = ir_close;
-
-	minor = ida_simple_get(&rc_ida, 0, RC_DEV_MAX, GFP_KERNEL);
-	if (minor < 0)
-		return minor;
-
-	dev->minor = minor;
-	dev_set_name(&dev->dev, "rc%u", dev->minor);
-	dev_set_drvdata(&dev->dev, dev);
-	atomic_set(&dev->initialized, 0);
-
-	dev->dev.groups = dev->sysfs_groups;
-	dev->sysfs_groups[attr++] = &rc_dev_protocol_attr_grp;
-	if (dev->s_filter)
-		dev->sysfs_groups[attr++] = &rc_dev_filter_attr_grp;
-	if (dev->s_wakeup_filter)
-		dev->sysfs_groups[attr++] = &rc_dev_wakeup_filter_attr_grp;
-	if (dev->change_wakeup_protocol)
-		dev->sysfs_groups[attr++] = &rc_dev_wakeup_protocol_attr_grp;
-	dev->sysfs_groups[attr++] = NULL;
-
-	rc = device_add(&dev->dev);
-	if (rc)
-		goto out_unlock;
-
-	rc = ir_setkeytable(dev, rc_map);
-	if (rc)
-		goto out_dev;
-
-	dev->input_dev->dev.parent = &dev->dev;
-	memcpy(&dev->input_dev->id, &dev->input_id, sizeof(dev->input_id));
-	dev->input_dev->phys = dev->input_phys;
-	dev->input_dev->name = dev->input_name;
-
-	rc = input_register_device(dev->input_dev);
-	if (rc)
-		goto out_table;
 
 	/*
 	 * Default delay of 250ms is too short for some protocols, especially
@@ -1482,52 +1492,103 @@ int rc_register_device(struct rc_dev *dev)
 	 */
 	dev->input_dev->rep[REP_PERIOD] = 125;
 
+	dev->input_dev->dev.parent = &dev->dev;
+	memcpy(&dev->input_dev->id, &dev->input_id, sizeof(dev->input_id));
+	dev->input_dev->phys = dev->input_phys;
+	dev->input_dev->name = dev->input_name;
+
+	/* rc_open will be called here */
+	rc = input_register_device(dev->input_dev);
+	if (rc)
+		goto out_table;
+
+	return 0;
+
+out_table:
+	ir_free_table(&dev->rc_map);
+
+	return rc;
+}
+
+static void rc_free_rx_device(struct rc_dev *dev)
+{
+	if (!dev || dev->driver_type == RC_DRIVER_IR_RAW_TX)
+		return;
+
+	ir_free_table(&dev->rc_map);
+
+	input_unregister_device(dev->input_dev);
+	dev->input_dev = NULL;
+}
+
+int rc_register_device(struct rc_dev *dev)
+{
+	static bool raw_init; /* 'false' default value, raw decoders loaded? */
+	const char *path;
+	int attr = 0;
+	int minor;
+	int rc;
+
+	if (!dev)
+		return -EINVAL;
+
+	minor = ida_simple_get(&rc_ida, 0, RC_DEV_MAX, GFP_KERNEL);
+	if (minor < 0)
+		return minor;
+
+	dev->minor = minor;
+	dev_set_name(&dev->dev, "rc%u", dev->minor);
+	dev_set_drvdata(&dev->dev, dev);
+	atomic_set(&dev->initialized, 0);
+
+	dev->dev.groups = dev->sysfs_groups;
+	if (dev->driver_type != RC_DRIVER_IR_RAW_TX)
+		dev->sysfs_groups[attr++] = &rc_dev_protocol_attr_grp;
+	if (dev->s_filter)
+		dev->sysfs_groups[attr++] = &rc_dev_filter_attr_grp;
+	if (dev->s_wakeup_filter)
+		dev->sysfs_groups[attr++] = &rc_dev_wakeup_filter_attr_grp;
+	if (dev->change_wakeup_protocol)
+		dev->sysfs_groups[attr++] = &rc_dev_wakeup_protocol_attr_grp;
+	dev->sysfs_groups[attr++] = NULL;
+
+	rc = device_add(&dev->dev);
+	if (rc)
+		goto out_unlock;
+
 	path = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
 	dev_info(&dev->dev, "%s as %s\n",
 		dev->input_name ?: "Unspecified device", path ?: "N/A");
 	kfree(path);
 
-	if (dev->driver_type == RC_DRIVER_IR_RAW) {
+	if (dev->driver_type != RC_DRIVER_IR_RAW_TX) {
+		rc = rc_setup_rx_device(dev);
+		if (rc)
+			goto out_dev;
+	}
+
+	if (dev->driver_type == RC_DRIVER_IR_RAW ||
+	    dev->driver_type == RC_DRIVER_IR_RAW_TX) {
 		if (!raw_init) {
 			request_module_nowait("ir-lirc-codec");
 			raw_init = true;
 		}
 		rc = ir_raw_event_register(dev);
 		if (rc < 0)
-			goto out_input;
+			goto out_rx;
 	}
-
-	rc_type = BIT_ULL(rc_map->rc_type);
-
-	if (dev->change_protocol) {
-		rc = dev->change_protocol(dev, &rc_type);
-		if (rc < 0)
-			goto out_raw;
-		dev->enabled_protocols = rc_type;
-	}
-
-	if (dev->driver_type == RC_DRIVER_IR_RAW)
-		ir_raw_load_modules(&rc_type);
 
 	/* Allow the RC sysfs nodes to be accessible */
 	atomic_set(&dev->initialized, 1);
 
-	IR_dprintk(1, "Registered rc%u (driver: %s, remote: %s, mode %s)\n",
+	IR_dprintk(1, "Registered rc%u (driver: %s)\n",
 		   dev->minor,
-		   dev->driver_name ? dev->driver_name : "unknown",
-		   rc_map->name ? rc_map->name : "unknown",
-		   dev->driver_type == RC_DRIVER_IR_RAW ? "raw" : "cooked");
+		   dev->driver_name ? dev->driver_name : "unknown");
 
 	return 0;
 
-out_raw:
-	if (dev->driver_type == RC_DRIVER_IR_RAW)
-		ir_raw_event_unregister(dev);
-out_input:
-	input_unregister_device(dev->input_dev);
-	dev->input_dev = NULL;
-out_table:
-	ir_free_table(&dev->rc_map);
+out_rx:
+	rc_free_rx_device(dev);
 out_dev:
 	device_del(&dev->dev);
 out_unlock:
@@ -1535,6 +1596,33 @@ out_unlock:
 	return rc;
 }
 EXPORT_SYMBOL_GPL(rc_register_device);
+
+static void devm_rc_release(struct device *dev, void *res)
+{
+	rc_unregister_device(*(struct rc_dev **)res);
+}
+
+int devm_rc_register_device(struct device *parent, struct rc_dev *dev)
+{
+	struct rc_dev **dr;
+	int ret;
+
+	dr = devres_alloc(devm_rc_release, sizeof(*dr), GFP_KERNEL);
+	if (!dr)
+		return -ENOMEM;
+
+	ret = rc_register_device(dev);
+	if (ret) {
+		devres_free(dr);
+		return ret;
+	}
+
+	*dr = dev;
+	devres_add(parent, dr);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(devm_rc_register_device);
 
 void rc_unregister_device(struct rc_dev *dev)
 {
@@ -1546,18 +1634,14 @@ void rc_unregister_device(struct rc_dev *dev)
 	if (dev->driver_type == RC_DRIVER_IR_RAW)
 		ir_raw_event_unregister(dev);
 
-	/* Freeing the table should also call the stop callback */
-	ir_free_table(&dev->rc_map);
-	IR_dprintk(1, "Freed keycode table\n");
-
-	input_unregister_device(dev->input_dev);
-	dev->input_dev = NULL;
+	rc_free_rx_device(dev);
 
 	device_del(&dev->dev);
 
 	ida_simple_remove(&rc_ida, dev->minor);
 
-	rc_free_device(dev);
+	if (!dev->managed_alloc)
+		rc_free_device(dev);
 }
 
 EXPORT_SYMBOL_GPL(rc_unregister_device);
