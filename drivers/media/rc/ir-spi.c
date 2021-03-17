@@ -48,8 +48,10 @@ static int ir_spi_tx(struct rc_dev *dev,
 
 		periods = DIV_ROUND_CLOSEST(buffer[i] * idata->freq, 1000000);
 
-		if (len + periods >= IR_SPI_MAX_BUFSIZE)
-			return -EINVAL;
+		if (len + periods >= IR_SPI_MAX_BUFSIZE) {
+			len += periods;
+			continue;
+		}
 
 		/*
 		 * the first value in buffer is a pulse, so that 0, 2, 4, ...
@@ -59,6 +61,13 @@ static int ir_spi_tx(struct rc_dev *dev,
 		val = (i % 2) ? idata->space : idata->pulse;
 		for (j = 0; j < periods; j++)
 			idata->tx_buf[len++] = val;
+	}
+
+	/* Check for buffer overrun */
+	if (len >= IR_SPI_MAX_BUFSIZE) {
+		dev_err(&dev->dev, "buffer overrun - need %lu bytes\n",
+			len * sizeof(idata->tx_buf[0]));
+		return -ENOSPC;
 	}
 
 	memset(&xfer, 0, sizeof(xfer));
