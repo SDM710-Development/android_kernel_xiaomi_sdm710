@@ -40,6 +40,8 @@ static int ir_spi_tx(struct rc_dev *dev,
 	struct ir_spi_data *idata = dev->priv;
 	struct spi_transfer xfer;
 
+	dev_info(&dev->dev, "request to transmit %u entries\n", count);
+
 	/* convert the pulse/space signal to raw binary signal */
 	for (i = 0; i < count; i++) {
 		unsigned int periods;
@@ -70,11 +72,17 @@ static int ir_spi_tx(struct rc_dev *dev,
 		return -ENOSPC;
 	}
 
+	dev_info(&dev->dev, "raw binary stream size: %lu bytes\n",
+		 len * sizeof(idata->tx_buf[0]));
+
 	memset(&xfer, 0, sizeof(xfer));
 
 	xfer.speed_hz = idata->freq * 16;
 	xfer.len = len * sizeof(*idata->tx_buf);
 	xfer.tx_buf = idata->tx_buf;
+
+	dev_info(&dev->dev, "xfer parameters - freq: %u, len: %u\n",
+		 xfer.speed_hz, xfer.len);
 
 	if (idata->regulator) {
 		ret = regulator_enable(idata->regulator);
@@ -96,6 +104,8 @@ static int ir_spi_set_tx_carrier(struct rc_dev *dev, u32 carrier)
 {
 	struct ir_spi_data *idata = dev->priv;
 
+	dev_info(&dev->dev, "set tx carrier to %u\n", carrier);
+
 	if (!carrier)
 		return -EINVAL;
 
@@ -108,6 +118,8 @@ static int ir_spi_set_duty_cycle(struct rc_dev *dev, u32 duty_cycle)
 {
 	struct ir_spi_data *idata = dev->priv;
 	int bits = (duty_cycle * 15) / 100;
+
+	dev_info(&dev->dev, "set duty cycle to %u\n", duty_cycle);
 
 	idata->pulse = GENMASK(bits, 0);
 
