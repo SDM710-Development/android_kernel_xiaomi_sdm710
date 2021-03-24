@@ -39,8 +39,6 @@
 #include "sde_core_perf.h"
 #include "sde_trace.h"
 
-#include "dsi_display.h"
-
 #define SDE_PSTATES_MAX (SDE_STAGE_MAX * 4)
 #define SDE_MULTIRECT_PLANE_MAX (SDE_STAGE_MAX * 2)
 
@@ -4797,63 +4795,6 @@ static int _sde_crtc_check_secure_state(struct drm_crtc *crtc,
 	return 0;
 }
 
-bool sde_crtc_get_dim_layer_status(struct drm_crtc_state *crtc_state)
-{
-	struct sde_crtc_state *cstate;
-
-	if (!crtc_state)
-		return false;
-
-	cstate = to_sde_crtc_state(crtc_state);
-	return !!cstate->dim_layer_status;
-}
-
-static int sde_crtc_fod_atomic_check(struct sde_crtc_state *cstate, struct plane_state *pstates,
-				     int cnt)
-{
-	int fod_property_value, fod_icon_plane_idx = -1, fod_press_plane_idx = -1;
-	int plane_idx, dim_layer_zpos = INT_MAX;
-	struct dsi_display *dsi_display = get_primary_display();
-
-	if (dsi_display == NULL || dsi_display->panel == NULL) {
-		SDE_ERROR("dsi display panel is null\n");
-		return 0;
-	}
-
-	if (!dsi_display->panel->fod_dimlayer_enabled)
-		return 0;
-
-	for (plane_idx = 0; plane_idx < cnt; plane_idx++) {
-		fod_property_value = sde_plane_check_fod_layer(pstates[plane_idx].drm_pstate);
-		if (fod_property_value == 1)
-			fod_icon_plane_idx = plane_idx;
-		else if (fod_property_value == 2)
-			fod_press_plane_idx = plane_idx;
-	}
-
-	if (fod_icon_plane_idx >= 0 || fod_press_plane_idx >= 0) {
-		cstate->dim_layer_status = true;
-
-		if (dim_layer_zpos > pstates[fod_icon_plane_idx].stage + 1)
-			dim_layer_zpos = pstates[fod_icon_plane_idx].stage + 1;
-
-		for (plane_idx = 0; plane_idx < cnt; plane_idx++) {
-			if (pstates[plane_idx].stage >= dim_layer_zpos)
-				pstates[plane_idx].stage++;
-		}
-
-		if (fod_press_plane_idx >= 0)
-			cstate->finger_down = true;
-		else
-			cstate->finger_down = false;
-	} else {
-		cstate->dim_layer_status = false;
-		cstate->finger_down = false;
-	}
-
-	return 0;
-}
-
 static int sde_crtc_atomic_check(struct drm_crtc *crtc,
 		struct drm_crtc_state *state)
 {
@@ -5003,10 +4944,6 @@ static int sde_crtc_atomic_check(struct drm_crtc *crtc,
 			sde_plane_clear_multirect(pipe_staged[i]);
 		}
 	}
-
-	rc = sde_crtc_fod_atomic_check(cstate, pstates, cnt);
-	if (rc)
-		goto end;
 
 	/* assign mixer stages based on sorted zpos property */
 	sort(pstates, cnt, sizeof(pstates[0]), pstate_cmp, NULL);

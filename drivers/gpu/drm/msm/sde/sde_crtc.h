@@ -440,9 +440,6 @@ struct sde_crtc_state {
 	bool sbuf_clk_shifted;
 
 	struct sde_crtc_respool rp;
-
-	bool finger_down;
-	bool dim_layer_status;
 };
 
 enum sde_crtc_irq_state {

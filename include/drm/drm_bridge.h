@@ -190,9 +190,6 @@ struct drm_bridge_funcs {
 	 * The enable callback is optional.
 	 */
 	void (*enable)(struct drm_bridge *bridge);
-
-	void (*disp_param_set)(struct drm_bridge *bridge, int cmd);
-	ssize_t (*disp_param_get)(struct drm_bridge *bridge, char *buf);
 };
 
 /**
@@ -236,6 +233,5 @@ void drm_bridge_pre_enable(struct drm_bridge *bridge);
 void drm_bridge_enable(struct drm_bridge *bridge);
 int drm_bridge_connector_init(struct drm_bridge *bridge,
 	struct drm_connector *connector);
-int dsi_bridge_interface_enable(int timeout);
 
 #endif
