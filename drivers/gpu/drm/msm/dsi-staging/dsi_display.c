@@ -61,6 +61,13 @@ static const struct of_device_id dsi_display_dt_match[] = {
 	{}
 };
 
+struct dsi_display *dim_display;
+struct dsi_display *get_primary_display(void)
+{
+	return dim_display;
+}
+EXPORT_SYMBOL(get_primary_display);
+
 static struct dsi_display *primary_display;
 static struct dsi_display *secondary_display;
 
@@ -5829,6 +5836,7 @@ int dsi_display_get_modes(struct dsi_display *display,
 
 exit:
 	*out_modes = display->modes;
+	dim_display = display;
 	rc = 0;
 
 error:
