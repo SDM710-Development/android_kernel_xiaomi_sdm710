@@ -23,6 +23,8 @@
 #include "dsi_panel.h"
 #include "dsi_ctrl_hw.h"
 
+#include "../../../../../kernel/irq/internals.h"
+
 /**
  * topology is currently defined by a set of following 3 values:
  * 1. num of layer mixers
@@ -3177,6 +3179,21 @@ static int dsi_panel_parse_esd_config(struct dsi_panel *panel,
 
 	esd_config = &panel->esd_config;
 	esd_config->status_mode = ESD_MODE_MAX;
+	/* esd-err-flag method will be preferred */
+	esd_config->esd_err_irq_gpio = of_get_named_gpio_flags(of_node, "qcom,esd-err-irq-gpio", 0,
+					(enum of_gpio_flags *)&(esd_config->esd_interrupt_flags));
+	if (gpio_is_valid(esd_config->esd_err_irq_gpio)) {
+		esd_config->esd_err_irq = gpio_to_irq(esd_config->esd_err_irq_gpio);
+
+		rc = gpio_request(esd_config->esd_err_irq_gpio, "esd_err_irq_gpio");
+		if (rc)
+			pr_err("%s: Failed to get esd irq gpio %d (code: %d)", __func__,
+			       esd_config->esd_err_irq_gpio, rc);
+		else
+			gpio_direction_input(esd_config->esd_err_irq_gpio);
+
+		return 0;
+	}
 	esd_config->esd_enabled = of_property_read_bool(of_node,
 		"qcom,esd-check-enabled");
 
@@ -3230,6 +3247,31 @@ static int dsi_panel_parse_esd_config(struct dsi_panel *panel,
 error:
 	panel->esd_config.esd_enabled = false;
 	return rc;
+}
+
+static void dsi_panel_esd_irq_ctrl(struct dsi_panel *panel, bool enable)
+{
+	struct drm_panel_esd_config *esd_config;
+	struct irq_desc *desc;
+
+	if (!panel || !panel->panel_initialized) {
+		pr_err("[LCD] panel not ready!\n");
+		return;
+	}
+
+	esd_config = &panel->esd_config;
+	if (gpio_is_valid(esd_config->esd_err_irq_gpio)) {
+		if (esd_config->esd_err_irq) {
+			if (enable) {
+				desc = irq_to_desc(esd_config->esd_err_irq);
+				if (!irq_settings_is_level(desc))
+					desc->istate &= ~IRQS_PENDING;
+
+				enable_irq(esd_config->esd_err_irq);
+			} else
+				disable_irq_nosync(esd_config->esd_err_irq);
+		}
+	}
 }
 
 struct dsi_panel *dsi_panel_get(struct device *parent,
@@ -4049,6 +4091,9 @@ int dsi_panel_enable(struct dsi_panel *panel)
 		       panel->name, rc);
 	}
 	panel->panel_initialized = true;
+
+	dsi_panel_esd_irq_ctrl(panel, true);
+
 	mutex_unlock(&panel->panel_lock);
 	return rc;
 }
@@ -4117,6 +4162,8 @@ int dsi_panel_disable(struct dsi_panel *panel)
 		return 0;
 
 	mutex_lock(&panel->panel_lock);
+
+	dsi_panel_esd_irq_ctrl(panel, false);
 
 	/* Avoid sending panel off commands when ESD recovery is underway */
 	if (!atomic_read(&panel->esd_recovery_pending)) {
