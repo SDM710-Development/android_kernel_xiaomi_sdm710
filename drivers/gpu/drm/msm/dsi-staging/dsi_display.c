@@ -4900,6 +4900,8 @@ static int dsi_display_sysfs_deinit(struct dsi_display *display)
 		sysfs_remove_group(&dev->kobj,
 			&dynamic_dsi_clock_fs_attrs_group);
 
+	sysfs_remove_group(&dev->kobj, &display_fs_attrs_group);
+
 	return 0;
 
 }
