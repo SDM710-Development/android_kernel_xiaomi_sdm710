@@ -366,7 +366,10 @@ config MACH_XIAOMI_SDM710
 	select ARCH_QCOM
 	select ARCH_SDM670
 
-config MACH_XIAOMI_PYXIS_COSMOS
+config MACH_XIAOMI_F3B
+	bool
+
+config MACH_XIAOMI_F3M
 	bool
 
 choice
@@ -390,19 +393,14 @@ config MACH_XIAOMI_F2
 	help
 	  This enables support for Xiaomi Mi 9 SE.
 
-config MACH_XIAOMI_F3B
-	bool "F3B board"
+config MACH_XIAOMI_PYXIS_COSMOS
+	bool "Pyxis Cosmos board"
 	select MACH_XIAOMI_SDM710
-	select MACH_XIAOMI_PYXIS_COSMOS
+	select MACH_XIAOMI_F3B
+	select MACH_XIAOMI_F3M
 	help
-	  This enables support for Xiaomi Mi CC9 (China) / 9 Lite (Global).
-
-config MACH_XIAOMI_F3M
-	bool "F3M board"
-	select MACH_XIAOMI_SDM710
-	select MACH_XIAOMI_PYXIS_COSMOS
-	help
-	  This enables support for Xiaomi Mi CC9 Meitu Edition.
+	  This enables support for F3B board (Xiaomi Mi CC9 China / 9 Lite Global) and F3M board
+	  (Xiaomi Mi CC9 Meitu Edition) under a common configuration.
 
 endchoice
 
