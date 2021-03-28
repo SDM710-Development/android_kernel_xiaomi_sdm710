@@ -561,6 +561,7 @@ void cam_cci_get_clk_rates(struct cci_device *cci_dev,
 	}
 }
 
+extern uint32_t g_operation_mode;
 static int32_t cam_cci_set_clk_param(struct cci_device *cci_dev,
 	struct cam_cci_ctrl *c_ctrl)
 {
@@ -570,6 +571,11 @@ static int32_t cam_cci_set_clk_param(struct cci_device *cci_dev,
 	struct cam_hw_soc_info *soc_info =
 		&cci_dev->soc_info;
 	void __iomem *base = soc_info->reg_map[0].mem_base;
+
+#ifdef CONFIG_MACH_XIAOMI_PYXIS_COSMOS
+	if (g_operation_mode == 0x8006)
+		i2c_freq_mode = I2C_FAST_PLUS_MODE;
+#endif
 
 	if ((i2c_freq_mode >= I2C_MAX_MODES) || (i2c_freq_mode < 0)) {
 		CAM_ERR(CAM_CCI, "invalid i2c_freq_mode = %d", i2c_freq_mode);
