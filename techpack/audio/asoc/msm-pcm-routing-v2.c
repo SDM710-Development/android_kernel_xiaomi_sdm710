@@ -40,12 +40,14 @@
 #include <dsp/audio_cal_utils.h>
 #include <elliptic/elliptic_mixer_controls.h>
 #include <dsp/msm-cirrus-playback.h>
+#include <dsp/smart_amp.h>
 
 #include "msm-pcm-routing-v2.h"
 #include "msm-pcm-routing-devdep.h"
 #include "msm-qti-pp-config.h"
 #include "msm-dolby-dap-config.h"
 #include "msm-ds2-dap-config.h"
+#include "tas2562-calib.h"
 
 #ifndef CONFIG_DOLBY_DAP
 #undef DOLBY_ADM_COPP_TOPOLOGY_ID
@@ -21215,6 +21217,9 @@ static int msm_routing_probe(struct snd_soc_platform *platform)
 #ifdef CONFIG_ELLIPTIC_ULTRASOUND
 	elliptic_add_platform_controls(platform);
 #endif
+#ifdef CONFIG_SND_SOC_TAS2562
+	msm_smartamp_add_controls(platform);
+#endif
 
 	return 0;
 }
@@ -21375,11 +21380,18 @@ int __init msm_soc_routing_platform_init(void)
 	memset(&be_dai_name_table, 0, sizeof(be_dai_name_table));
 	memset(&last_be_id_configured, 0, sizeof(last_be_id_configured));
 
+#ifdef CONFIG_SND_SOC_TAS2562
+	tas_calib_init();
+#endif
+
 	return platform_driver_register(&msm_routing_pcm_driver);
 }
 
 void msm_soc_routing_platform_exit(void)
 {
+#ifdef CONFIG_SND_SOC_TAS2562
+	tas_calib_exit();
+#endif
 	msm_routing_delete_cal_data();
 	memset(&be_dai_name_table, 0, sizeof(be_dai_name_table));
 	mutex_destroy(&routing_lock);

@@ -185,6 +185,10 @@ ifdef CONFIG_QTI_PP
 	PLATFORM_OBJS += msm-qti-pp-config.o
 	CFLAGS_msm-qti-pp-config.o += $(call cc-option, -Wframe-larger-than=2048)
 endif
+ifdef CONFIG_SND_SOC_TAS2562
+	PLATFORM_OBJS += tas2562-algo.o
+	PLATFORM_OBJS += tas2562-calib.o
+endif
 
 LINUX_INC +=	-Iinclude/linux
 
