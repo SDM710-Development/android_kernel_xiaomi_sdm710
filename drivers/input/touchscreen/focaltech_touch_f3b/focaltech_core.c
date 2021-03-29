@@ -41,7 +41,6 @@
 #include <linux/earlysuspend.h>
 #define FTS_SUSPEND_LEVEL 1	/* Early-suspend level */
 #endif
-#include <linux/backlight.h>
 
 /*****************************************************************************
 * Private constant and macro definitions using #define
@@ -1800,26 +1799,6 @@ static int fts_power_supply_event(struct notifier_block *nb, unsigned long event
 	return 0;
 }
 
-static int fts_bl_state_chg_callback(struct notifier_block *nb,
-				      unsigned long val, void *data)
-{
-	struct fts_ts_data *ts_data = container_of(nb, struct fts_ts_data, bl_notif);
-	unsigned int blank;
-
-	if (val != BACKLIGHT_UPDATED)
-		return NOTIFY_OK;
-	if (data && ts_data) {
-		blank = *(int *)(data);
-		FTS_INFO("%s: val:%lu,blank:%u\n", __func__, val, blank);
-		if (!ts_data->suspended && blank == BACKLIGHT_OFF) {
-			fts_irq_disable_sync();
-		} else {
-			fts_irq_enable();
-		}
-	}
-	return NOTIFY_OK;
-}
-
 
 #if defined(CONFIG_DRM) && defined(DRM_ADD_COMPLETE)
 /*****************************************************************************
@@ -2160,10 +2139,6 @@ static int fts_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	ts_data->early_suspend.resume = fts_ts_late_resume;
 	register_early_suspend(&ts_data->early_suspend);
 #endif
-	ts_data->bl_notif.notifier_call = fts_bl_state_chg_callback;
-	if (backlight_register_notifier(&ts_data->bl_notif) < 0) {
-		FTS_ERROR("register bl_notifier failed!\n");
-	}
 	ts_data->power_supply_notifier.notifier_call = fts_power_supply_event;
 	power_supply_reg_notifier(&ts_data->power_supply_notifier);
 
