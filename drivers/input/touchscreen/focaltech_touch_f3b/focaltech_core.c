@@ -87,8 +87,6 @@ extern int fts_charger_mode_set(struct i2c_client *client, bool on);
 /*****************************************************************************
 * Static function prototypes
 *****************************************************************************/
-extern void lpm_disable_for_input(bool on);
-extern void touch_irq_boost(void);
 #ifndef CONFIG_FACTORY_BUILD
 static int fts_ts_clear_buffer(void);
 #endif
@@ -665,7 +663,6 @@ static void fts_release_all_finger(void)
 #endif
 	input_report_key(input_dev, BTN_TOUCH, 0);
 	input_sync(input_dev);
-	lpm_disable_for_input(false);
 	FTS_FUNC_EXIT();
 }
 
@@ -796,7 +793,6 @@ static int fts_input_report_b(struct fts_ts_data *data)
 		if (EVENT_NO_DOWN(data) || (!touchs)) {
 			/*FTS_DEBUG("[B]Points All Up!"); */
 			input_report_key(data->input_dev, BTN_TOUCH, 0);
-			lpm_disable_for_input(false);
 		} else {
 			input_report_key(data->input_dev, BTN_TOUCH, 1);
 		}
@@ -1125,7 +1121,6 @@ static irqreturn_t fts_ts_interrupt(int irq, void *data)
 #if FTS_ESDCHECK_EN
 	fts_esdcheck_set_intr(1);
 #endif
-	touch_irq_boost();
 #ifdef CONFIG_I2C_STATUS_FOR_TOUCH
 	pm_wakeup_event(&ts_data->client->dev, MAX_WAIT_TIME);
 	if (!ts_data->IRQ_skipped && spin_trylock(&i2c_resume_lock)) {
@@ -1148,7 +1143,6 @@ static irqreturn_t fts_ts_interrupt(int irq, void *data)
 	}
 handleIRQ:
 #endif
-	lpm_disable_for_input(true);
 	ret = fts_read_touchdata(ts_data);
 	if (ret == 0) {
 		mutex_lock(&ts_data->report_mutex);
