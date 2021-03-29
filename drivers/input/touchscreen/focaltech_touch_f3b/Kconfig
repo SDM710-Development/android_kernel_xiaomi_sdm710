@@ -1,0 +1,26 @@
+#
+# Focaltech Touchscreen driver configuration
+#
+
+config TOUCHSCREEN_FTS_F3B
+	bool "Focaltech Touchscreen"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have Focaltech touch panel.
+	  If unsure, say N.
+
+if TOUCHSCREEN_FTS_F3B
+
+config TOUCHSCREEN_FTS_FOD_F3B
+	bool "Focaltech Touchscreen Fod func"
+	default n
+	help
+	  Say Y here if you support fod function.
+	  If unsure, say N.
+
+config TOUCHSCREEN_FTS_DIRECTORY_F3B
+	string "Focaltech ts directory name"
+	default "focaltech_touch_f3b"
+
+endif
