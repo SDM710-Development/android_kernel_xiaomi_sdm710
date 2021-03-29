@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  */
 #include "xiaomi-sdm710-common.dtsi"
-#include "pyxis-sdm710-camera-sensor.dtsi"
+#include "pyxis-cosmos-sdm710-camera-sensor.dtsi"
 
 &sdhc_2 {
 	cd-gpios = <&tlmm 126 0x0>;
@@ -634,3 +634,10 @@
 	};
 };
 
+&firmware {
+        android {
+                vbmeta {
+                        parts = "vbmeta,boot,system,vendor,dtbo,recovery";
+                };
+        };
+};
