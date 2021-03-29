@@ -2478,6 +2478,22 @@ static struct snd_soc_dai_link msm_int_dai[] = {
 		.ignore_pmdown_time = 1,
 		.id = MSM_FRONTEND_DAI_MULTIMEDIA6,
 	},
+#ifdef CONFIG_SND_SOC_TAS2562
+	{/* hw:x,40 */
+		.name = "Primary MI2S_TX Hostless",
+		.stream_name = "Primary MI2S_TX Hostless",
+		.cpu_dai_name = "PRI_MI2S_TX_HOSTLESS",
+		.platform_name = "msm-pcm-hostless",
+		.dynamic = 1,
+		.dpcm_capture = 1,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+				SND_SOC_DPCM_TRIGGER_POST},
+		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
+		.ignore_suspend = 1,
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+	},
+#endif
 };
 
 
@@ -3471,6 +3487,11 @@ static struct snd_soc_card *msm_int_populate_sndcard_dailinks(
 #if defined(CONFIG_MACH_XIAOMI_F2) && defined(CONFIG_SND_SOC_CS35L41)
 		msm_mi2s_be_dai_links[0].codec_name = CS35L41_CODEC_NAME;
 		msm_mi2s_be_dai_links[0].codec_dai_name = "cs35l41-pcm";
+#elif defined(CONFIG_MACH_XIAOMI_PYXIS_COSMOS) && defined(CONFIG_SND_SOC_TAS2562)
+		msm_mi2s_be_dai_links[0].codec_name = "tas2562.2-004c";
+		msm_mi2s_be_dai_links[0].codec_dai_name = "tas2562 ASI1";
+		msm_mi2s_be_dai_links[1].codec_name = "tas2562.2-004c";
+		msm_mi2s_be_dai_links[1].codec_dai_name = "tas2562 ASI1";
 #endif
 		memcpy(dailink + len1,
 		       msm_mi2s_be_dai_links,
