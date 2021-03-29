@@ -12,7 +12,7 @@
  * GNU General Public License for more details.
  */
 
-#include "pyxis-sdm710-pinctrl.dtsi"
+#include "pyxis-cosmos-sdm710-pinctrl.dtsi"
 
 /* F3B flash led's typical peak pulse current is 1000mA */
 &pm660l_flash0 {
