@@ -21,7 +21,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 
 #include "pyxis-sdm710.dtsi"
-#include "sdm670-audio-overlay.dtsi"
+#include "xiaomi-audio-overlay.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. SDM710 PM660 + PM660L MTP ,Pyxis";

@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 #include "xiaomi-sdm710-common.dtsi"
-#include "xiaomi-sde-display.dtsi"
 #include "pyxis-sdm710-camera-sensor.dtsi"
 
 &sdhc_2 {
@@ -19,48 +18,35 @@
 	status = "ok";
 };
 
-&tlmm {
-	ts_mux {
-		ts_active: ts_active {
-			mux {
-				pins = "gpio125", "gpio5";
-				function = "gpio";
-			};
+&ts_active {
+	mux {
+		pins = "gpio125", "gpio5";
+	};
 
-			config {
-				pins = "gpio125", "gpio5";
-				drive-strength = <16>;
-				bias-pull-up;
-			};
-		};
+	config {
+		pins = "gpio125", "gpio5";
+	};
+};
+
+&ts_reset_suspend {
+	mux {
+		pins = "gpio5";
+	};
+
+	config {
+		pins = "gpio5";
+		drive-strength = <16>;
 	};
 };
 
 &ts_int_suspend {
 	mux {
 		pins = "gpio125";
-		function = "gpio";
 	};
 
 	config {
 		pins = "gpio125";
 		drive-strength = <16>;
-		bias-diable;
-		input-enable;
-	};
-
-};
-
-&ts_reset_suspend {
-	mux {
-		pins = "gpio5";
-		function = "gpio";
-	};
-
-	config {
-		pins = "gpio5";
-		drive-strength = <16>;
-		bias-disable;
 	};
 };
 
@@ -234,57 +220,29 @@
 	qcom,platform-te-gpio = <&tlmm 10 0>;
 };
 
-&reserved_memory {
-	secure_dsp_mem: secure_dsp_region {
-		compatible = "removed-dma-pool";
-		no-map;
-		reg = <0 0x9fd00000 0 0xc00000>;
-	};
-
-	ramdump_fb_mem: ramdump_fb_region@af000000 {
-		compatible = "removed-dma-pool";
-		no-map;
-		reg = <0 0xaf000000 0 0x1000000>;
-	};
-};
-
-
 &pil_cdsp_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x93400000 0 0x1e00000>;
 };
 
 &pil_mba_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x95200000 0 0x200000>;
 };
 
 &pil_adsp_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x95400000 0 0x2200000>;
 };
 
 &pil_ipa_fw_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x97600000 0 0x10000>;
 };
 
 &pil_ipa_gsi_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x97610000 0 0x5000>;
 };
 
 &pil_gpu_mem {
-	compatible = "removed-dma-pool";
-	no-map;
 	reg = <0 0x97615000 0 0x2000>;
 };
-
 
 &qupv3_se7_i2c {
 	status = "ok";
