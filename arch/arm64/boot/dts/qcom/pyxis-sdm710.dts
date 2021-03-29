@@ -19,7 +19,7 @@
 #include "xiaomi-audio-overlay.dtsi"
 
 / {
-	model = "Qualcomm Technologies, Inc. SDM710 PM660 + PM660L MTP Pyxis";
+	model = "Qualcomm Technologies, Inc. SDM710 PM660 + PM660L MTP, Pyxis";
 	compatible = "qcom,sdm670-mtp", "qcom,sdm670", "qcom,mtp";
 	qcom,board-id = <35 0>;
 	qcom,pmic-id = <0x0001001b 0x0101011a 0x0 0x0>,
