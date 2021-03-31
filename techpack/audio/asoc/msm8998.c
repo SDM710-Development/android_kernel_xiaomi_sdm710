@@ -7026,6 +7026,7 @@ static int msm_init_wsa_dev(struct platform_device *pdev,
 		dev_dbg(&pdev->dev,
 			 "%s: wsa-max-devs property missing in DT %s, ret = %d\n",
 			 __func__, pdev->dev.of_node->full_name, ret);
+		wsa_max_devs = 0;
 		goto err_dt;
 	}
 	if (wsa_max_devs == 0) {

@@ -1426,6 +1426,7 @@ int msm8952_init_wsa_dev(struct platform_device *pdev,
 			"%s: wsa-max-devs property missing in DT %s, ret = %d\n",
 			__func__, pdev->dev.of_node->full_name, ret);
 		card->num_aux_devs = 0;
+		wsa_max_devs = 0;
 		return 0;
 	}
 	if (wsa_max_devs == 0) {
