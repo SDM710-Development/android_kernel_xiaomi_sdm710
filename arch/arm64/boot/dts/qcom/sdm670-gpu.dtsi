@@ -161,6 +161,7 @@
 			};
 		};
 
+/*
 		qcom,gpu-coresights {
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -192,6 +193,7 @@
 				};
 			};
 		};
+*/
 
 		/* GPU Mempools */
 		qcom,gpu-mempools {

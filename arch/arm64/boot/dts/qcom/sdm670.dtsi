@@ -622,7 +622,7 @@
 
 #include "sdm670-qupv3.dtsi"
 
-#include "sdm670-coresight.dtsi"
+//#include "sdm670-coresight.dtsi"
 
 #include "sdm670-vidc.dtsi"
 
