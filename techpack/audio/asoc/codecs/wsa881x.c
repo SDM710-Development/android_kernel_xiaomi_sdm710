@@ -1417,6 +1417,10 @@ static int wsa881x_swr_down(struct swr_device *pdev)
 	struct wsa881x_priv *wsa881x;
 	int ret;
 
+	/* Nothing to take down */
+	if (wsa_max_devs == 0)
+		return 0;
+
 	wsa881x = swr_get_dev_data(pdev);
 	if (!wsa881x) {
 		dev_err(&pdev->dev, "%s: wsa881x is NULL\n", __func__);
