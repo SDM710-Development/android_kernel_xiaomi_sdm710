@@ -107,6 +107,7 @@ int diag_pcie_register_ops(int proc, int ctx, struct diag_mux_ops *ops)
 {
 	int err = 0;
 
+#ifdef CONFIG_PCI
 	if (!ops)
 		return -EINVAL;
 
@@ -120,6 +121,7 @@ int diag_pcie_register_ops(int proc, int ctx, struct diag_mux_ops *ops)
 			proc, err);
 		return err;
 	}
+#endif
 	return 0;
 }
 
