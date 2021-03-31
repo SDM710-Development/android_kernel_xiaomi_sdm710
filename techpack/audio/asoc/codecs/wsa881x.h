@@ -53,4 +53,6 @@ void wsa881x_regmap_defaults(struct regmap *regmap, u8 version)
 
 #endif
 
+extern u32 wsa_max_devs;
+
 #endif /* _WSA881X_H */

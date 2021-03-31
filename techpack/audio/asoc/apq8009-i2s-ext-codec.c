@@ -41,6 +41,8 @@
 
 #define DRV_NAME "apq8009-i2s-wcd"
 
+u32 wsa_max_devs;
+
 /* dummy definition of deprecated FE DAI's*/
 enum {
 	MSM_FRONTEND_DAI_CS_VOICE = 39,
@@ -2602,7 +2604,6 @@ static int apq8009_init_wsa_dev(struct platform_device *pdev,
 		struct snd_soc_card *card)
 {
 	struct device_node *wsa_of_node;
-	u32 wsa_max_devs;
 	u32 wsa_dev_cnt;
 	char *dev_name_str = NULL;
 	struct apq8009_wsa881x_dev_info *wsa881x_dev_info;

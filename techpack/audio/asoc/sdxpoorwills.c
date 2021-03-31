@@ -75,6 +75,8 @@
 #define SDX_SPK_ON 1
 #define SDX_HIFI_ON 1
 
+u32 wsa_max_devs;
+
 enum mi2s_types {
 	PRI_MI2S,
 	SEC_MI2S,
@@ -2109,7 +2111,6 @@ static int sdx_init_wsa_dev(struct platform_device *pdev,
 			    struct snd_soc_card *card)
 {
 	struct device_node *wsa_of_node;
-	u32 wsa_max_devs;
 	u32 wsa_dev_cnt;
 	char *dev_name_str = NULL;
 	struct sdx_wsa881x_dev_info *wsa881x_dev_info;

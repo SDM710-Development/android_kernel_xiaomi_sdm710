@@ -21,6 +21,8 @@
 
 #define DEV_NAME_STR_LEN            32
 
+u32 wsa_max_devs;
+
 /* dummy definition of below deprecated FE DAI's*/
 enum {
 	MSM_FRONTEND_DAI_CS_VOICE = 39,
@@ -1408,7 +1410,6 @@ int msm8952_init_wsa_dev(struct platform_device *pdev,
 			struct snd_soc_card *card)
 {
 	struct device_node *wsa_of_node;
-	u32 wsa_max_devs;
 	u32 wsa_dev_cnt;
 	char *dev_name_str = NULL;
 	struct msm895x_wsa881x_dev_info *wsa881x_dev_info;
