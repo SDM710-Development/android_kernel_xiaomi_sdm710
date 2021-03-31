@@ -38,6 +38,8 @@
 #define DEFAULT_MCLK_RATE 9600000
 #define MSM_LL_QOS_VALUE 300 /* time in us to ensure LPM doesn't go in C3/C4 */
 
+u32 wsa_max_devs;
+
 enum {
 	DP_RX_IDX,
 	EXT_DISP_RX_IDX_MAX,
@@ -5437,7 +5439,6 @@ static int msm_init_wsa_dev(struct platform_device *pdev,
 			    struct snd_soc_card *card)
 {
 	struct device_node *wsa_of_node;
-	u32 wsa_max_devs;
 	u32 wsa_dev_cnt;
 	char *dev_name_str = NULL;
 	struct msm_wsa881x_dev_info *wsa881x_dev_info;

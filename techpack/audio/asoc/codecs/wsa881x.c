@@ -1147,6 +1147,9 @@ static int wsa881x_probe(struct snd_soc_codec *codec)
 	if (!wsa881x)
 		return -EINVAL;
 
+	if (wsa_max_devs == 0)
+		return 0;
+
 	dev = wsa881x->swr_slave;
 	wsa881x->codec = codec;
 	mutex_init(&wsa881x->bg_lock);
@@ -1267,6 +1270,10 @@ static int wsa881x_swr_probe(struct swr_device *pdev)
 			    GFP_KERNEL);
 	if (!wsa881x)
 		return -ENOMEM;
+
+	if (wsa_max_devs == 0)
+		return 0;
+
 	wsa881x->wsa_rst_np = of_parse_phandle(pdev->dev.of_node,
 					     "qcom,spkr-sd-n-node", 0);
 	if (!wsa881x->wsa_rst_np) {
