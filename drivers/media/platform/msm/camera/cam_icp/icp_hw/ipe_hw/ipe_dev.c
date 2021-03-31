@@ -85,7 +85,7 @@ int cam_ipe_probe(struct platform_device *pdev)
 		&query.camera_version, &query.cpas_version, &cam_caps);
 	if ((!(cam_caps & CPAS_IPE1_BIT)) && (hw_idx)) {
 		CAM_ERR(CAM_ICP, "IPE1 hw idx = %d\n", hw_idx);
-		return -EINVAL;
+		return rc;
 	}
 
 	ipe_dev_intf = kzalloc(sizeof(struct cam_hw_intf), GFP_KERNEL);
