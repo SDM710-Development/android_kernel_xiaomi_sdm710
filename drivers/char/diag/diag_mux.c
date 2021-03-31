@@ -107,6 +107,9 @@ int diag_pcie_register_ops(int proc, int ctx, struct diag_mux_ops *ops)
 {
 	int err = 0;
 
+	if (!IS_ENABLED(CONFIG_PCI))
+		return 0;
+
 	if (!ops)
 		return -EINVAL;
 
