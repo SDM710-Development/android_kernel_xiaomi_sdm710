@@ -39,9 +39,9 @@
 		};
 	};
 
-	spk_id_pin: spk-id-pin@116 {
+	spk_id_pin: spk-id-pin@127 {
 		compatible = "audio,speaker-id";
-		audio,speaker-id-gpio = <&tlmm 116 0>;
+		audio,speaker-id-gpio = <&tlmm 127 0>;
 		pinctrl-names = "pull_down", "pull_up", "no_pull";
 		pinctrl-0 = <&spk_id_pull_down>;
 		pinctrl-1 = <&spk_id_pull_up>;
