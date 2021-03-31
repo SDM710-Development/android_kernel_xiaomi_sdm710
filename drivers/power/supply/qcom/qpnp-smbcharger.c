@@ -8128,7 +8128,7 @@ static int smbchg_check_chg_version(struct smbchg_chip *chip)
 	if (IS_ERR(pmic_rev_id)) {
 		rc = PTR_ERR(revid_dev_node);
 		if (rc != -EPROBE_DEFER)
-			pr_err("Unable to get pmic_revid rc=%d\n", rc);
+			pr_err("%s: Unable to get pmic_revid rc=%d\n", __func__, rc);
 		return rc;
 	}
 

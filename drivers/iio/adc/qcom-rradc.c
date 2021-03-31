@@ -1165,7 +1165,7 @@ static int rradc_get_dt_data(struct rradc_chip *chip, struct device_node *node)
 		if (IS_ERR(chip->pmic_fab_id)) {
 			rc = PTR_ERR(chip->pmic_fab_id);
 			if (rc != -EPROBE_DEFER)
-				pr_err("Unable to get pmic_revid rc=%d\n", rc);
+				pr_err("%s: Unable to get pmic_revid rc=%d\n", __func__, rc);
 			return rc;
 		}
 

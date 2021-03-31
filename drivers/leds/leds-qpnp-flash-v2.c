@@ -2262,7 +2262,7 @@ static int qpnp_flash_led_parse_common_dt(struct qpnp_flash_led *led,
 
 	led->pdata->pmic_rev_id = get_revid_data(revid_node);
 	if (IS_ERR_OR_NULL(led->pdata->pmic_rev_id)) {
-		pr_err("Unable to get pmic_revid rc=%ld\n",
+		pr_err("%s: Unable to get pmic_revid rc=%ld\n", __func__,
 			PTR_ERR(led->pdata->pmic_rev_id));
 		/*
 		 * the revid peripheral must be registered, any failure

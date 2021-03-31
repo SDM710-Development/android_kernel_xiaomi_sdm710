@@ -8578,7 +8578,7 @@ static int fg_detect_pmic_type(struct fg_chip *chip)
 
 	pmic_rev_id = get_revid_data(revid_dev_node);
 	if (IS_ERR_OR_NULL(pmic_rev_id)) {
-		pr_err("Unable to get pmic_revid rc=%ld\n",
+		pr_err("%s: Unable to get pmic_revid rc=%ld\n", __func__,
 				PTR_ERR(pmic_rev_id));
 		/*
 		 * the revid peripheral must be registered, any failure
