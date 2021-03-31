@@ -2711,7 +2711,7 @@ static int qpnp_wled_probe(struct platform_device *pdev)
 	wled->pmic_rev_id = get_revid_data(revid_node);
 	of_node_put(revid_node);
 	if (IS_ERR_OR_NULL(wled->pmic_rev_id)) {
-		pr_err("Unable to get pmic_revid rc=%ld\n",
+		pr_err("%s: Unable to get pmic_revid rc=%ld\n", __func__,
 			PTR_ERR(wled->pmic_rev_id));
 		/*
 		 * the revid peripheral must be registered, any failure
