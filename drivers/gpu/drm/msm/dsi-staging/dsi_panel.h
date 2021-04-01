@@ -26,6 +26,7 @@
 #include "dsi_defs.h"
 #include "dsi_ctrl_hw.h"
 #include "dsi_clk.h"
+#include "dsi_parser.h"
 #include "dsi_pwr.h"
 #include "msm_drv.h"
 
@@ -113,6 +114,7 @@ struct dsi_backlight_config {
 	u32 bl_scale_ad;
 	u32 bl_doze_lpm;
 	u32 bl_doze_hbm;
+	u32 bl_dimlayer_dc_level;
 
 	int en_gpio;
 	/* PWM params */
@@ -220,6 +222,7 @@ struct dsi_panel {
 	struct dsi_pinctrl_info pinctrl;
 	struct drm_panel_hdr_properties hdr_props;
 	struct drm_panel_esd_config esd_config;
+	struct dsi_parser_utils utils;
 
 	bool lp11_init;
 	bool ulps_enabled;
@@ -243,6 +246,9 @@ struct dsi_panel {
 
 	struct brightness_alpha_pair *fod_dim_lut;
 	u32 fod_dim_lut_count;
+
+	struct brightness_alpha_pair *bl_dim_lut;
+	u32 bl_dim_lut_count;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
@@ -350,6 +356,10 @@ int dsi_panel_set_doze_mode(struct dsi_panel *panel, enum dsi_doze_mode_type mod
 
 int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status);
 
+int dsi_panel_set_dimlayer_bl_backlight(struct dsi_panel *panel, bool status);
+
 u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel);
+
+u32 dsi_panel_get_bl_dim_alpha(struct dsi_panel *panel);
 
 #endif /* _DSI_PANEL_H_ */

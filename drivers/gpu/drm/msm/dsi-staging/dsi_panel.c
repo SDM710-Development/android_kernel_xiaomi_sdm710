@@ -21,6 +21,7 @@
 #include <linux/firmware.h>
 
 #include "dsi_panel.h"
+#include "dsi_parser.h"
 #include "dsi_ctrl_hw.h"
 
 #include "../../../../../kernel/irq/internals.h"
@@ -934,6 +935,32 @@ u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel)
 			   panel->fod_dim_lut[i - 1].alpha, panel->fod_dim_lut[i].alpha);
 }
 
+u32 dsi_panel_get_bl_dim_alpha(struct dsi_panel *panel)
+{
+	u32 brightness = dsi_panel_get_backlight(panel);
+	int i;
+
+	if (!panel->bl_dim_lut)
+		return 0;
+
+	for (i = 0; i < panel->bl_dim_lut_count; i++)
+		if (panel->bl_dim_lut[i].brightness >= brightness)
+			break;
+
+	if (i == 0)
+		return panel->bl_dim_lut[i].alpha;
+
+	if (i == panel->bl_dim_lut_count)
+		return panel->bl_dim_lut[i - 1].alpha;
+
+	return interpolate(brightness,
+			panel->bl_dim_lut[i - 1].brightness, panel->bl_dim_lut[i].brightness,
+			panel->bl_dim_lut[i - 1].alpha, panel->bl_dim_lut[i].alpha);
+}
+
+extern bool is_dimlayer_hbm_enabled;
+extern bool is_fod_hbm_enabled;
+extern bool is_dimlayer_bl_enable;
 int dsi_panel_update_doze(struct dsi_panel *panel)
 {
 	int rc = 0;
@@ -950,6 +977,8 @@ int dsi_panel_update_doze(struct dsi_panel *panel)
 			       panel->name, rc);
 	} else if (!panel->doze_enabled) {
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NOLP);
+		dsi_panel_set_dimlayer_bl_backlight(panel, is_dimlayer_bl_enable);
+		dsi_panel_set_fod_hbm(panel, is_dimlayer_hbm_enabled || is_fod_hbm_enabled);
 		if (rc)
 			pr_err("[%s] failed to send DSI_CMD_SET_NOLP cmd, rc=%d\n",
 			       panel->name, rc);
@@ -978,6 +1007,7 @@ int dsi_panel_set_doze_mode(struct dsi_panel *panel, enum dsi_doze_mode_type mod
 	return dsi_panel_update_doze(panel);
 }
 
+extern bool is_fod_hbm_enabled;
 int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status)
 {
 	int rc = 0;
@@ -1018,6 +1048,19 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 		pr_err("Backlight type(%d) not supported\n", bl->type);
 		rc = -ENOTSUPP;
 	}
+
+	return rc;
+}
+
+int dsi_panel_set_dimlayer_bl_backlight(struct dsi_panel *panel, bool status)
+{
+	int rc = 0;
+	u32 brightness = dsi_panel_get_backlight(panel);
+
+	if (status)
+		dsi_panel_set_backlight(panel, brightness < panel->bl_config.bl_dimlayer_dc_level ? panel->bl_config.bl_dimlayer_dc_level : brightness);
+	else
+		dsi_panel_set_backlight(panel, brightness);
 
 	return rc;
 }
@@ -2475,12 +2518,76 @@ count_fail:
 	return rc;
 }
 
+static int dsi_panel_parse_bl_dim_lut(struct dsi_panel *panel,
+                                       struct dsi_parser_utils *utils)
+{
+	struct brightness_alpha_pair *lut;
+	u32 *array;
+	int count;
+	int len;
+	int rc;
+	int i;
+
+	len = utils->count_u32_elems(utils->data, "qcom,disp-bl-dim-lut");
+	if (len <= 0 || len % BRIGHTNESS_ALPHA_PAIR_LEN) {
+		pr_err("[%s] invalid number of elements, rc=%d\n",
+				panel->name, rc);
+		rc = -EINVAL;
+		goto count_fail;
+	}
+
+	array = kcalloc(len, sizeof(u32), GFP_KERNEL);
+	if (!array) {
+		pr_err("[%s] failed to allocate memory, rc=%d\n",
+				panel->name, rc);
+		rc = -ENOMEM;
+		goto alloc_array_fail;
+	}
+
+	rc = utils->read_u32_array(utils->data,
+			"qcom,disp-bl-dim-lut", array, len);
+	if (rc) {
+		pr_err("[%s] failed to allocate memory, rc=%d\n",
+				panel->name, rc);
+		goto read_fail;
+	}
+
+	count = len / BRIGHTNESS_ALPHA_PAIR_LEN;
+	lut = kcalloc(count, sizeof(*lut), GFP_KERNEL);
+
+	if (!lut) {
+		rc = -ENOMEM;
+		goto alloc_lut_fail;
+	}
+
+	for (i = 0; i < count; i++) {
+		struct brightness_alpha_pair *pair = &lut[i];
+		pair->brightness = array[i * BRIGHTNESS_ALPHA_PAIR_LEN + 0];
+		pair->alpha = array[i * BRIGHTNESS_ALPHA_PAIR_LEN + 1];
+	}
+
+	panel->bl_dim_lut = lut;
+	panel->bl_dim_lut_count = count;
+
+alloc_lut_fail:
+read_fail:
+	kfree(array);
+alloc_array_fail:
+count_fail:
+	if (rc) {
+		panel->bl_dim_lut = NULL;
+		panel->bl_dim_lut_count = 0;
+	}
+	return rc;
+}
+
 static int dsi_panel_parse_bl_config(struct dsi_panel *panel,
 				     struct device_node *of_node)
 {
 	int rc = 0;
 	const char *bl_type;
 	const char *data;
+	struct dsi_parser_utils *utils = &panel->utils;
 	u32 val = 0;
 
 	bl_type = of_get_property(of_node,
@@ -2556,12 +2663,25 @@ static int dsi_panel_parse_bl_config(struct dsi_panel *panel,
 	if (rc) {
 		pr_debug("set doze hbm backlight to 0\n");
 		panel->bl_config.bl_doze_hbm = 0;
-	} else
+	} else {
 		panel->bl_config.bl_doze_hbm = val;
+	}
+
+	rc = utils->read_u32(utils->data,
+		"qcom,disp-dc-dimlayer-backlight", &val);
+	if (rc) {
+		pr_debug("set dc dimlayer low backlight to 0\n");
+		panel->bl_config.bl_dimlayer_dc_level = 0;
+	} else
+		panel->bl_config.bl_dimlayer_dc_level = val;
 
 	rc = dsi_panel_parse_fod_dim_lut(panel, of_node);
 	if (rc)
 		pr_err("[%s] failed to parse fod dim lut\n", panel->name);
+
+	rc = dsi_panel_parse_bl_dim_lut(panel, utils);
+	if (rc)
+		pr_err("[%s] failed to parse bl dim lut\n", panel->name);
 
 	if (panel->bl_config.type == DSI_BACKLIGHT_PWM) {
 		rc = dsi_panel_parse_bl_pwm_config(&panel->bl_config, of_node);
@@ -3917,6 +4037,7 @@ int dsi_panel_get_host_cfg_for_mode(struct dsi_panel *panel,
 		return -EINVAL;
 	}
 
+	pr_err("%s\n", __func__);
 	mutex_lock(&panel->panel_lock);
 
 	config->panel_mode = panel->panel_mode;
@@ -4319,6 +4440,11 @@ int dsi_panel_enable(struct dsi_panel *panel)
 		       panel->name, rc);
 	}
 	panel->panel_initialized = true;
+
+	if (is_fod_hbm_enabled || is_dimlayer_hbm_enabled)
+		dsi_panel_set_fod_hbm(panel, true);
+	else
+		dsi_panel_set_dimlayer_bl_backlight(panel, is_dimlayer_bl_enable);
 
 	dsi_panel_esd_irq_ctrl(panel, true);
 
