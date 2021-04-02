@@ -36,11 +36,6 @@
 	/delete-property/ qcom,minidump-id;
 };
 
-/* msm-arm-smmu-sdm670.dtsi */
-&kgsl_smmu {
-	/delete-property/ qcom,deferred-regulator-disable-delay;
-};
-
 /* sdm670-audio.dtsi */
 &int_codec {
 	/delete-property/ qcom,ext-disp-audio-rx;

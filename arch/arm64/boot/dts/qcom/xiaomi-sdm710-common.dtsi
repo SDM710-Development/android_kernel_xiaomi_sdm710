@@ -220,10 +220,6 @@
 	spm-level = <3>;
 };
 
-&gpu_cx_gdsc {
-	vdd_parent-supply = <&pm660l_s3_level>;
-};
-
 /* sdm670-pinctrl.dtsi */
 &tlmm {
 	pri_mi2s {
