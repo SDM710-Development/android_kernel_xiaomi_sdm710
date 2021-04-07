@@ -2614,7 +2614,7 @@
 
 	cpubw: qcom,cpubw {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "bw_hwmon";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_AMPSS_M0 MSM_BUS_SLAVE_EBI_CH0>;
 		qcom,active-only;
