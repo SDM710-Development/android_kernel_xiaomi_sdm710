@@ -220,6 +220,30 @@
 	spm-level = <3>;
 };
 
+&CPU0 {
+	clock-frequency = <1708800000>;
+};
+
+&CPU1 {
+	clock-frequency = <1708800000>;
+};
+
+&CPU2 {
+	clock-frequency = <1708800000>;
+};
+
+&CPU3 {
+	clock-frequency = <1708800000>;
+};
+
+&CPU4 {
+	clock-frequency = <1708800000>;
+};
+
+&CPU5 {
+	clock-frequency = <1708800000>;
+};
+
 /* sdm670-pinctrl.dtsi */
 &tlmm {
 	pri_mi2s {
