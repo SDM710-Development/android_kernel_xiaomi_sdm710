@@ -1,32 +1,7 @@
-# We can build either as part of a standalone Kernel build or as
-# an external module.  Determine which mechanism is being used
-ifeq ($(MODNAME),)
-	KERNEL_BUILD := 1
-else
-	KERNEL_BUILD := 0
-endif
-
-
-
-ifeq ($(KERNEL_BUILD), 1)
-	# These are configurable via Kconfig for kernel-based builds
-	# Need to explicitly configure for Android-based builds
-	AUDIO_BLD_DIR := $(shell pwd)/kernel/msm-4.9
-	AUDIO_ROOT := $(AUDIO_BLD_DIR)/techpack/audio
-endif
-
-ifeq ($(KERNEL_BUILD), 0)
-	ifeq ($(CONFIG_ARCH_SDM845), y)
-		include $(AUDIO_ROOT)/config/sdm845auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm845autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_SDM670), y)
-		include $(AUDIO_ROOT)/config/sdm710auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm710autoconf.h
-	endif
-endif
+# These are configurable via Kconfig for kernel-based builds
+# Need to explicitly configure for Android-based builds
+AUDIO_BLD_DIR := $(shell pwd)/kernel/msm-4.9
+AUDIO_ROOT := $(AUDIO_BLD_DIR)/techpack/audio
 
 # As per target team, build is done as follows:
 # Defconfig : build with default flags
@@ -93,14 +68,6 @@ endif
 
 ifeq ($(call cc-option-yn, -Wheader-guard),y)
 EXTRA_CFLAGS += -Wheader-guard
-endif
-
-ifeq ($(KERNEL_BUILD), 0)
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/ipc/Module.symvers
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/dsp/Module.symvers
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/asoc/Module.symvers
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/asoc/codecs/Module.symvers
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/soc/Module.symvers
 endif
 
 # Module information used by KBuild framework

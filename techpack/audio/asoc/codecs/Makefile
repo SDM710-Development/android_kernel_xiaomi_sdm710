@@ -1,50 +1,7 @@
-# We can build either as part of a standalone Kernel build or as
-# an external module.  Determine which mechanism is being used
-ifeq ($(MODNAME),)
-	KERNEL_BUILD := 1
-else
-	KERNEL_BUILD := 0
-endif
-
-ifeq ($(KERNEL_BUILD), 1)
-	# These are configurable via Kconfig for kernel-based builds
-	# Need to explicitly configure for Android-based builds
-	AUDIO_BLD_DIR := $(shell pwd)/kernel/msm-4.9
-	AUDIO_ROOT := $(AUDIO_BLD_DIR)/techpack/audio
-endif
-
-ifeq ($(KERNEL_BUILD), 0)
-	ifeq ($(CONFIG_ARCH_SDM845), y)
-		include $(AUDIO_ROOT)/config/sdm845auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm845autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_SDM670), y)
-		include $(AUDIO_ROOT)/config/sdm710auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm710autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_SDM450), y)
-		include $(AUDIO_ROOT)/config/sdm450auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm450autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_SDM439), y)
-		include $(AUDIO_ROOT)/config/sdm450auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm450autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_MSM8909), y)
-		include $(AUDIO_ROOT)/config/msm8909auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/msm8909autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_MSM8917), y)
-		include $(AUDIO_ROOT)/config/sdm450auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm450autoconf.h
-	endif
-endif
+# These are configurable via Kconfig for kernel-based builds
+# Need to explicitly configure for Android-based builds
+AUDIO_BLD_DIR := $(shell pwd)/kernel/msm-4.9
+AUDIO_ROOT := $(AUDIO_BLD_DIR)/techpack/audio
 
 # As per target team, build is done as follows:
 # Defconfig : build with default flags
@@ -186,21 +143,8 @@ ifeq ($(call cc-option-yn, -Wheader-guard),y)
 EXTRA_CFLAGS += -Wheader-guard
 endif
 
+obj-y += cs35l41/ msm_sdw/ sdm660_cdc/ tas2557/ tas2562/ wcd934x/
 
-ifeq ($(KERNEL_BUILD), 0)
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/ipc/Module.symvers
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/dsp/Module.symvers
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/soc/Module.symvers
-endif
-
-ifeq ($(KERNEL_BUILD), 1)
-	obj-y	+= wcd934x/
-	obj-y	+= sdm660_cdc/
-	obj-y	+= msm_sdw/
-	obj-y	+= tas2557/
-	obj-y	+= tas2562/
-	obj-y	+= cs35l41/
-endif
 # Module information used by KBuild framework
 obj-$(CONFIG_WCD9XXX_CODEC_CORE) += wcd_core_dlkm.o
 wcd_core_dlkm-y := $(CORE_OBJS)

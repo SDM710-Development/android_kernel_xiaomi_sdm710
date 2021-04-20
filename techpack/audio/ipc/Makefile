@@ -1,11 +1,3 @@
-# We can build either as part of a standalone Kernel build or as
-# an external module.  Determine which mechanism is being used
-ifeq ($(MODNAME),)
-	KERNEL_BUILD := 1
-else
-	KERNEL_BUILD := 0
-endif
-
 TARGET_KERNEL_VERSION := 4.9
 
 # These are configurable via Kconfig for kernel-based builds
@@ -31,42 +23,7 @@ ifeq ($(CONFIG_ARCH_MSM8917), y)
 endif
 KDIR := $(TOP)/kernel/msm-$(TARGET_KERNEL_VERSION)
 
-ifeq ($(KERNEL_BUILD), 1)
-	AUDIO_ROOT := $(KDIR)/techpack/audio
-endif
-
-ifeq ($(KERNEL_BUILD), 0)
-	ifeq ($(CONFIG_ARCH_SDM845), y)
-		include $(AUDIO_ROOT)/config/sdm845auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm845autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_SDM670), y)
-		include $(AUDIO_ROOT)/config/sdm710auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm710autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_SDM450), y)
-		include $(AUDIO_ROOT)/config/sdm450auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm450autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_SDM439), y)
-		include $(AUDIO_ROOT)/config/sdm450auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm450autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_MSM8909), y)
-		include $(AUDIO_ROOT)/config/msm8909auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/msm8909autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_MSM8917), y)
-		include $(AUDIO_ROOT)/config/sdm450auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm450autoconf.h
-	endif
-endif
+AUDIO_ROOT := $(KDIR)/techpack/audio
 
 # As per target team, build is done as follows:
 # Defconfig : build with default flags
@@ -150,41 +107,6 @@ CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
 		-D__linux__
 
 KBUILD_CPPFLAGS += $(CDEFINES)
-
-ifeq ($(KERNEL_BUILD), 0)
-
-HEADER_INSTALL_DIR := $(TOP)/kernel/msm-$(TARGET_KERNEL_VERSION)/scripts
-UAPI_OUT := $(OUT)/obj/vendor/qcom/opensource/audio-kernel/include
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ avtimer.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_aac.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_ac3.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_alac.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_amrnb.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_amrwb.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_amrwbplus.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_ape.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_calibration.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_g711_dec.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_g711.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_mvs.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_qcp.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_sbc.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_voicememo.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_wma.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/linux/ $(AUDIO_ROOT)/include/uapi/linux/ msm_audio_wmapro.h;)
-
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/sound/ $(AUDIO_ROOT)/include/uapi/sound/ audio_effects.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/sound/ $(AUDIO_ROOT)/include/uapi/sound/ audio_slimslave.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/sound/ $(AUDIO_ROOT)/include/uapi/sound/ devdep_params.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/sound/ $(AUDIO_ROOT)/include/uapi/sound/ lsm_params.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/sound/ $(AUDIO_ROOT)/include/uapi/sound/ msmcal-hwdep.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/sound/ $(AUDIO_ROOT)/include/uapi/sound/ voice_params.h;)
-$(shell $(HEADER_INSTALL_DIR)/headers_install.sh $(UAPI_OUT)/sound/ $(AUDIO_ROOT)/include/uapi/sound/ wcd-dsp-glink.h;)
-
-KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/dsp/Module.symvers
-
-endif
 
 # Currently, for versions of gcc which support it, the kernel Makefile
 # is disabling the maybe-uninitialized warning.  Re-enable it for the

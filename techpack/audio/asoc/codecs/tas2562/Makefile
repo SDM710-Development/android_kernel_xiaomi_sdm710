@@ -1,32 +1,7 @@
-# We can build either as part of a standalone Kernel build or as
-# an external module.  Determine which mechanism is being used
-ifeq ($(MODNAME),)
-	KERNEL_BUILD := 1
-else
-	KERNEL_BUILD := 0
-endif
-
-
-
-ifeq ($(KERNEL_BUILD), 1)
-	# These are configurable via Kconfig for kernel-based builds
-	# Need to explicitly configure for Android-based builds
-	AUDIO_BLD_DIR := $(ANDROID_BUILD_TOP)/kernel/msm-4.9
-	AUDIO_ROOT := $(AUDIO_BLD_DIR)/techpack/audio
-endif
-
-ifeq ($(KERNEL_BUILD), 0)
-	ifeq ($(CONFIG_ARCH_SDM845), y)
-		include $(AUDIO_ROOT)/config/sdm845auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm845autoconf.h
-	endif
-	ifeq ($(CONFIG_ARCH_SDM670), y)
-		include $(AUDIO_ROOT)/config/sdm710auto.conf
-		export
-		INCS    +=  -include $(AUDIO_ROOT)/config/sdm710autoconf.h
-	endif
-endif
+# These are configurable via Kconfig for kernel-based builds
+# Need to explicitly configure for Android-based builds
+AUDIO_BLD_DIR := $(ANDROID_BUILD_TOP)/kernel/msm-4.9
+AUDIO_ROOT := $(AUDIO_BLD_DIR)/techpack/audio
 
 # As per target team, build is done as follows:
 # Defconfig : build with default flags
