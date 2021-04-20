@@ -13,6 +13,3 @@ EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include/uapi	\
 # Module information used by KBuild framework
 obj-$(CONFIG_SND_SOC_TAS2562) += tas2562_dlkm.o
 tas2562_dlkm-y := $(TAS2562_OBJS)
-
-# inject some build related information
-DEFINES += -DBUILD_TIMESTAMP=\"$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')\"

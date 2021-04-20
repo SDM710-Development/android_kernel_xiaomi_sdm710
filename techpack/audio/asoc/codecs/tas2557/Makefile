@@ -13,5 +13,3 @@ EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include/uapi	\
 
 obj-$(CONFIG_SND_SOC_TAS2557)    += snd-soc-tas2557_dlkm.o
 snd-soc-tas2557_dlkm-y := $(TAS2557_OBJS)
-# inject some build related information
-DEFINES += -DBUILD_TIMESTAMP=\"$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')\"
