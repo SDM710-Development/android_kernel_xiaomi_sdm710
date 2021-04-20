@@ -1,33 +1,4 @@
-# These are configurable via Kconfig for kernel-based builds
-# Need to explicitly configure for Android-based builds
-AUDIO_BLD_DIR := $(shell pwd)/kernel/msm-4.9
-AUDIO_ROOT := $(AUDIO_BLD_DIR)/techpack/audio
-
-# As per target team, build is done as follows:
-# Defconfig : build with default flags
-# Slub      : defconfig  + CONFIG_SLUB_DEBUG := y +
-#	      CONFIG_SLUB_DEBUG_ON := y + CONFIG_PAGE_POISONING := y
-# Perf      : Using appropriate msmXXXX-perf_defconfig
-#
-# Shipment builds (user variants) should not have any debug feature
-# enabled. This is identified using 'TARGET_BUILD_VARIANT'. Slub builds
-# are identified using the CONFIG_SLUB_DEBUG_ON configuration. Since
-# there is no other way to identify defconfig builds, QTI internal
-# representation of perf builds (identified using the string 'perf'),
-# is used to identify if the build is a slub or defconfig one. This
-# way no critical debug feature will be enabled for perf and shipment
-# builds. Other OEMs are also protected using the TARGET_BUILD_VARIANT
-# config.
-
-############ UAPI ############
-UAPI_DIR :=	uapi
-UAPI_INC :=	-I$(AUDIO_ROOT)/include/$(UAPI_DIR)
-
-############ COMMON ############
-COMMON_DIR :=	include
-COMMON_INC :=	-I$(AUDIO_ROOT)/$(COMMON_DIR)
-
-# for SDM660_CDC Codec
+# TAS2557 Codec
 ifdef CONFIG_SND_SOC_TAS2557
 	TAS2557_OBJS += tas2557-core.o
 	TAS2557_OBJS += tas2557-misc.o
@@ -37,10 +8,8 @@ ifdef CONFIG_SND_SOC_TAS2557
 	CFLAGS_tas2557-misc.o += $(call cc-option, -Wno-shift-overflow)
 endif
 
-INCS +=		$(COMMON_INC) \
-		$(UAPI_INC)
-
-EXTRA_CFLAGS += $(INCS)
+EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include/uapi	\
+		-I$(srctree)/techpack/audio/include
 
 obj-$(CONFIG_SND_SOC_TAS2557)    += snd-soc-tas2557_dlkm.o
 snd-soc-tas2557_dlkm-y := $(TAS2557_OBJS)
