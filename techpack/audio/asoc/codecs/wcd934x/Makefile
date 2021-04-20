@@ -37,25 +37,10 @@ ifdef CONFIG_SND_SOC_WCD934X
 	WCD934X_OBJS += wcd934x-dsd.o
 endif
 
-LINUX_INC +=	-Iinclude/linux
-
 INCS +=		$(COMMON_INC) \
 		$(UAPI_INC)
 
 EXTRA_CFLAGS += $(INCS)
-
-
-CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
-		-DANI_LITTLE_BIT_ENDIAN \
-		-DDOT11F_LITTLE_ENDIAN_HOST \
-		-DANI_COMPILER_TYPE_GCC \
-		-DANI_OS_TYPE_ANDROID=6 \
-		-DPTT_SOCK_SVC_ENABLE \
-		-Wall\
-		-Werror\
-		-D__linux__
-
-KBUILD_CPPFLAGS += $(CDEFINES)
 
 # Currently, for versions of gcc which support it, the kernel Makefile
 # is disabling the maybe-uninitialized warning.  Re-enable it for the

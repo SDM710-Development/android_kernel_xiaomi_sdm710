@@ -83,23 +83,10 @@ endif
 
 	Q6_OBJS += msm-cirrus-playback.o
 
-LINUX_INC +=	-Iinclude/linux
-
 INCS +=		$(COMMON_INC) \
 		$(UAPI_INC)
 
 EXTRA_CFLAGS += $(INCS)
-
-
-CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
-		-DANI_LITTLE_BIT_ENDIAN \
-		-DDOT11F_LITTLE_ENDIAN_HOST \
-		-DANI_COMPILER_TYPE_GCC \
-		-DANI_OS_TYPE_ANDROID=6 \
-		-DPTT_SOCK_SVC_ENABLE \
-		-Wall\
-		-Werror\
-		-D__linux__
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_SPKR_PROTECTION)),true)
 	CDEFINES += -DCONFIG_SND_SOC_TAS2562_FOR_PYXIS
@@ -118,17 +105,6 @@ endif
 
 ifeq ($(call cc-option-yn, -Wheader-guard),y)
 EXTRA_CFLAGS += -Wheader-guard
-endif
-
-# If the module name is not "wlan", then the define MULTI_IF_NAME to be the
-# same a the QCA CHIP name. The host driver will then append MULTI_IF_NAME to
-# any string that must be unique for all instances of the driver on the system.
-# This allows multiple instances of the driver with different module names.
-# If the module name is wlan, leave MULTI_IF_NAME undefined and the code will
-# treat the driver as the primary driver.
-ifneq ($(MODNAME), qdsp6v2)
-CHIP_NAME ?= $(MODNAME)
-CDEFINES += -DMULTI_IF_NAME=\"$(CHIP_NAME)\"
 endif
 
 obj-y += codecs/

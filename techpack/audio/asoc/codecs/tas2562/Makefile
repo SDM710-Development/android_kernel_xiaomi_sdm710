@@ -36,25 +36,10 @@ ifdef CONFIG_SND_SOC_TAS2562
 	TAS2562_OBJS += tas2562-misc.o
 endif
 
-LINUX_INC +=	-Iinclude/linux
-
 INCS +=		$(COMMON_INC) \
 		$(UAPI_INC)
 
 EXTRA_CFLAGS += $(INCS)
-
-
-CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
-		-DANI_LITTLE_BIT_ENDIAN \
-		-DDOT11F_LITTLE_ENDIAN_HOST \
-		-DANI_COMPILER_TYPE_GCC \
-		-DANI_OS_TYPE_ANDROID=6 \
-		-DPTT_SOCK_SVC_ENABLE \
-		-Wall\
-		-Werror\
-		-D__linux__
-
-KBUILD_CPPFLAGS += $(CDEFINES)
 
 # Module information used by KBuild framework
 obj-$(CONFIG_SND_SOC_TAS2562) += tas2562_dlkm.o

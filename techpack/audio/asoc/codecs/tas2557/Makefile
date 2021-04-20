@@ -37,26 +37,10 @@ ifdef CONFIG_SND_SOC_TAS2557
 	CFLAGS_tas2557-misc.o += $(call cc-option, -Wno-shift-overflow)
 endif
 
-LINUX_INC +=	-Iinclude/linux
-
 INCS +=		$(COMMON_INC) \
 		$(UAPI_INC)
 
 EXTRA_CFLAGS += $(INCS)
-
-
-CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
-		-DANI_LITTLE_BIT_ENDIAN \
-		-DDOT11F_LITTLE_ENDIAN_HOST \
-		-DANI_COMPILER_TYPE_GCC \
-		-DANI_OS_TYPE_ANDROID=6 \
-		-DPTT_SOCK_SVC_ENABLE \
-		-Wall\
-		-Werror\
-		-D__linux__
-
-KBUILD_CPPFLAGS += $(CDEFINES)
-
 
 obj-$(CONFIG_SND_SOC_TAS2557)    += snd-soc-tas2557_dlkm.o
 snd-soc-tas2557_dlkm-y := $(TAS2557_OBJS)
