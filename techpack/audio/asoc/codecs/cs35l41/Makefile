@@ -1,16 +1,8 @@
 ############ CS35L41 ############
 
-# for CS35L41 Codec
-ifdef CONFIG_SND_SOC_CS35L41
-	CS35L41_OBJS += cs35l41.o
-	CS35L41_OBJS += cs35l41-i2c.o
-	CS35L41_OBJS += cs35l41-tables.o
-	CS35L41_OBJS += wm_adsp.o
-endif
+# CS35L41 Codec
+obj-$(CONFIG_SND_SOC_CS35L41) += audio_cs35l41.o
+audio_cs35l41-y := cs35l41.o cs35l41-i2c.o cs35l41-tables.o wm_adsp.o
 
 EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include/uapi	\
 		-I$(srctree)/techpack/audio/include
-
-# Module information used by KBuild framework
-obj-$(CONFIG_SND_SOC_CS35L41) += cs35l41_dlkm.o
-cs35l41_dlkm-y := $(CS35L41_OBJS)

@@ -1,15 +1,8 @@
 ############ TAS2562 ############
 
-# for TAS2562 Codec
-ifdef CONFIG_SND_SOC_TAS2562
-	TAS2562_OBJS += tas2562-codec.o
-	TAS2562_OBJS += tas2562-regmap.o
-	TAS2562_OBJS += tas2562-misc.o
-endif
+# TAS2562 Codec
+obj-$(CONFIG_SND_SOC_TAS2562) += audio_tas2562.o
+audio_tas2562-y := tas2562-codec.o tas2562-misc.o tas2562-regmap.o
 
 EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include/uapi	\
 		-I$(srctree)/techpack/audio/include
-
-# Module information used by KBuild framework
-obj-$(CONFIG_SND_SOC_TAS2562) += tas2562_dlkm.o
-tas2562_dlkm-y := $(TAS2562_OBJS)
