@@ -1,0 +1,45 @@
+config SND_SOC_MSM_HDMI_CODEC_RX
+	bool
+
+config SND_SOC_MSM_STUB
+	bool
+
+config SND_SOC_WCD_CPE
+	bool
+
+config SND_SOC_WCD_MBHC
+	bool
+
+config SND_SOC_WCD_MBHC_ADC
+	bool
+
+config SND_SOC_WCD_MBHC_LEGACY
+	bool
+
+config SND_SOC_WCD_SPI
+	bool
+
+config SND_SOC_WCD9XXX_V2
+	bool
+
+config SND_SOC_WCD9335
+	bool
+
+config SND_SOC_WSA881X
+	bool
+
+config SND_SOC_WSA881X_ANALOG
+	bool
+
+config WCD9XXX_CODEC_CORE
+	bool
+
+config SPK_ID
+	bool
+
+source "techpack/audio/asoc/codecs/cs35l41/Kconfig"
+source "techpack/audio/asoc/codecs/msm_sdw/Kconfig"
+source "techpack/audio/asoc/codecs/sdm660_cdc/Kconfig"
+source "techpack/audio/asoc/codecs/tas2557/Kconfig"
+source "techpack/audio/asoc/codecs/tas2562/Kconfig"
+source "techpack/audio/asoc/codecs/wcd934x/Kconfig"

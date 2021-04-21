@@ -1,0 +1,52 @@
+config DOLBY_DS2
+	bool
+
+config DOLBY_LICENSE
+	bool
+
+config QTI_PP
+	bool
+
+config SND_HWDEP_ROUTING
+	bool
+
+config SND_SOC_BG_8909
+	bool
+
+config SND_SOC_CPE
+	bool
+
+config SND_SOC_EXT_CODEC
+	bool
+
+config SND_SOC_EXT_CODEC_SDM450
+	bool
+
+config SND_SOC_EXT_CODEC_8909
+	bool
+
+config SND_SOC_INT_CODEC
+	bool
+
+config SND_SOC_MACHINE_SDM845
+	bool
+
+config SND_SOC_MACHINE_SDXPOORWILLS
+	bool
+
+config SND_SOC_MSM8909
+	bool
+
+config SND_SOC_QDSP6V2
+	bool
+
+config SND_SOC_SDM450
+	bool
+
+config SND_SOC_SDM670
+	bool
+
+config SND_SOC_8909_DIG_CDC
+	bool
+
+source "techpack/audio/asoc/codecs/Kconfig"

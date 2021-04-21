@@ -1,0 +1,4 @@
+source "techpack/audio/asoc/Kconfig"
+source "techpack/audio/dsp/Kconfig"
+source "techpack/audio/ipc/Kconfig"
+source "techpack/audio/soc/Kconfig"

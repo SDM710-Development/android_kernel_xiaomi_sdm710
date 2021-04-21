@@ -1,0 +1,17 @@
+config MSM_BG_GLINK
+	bool
+
+config MSM_QDSP6_APRV2
+	bool
+
+config MSM_QDSP6_APRV2_GLINK
+	bool
+
+config MSM_QDSP6_APRV3
+	bool
+
+config MSM_QDSP6_APRV3_GLINK
+	bool
+
+config WCD_DSP_GLINK
+	bool
