@@ -1,5 +1,6 @@
 menuconfig SND_SOC_TAS2557
 	tristate "Texas Instruments TAS2557 SmartAmp(R)"
+	select SPK_ID
 
 config TAS2557_REGMAP
 	depends on SND_SOC_TAS2557
