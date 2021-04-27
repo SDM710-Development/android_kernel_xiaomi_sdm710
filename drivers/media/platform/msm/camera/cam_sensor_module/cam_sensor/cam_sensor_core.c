@@ -586,6 +586,8 @@ int cam_sensor_match_id(struct cam_sensor_ctrl_t *s_ctrl)
 	return rc;
 }
 
+uint32_t g_operation_mode;
+
 int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	void *arg)
 {
@@ -712,6 +714,9 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			CAM_ERR(CAM_SENSOR, "Failed Copying from user");
 			goto release_mutex;
 		}
+
+		g_operation_mode = sensor_acq_dev.operation_mode;
+		CAM_DBG(CAM_SENSOR, "Operation mode: %0x", g_operation_mode);
 
 		bridge_params.session_hdl = sensor_acq_dev.session_handle;
 		bridge_params.ops = &s_ctrl->bridge_intf.ops;
