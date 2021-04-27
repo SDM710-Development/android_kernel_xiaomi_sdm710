@@ -204,6 +204,8 @@ static int cam_vfe_camif_resource_deinit(
 
 }
 
+extern uint32_t g_operation_mode;
+
 static int cam_vfe_camif_resource_start(
 	struct cam_isp_resource_node        *camif_res)
 {
@@ -282,8 +284,27 @@ static int cam_vfe_camif_resource_start(
 				rsrc_data->last_line,
 				computed_epoch_line_cfg);
 		break;
-	case CAM_CPAS_TITAN_170_V100:
 	case CAM_CPAS_TITAN_170_V110:
+#ifdef CONFIG_MACH_XIAOMI
+		if (g_operation_mode) {
+			if (g_operation_mode != 0x803C)
+				epoch0_irq_mask = rsrc_data->last_line * 2;
+			else
+				epoch0_irq_mask = 2998;
+
+			epoch0_irq_mask += rsrc_data->first_line;
+			epoch0_irq_mask /= 3;
+			epoch1_irq_mask = rsrc_data->reg_data->epoch_line_cfg;
+			epoch1_irq_mask &= 0xffff;
+
+			cam_io_w_mb((epoch0_irq_mask << 16) | epoch1_irq_mask,
+				    rsrc_data->mem_base +
+				    rsrc_data->camif_reg->epoch_irq);
+			break;
+		}
+		/* passthrough for operation_mode == 0 */
+#endif
+	case CAM_CPAS_TITAN_170_V100:
 	case CAM_CPAS_TITAN_170_V120:
 		cam_io_w_mb(rsrc_data->reg_data->epoch_line_cfg,
 				rsrc_data->mem_base +
