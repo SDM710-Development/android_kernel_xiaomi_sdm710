@@ -587,6 +587,7 @@ int cam_sensor_match_id(struct cam_sensor_ctrl_t *s_ctrl)
 }
 
 uint32_t g_operation_mode;
+uint16_t g_sensor_slave_addr;
 
 int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	void *arg)
@@ -939,6 +940,11 @@ int cam_sensor_publish_dev_info(struct cam_req_mgr_device_info *info)
 	info->p_delay = 2;
 	info->trigger = CAM_TRIGGER_POINT_SOF;
 
+	if (g_sensor_slave_addr == 0x5a && g_operation_mode == 0x8006)
+		info->p_delay = 0;
+
+	CAM_INFO(CAM_SENSOR, "Sensor pipeline delay: %d", info->p_delay);
+
 	return rc;
 }
 
@@ -1003,6 +1009,8 @@ int cam_sensor_power_up(struct cam_sensor_ctrl_t *s_ctrl)
 		CAM_ERR(CAM_SENSOR, "failed: %pK %pK", power_info, slave_info);
 		return -EINVAL;
 	}
+
+	g_sensor_slave_addr = slave_info->sensor_slave_addr;
 
 	if (s_ctrl->bob_pwm_switch) {
 		rc = cam_sensor_bob_pwm_mode_switch(soc_info,
