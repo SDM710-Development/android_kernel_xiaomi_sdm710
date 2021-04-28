@@ -69,6 +69,8 @@ void cam_node_put_ctxt_to_free_list(struct kref *ref)
 		container_of(ref, struct cam_context, refcount);
 	struct cam_node *node = ctx->node;
 
+	ctx->ctx_released = true;
+
 	mutex_lock(&node->list_mutex);
 	list_add_tail(&ctx->list, &node->free_ctx_list);
 	mutex_unlock(&node->list_mutex);
@@ -117,6 +119,8 @@ static int __cam_node_handle_acquire_dev(struct cam_node *node,
 			node->name);
 		goto free_ctx;
 	}
+
+	ctx->ctx_released = false;
 
 	CAM_DBG(CAM_CORE, "[%s] Acquire ctx_id %d",
 		node->name, ctx->ctx_id);
@@ -339,6 +343,8 @@ destroy_dev_hdl:
 	CAM_DBG(CAM_CORE, "[%s] Release ctx_id=%d, refcount=%d",
 		node->name, ctx->ctx_id,
 		atomic_read(&(ctx->refcount.refcount)));
+
+	ctx->ctx_released = true;
 
 	return rc;
 }
