@@ -2,9 +2,6 @@
 # Makefile for the touchscreen drivers.
 #
 
-subdir-ccflags-y := \
-    -fdata-sections -ffunction-sections -finline-functions -ftree-vectorize -funroll-loops
-
 # Each configuration option enables a list of files.
 
 wm97xx-ts-y := wm97xx-core.o
