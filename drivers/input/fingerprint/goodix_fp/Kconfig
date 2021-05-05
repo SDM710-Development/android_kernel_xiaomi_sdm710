@@ -67,4 +67,13 @@ config GOODIX_FP_PANEL_LIGHT_ON
 	  Say Y here if you want Goodix fingerprint sensor driver
 	  to light panel on when finger touches the sensor.
 
+config GOODIX_FP_PROXIMITY_STATE
+	bool "Proximity state support"
+	help
+	  Say Y here if you want to enable proximity state support
+	  in Goodix fingerprint sensor driver. Proximity state
+	  is exported via sysfs and controls whether fingerprint
+	  sensor should or not generate interrupts when it is
+	  touched.
+
 endif

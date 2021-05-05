@@ -120,6 +120,9 @@ struct gf_dev {
 #ifdef CONFIG_GOODIX_FP_PANEL_LIGHT_ON
 	struct work_struct work;
 #endif
+#ifdef CONFIG_GOODIX_FP_PROXIMITY_STATE
+	int proximity_state; /* 0:far 1:near */
+#endif
 };
 
 int gf_probe_common(struct device *dev);

@@ -707,6 +707,40 @@ static struct notifier_block goodix_noti_block = {
 };
 #endif
 
+#ifdef CONFIG_GOODIX_FP_PROXIMITY_STATE
+static ssize_t proximity_state_store(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+	struct gf_dev *gf_dev = dev_get_drvdata(dev);
+	int rc, val;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc)
+		return -EINVAL;
+
+	gf_dev->proximity_state = !!val;
+
+	if (gf_dev->proximity_state)
+		gf_disable_irq(gf_dev);
+	else
+		gf_enable_irq(gf_dev);
+
+	return count;
+}
+
+static DEVICE_ATTR_WO(proximity_state);
+
+static struct attribute *attributes[] = {
+	&dev_attr_proximity_state.attr,
+	NULL
+};
+
+static const struct attribute_group attribute_group = {
+	.attrs = attributes,
+};
+#endif
+
 static struct class *gf_class;
 
 static int gf_add_cdev(struct gf_dev *gf_dev)
@@ -910,6 +944,14 @@ int gf_probe_common(struct device *dev)
 	}
 #endif
 
+#ifdef CONFIG_GOODIX_FP_PROXIMITY_STATE
+	rc = sysfs_create_group(&dev->kobj, &attribute_group);
+	if (rc < 0) {
+		dev_err(gf_dev->dev, "failed to create sysfs node\n");
+		goto error_sysfs;
+	}
+#endif
+
 	wakeup_source_init(&fp_wakelock, "fp_wakelock");
 
 	dev_dbg(gf_dev->dev, "version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR,
@@ -917,7 +959,11 @@ int gf_probe_common(struct device *dev)
 
 	return rc;
 
+#ifdef CONFIG_GOODIX_FP_PROXIMITY_STATE
+error_sysfs:
+#endif
 #ifdef CONFIG_GOODIX_FP_DRM_EVENTS
+	drm_unregister_client(&gf_dev->notifier);
 error_drm_reg:
 #endif
 	gf_clk_fini(gf_dev);
