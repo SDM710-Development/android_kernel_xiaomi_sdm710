@@ -117,7 +117,7 @@ struct gf_dev {
 	bool avail;
 	char fb_black;
 	char wait_finger_down;
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_PANEL_LIGHT_ON
+#ifdef CONFIG_GOODIX_FP_PANEL_LIGHT_ON
 	struct work_struct work;
 #endif
 #ifdef CONFIG_FINGERPRINT_FP_VREG_CONTROL
@@ -128,7 +128,7 @@ struct gf_dev {
 int gf_probe_common(struct device *dev);
 int gf_remove_common(struct device *dev);
 
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_SPI
+#ifdef CONFIG_GOODIX_FP_SPI
 
 int gf_register_spi_driver(struct of_device_id *match_table);
 void gf_unregister_spi_driver(void);
@@ -148,7 +148,7 @@ void gf_unregister_spi_driver(void)
 
 #endif
 
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_PLATFORM
+#ifdef CONFIG_GOODIX_FP_PLATFORM
 
 int gf_register_platform_driver(struct of_device_id *match_table);
 void gf_unregister_platform_driver(void);
@@ -168,7 +168,7 @@ void gf_unregister_platform_driver(void)
 
 #endif
 
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_NETLINK
+#ifdef CONFIG_GOODIX_FP_NETLINK
 
 int gf_sendnlmsg(char message);
 int gf_netlink_init(void);
