@@ -521,6 +521,20 @@ static irqreturn_t gf_irq(int irq, void *handle)
 	/* Sent netlink message */
 	gf_sendnlmsg(GF_NET_EVENT_IRQ);
 
+	if (gf_dev->wait_finger_down && gf_dev->avail && gf_dev->fb_black) {
+		uint32_t key_input = KEY_RIGHT;
+
+		input_report_key(gf_dev->input, key_input, 1);
+		input_sync(gf_dev->input);
+		input_report_key(gf_dev->input, key_input, 0);
+		input_sync(gf_dev->input);
+
+		gf_dev->wait_finger_down = false;
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
+		schedule_work(&gf_dev->work);
+#endif
+	}
+
 	/* Send fasync notification */
 	kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
 
