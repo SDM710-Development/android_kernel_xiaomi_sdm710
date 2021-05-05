@@ -120,9 +120,6 @@ struct gf_dev {
 #ifdef CONFIG_GOODIX_FP_PANEL_LIGHT_ON
 	struct work_struct work;
 #endif
-#ifdef CONFIG_FINGERPRINT_FP_VREG_CONTROL
-	struct regulator *vreg;
-#endif
 };
 
 int gf_probe_common(struct device *dev);
