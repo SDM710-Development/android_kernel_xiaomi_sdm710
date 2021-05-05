@@ -502,7 +502,7 @@ static long gf_compat_ioctl(struct file *filp, unsigned int cmd,
 }
 #endif /* CONFIG_COMPAT */
 
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_PANEL_LIGHT_ON
 static void notification_work(struct work_struct *work)
 {
 	pr_debug("unblank\n");
@@ -530,7 +530,7 @@ static irqreturn_t gf_irq(int irq, void *handle)
 		input_sync(gf_dev->input);
 
 		gf_dev->wait_finger_down = false;
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_PANEL_LIGHT_ON
 		schedule_work(&gf_dev->work);
 #endif
 	}
@@ -879,7 +879,7 @@ int gf_probe_common(struct device *dev)
 	gf_dev->pwr_gpio = -EINVAL;
 	atomic_set(&gf_dev->users, 0);
 
-#ifdef CONFIG_FINGERPRINT_GOODIX_FP_DRM_EVENTS
+#ifdef CONFIG_FINGERPRINT_GOODIX_FP_PANEL_LIGHT_ON
 	INIT_WORK(&gf_dev->work, notification_work);
 #endif
 

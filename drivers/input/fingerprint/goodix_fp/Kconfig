@@ -63,3 +63,10 @@ config FINGERPRINT_GOODIX_FP_DRM_EVENTS
 	help
 	  Say Y here if you want Goodix fingerprint sensor driver
 	  to listen and handle blank/unblank events sent by DRM
+
+config FINGERPRINT_GOODIX_FP_PANEL_LIGHT_ON
+	bool "Light-on panel when finger touches the sensor"
+	depends on FINGERPRINT_GOODIX_FP_DRM_EVENTS
+	help
+	  Say Y here if you want Goodix fingerprint sensor driver
+	  to light panel on when finger touches the sensor.
