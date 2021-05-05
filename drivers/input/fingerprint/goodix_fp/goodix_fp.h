@@ -104,25 +104,24 @@ struct gf_dev {
 	struct clk *iface_clk;
 
 	struct input_dev *input;
-	/* buffer is NULL unless this device is open (users > 0) */
-	atomic_t users;
-	signed irq_gpio;
-	signed reset_gpio;
-	signed pwr_gpio;
-	int irq;
-	int irq_enabled;
-	int clk_enabled;
 	struct fasync_struct *async;
 	struct notifier_block notifier;
-	bool avail;
-	char fb_black;
-	char wait_finger_down;
 #ifdef CONFIG_GOODIX_FP_PANEL_LIGHT_ON
 	struct work_struct work;
 #endif
+	atomic_t users;
+	int irq_gpio;
+	int reset_gpio;
+	int pwr_gpio;
 #ifdef CONFIG_GOODIX_FP_PROXIMITY_STATE
 	int proximity_state; /* 0:far 1:near */
 #endif
+	int irq;
+	bool irq_enabled;
+	bool clk_enabled;
+	bool avail;
+	bool fb_black;
+	bool wait_finger_down;
 };
 
 int gf_probe_common(struct device *dev);
