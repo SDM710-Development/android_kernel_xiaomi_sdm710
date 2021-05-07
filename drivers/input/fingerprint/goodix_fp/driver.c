@@ -254,51 +254,51 @@ static void nav_event_input(struct gf_dev *gf_dev, gf_nav_event_t nav_event)
 
 	switch (nav_event) {
 	case GF_NAV_FINGER_DOWN:
-		dev_dbg(gf_dev->dev, "nav finger down\n");
+		dev_info(gf_dev->dev, "nav finger down\n");
 		break;
 
 	case GF_NAV_FINGER_UP:
-		dev_dbg(gf_dev->dev, "nav finger up\n");
+		dev_info(gf_dev->dev, "nav finger up\n");
 		break;
 
 	case GF_NAV_DOWN:
 		nav_input = GF_NAV_INPUT_DOWN;
-		dev_dbg(gf_dev->dev, "nav down\n");
+		dev_info(gf_dev->dev, "nav down\n");
 		break;
 
 	case GF_NAV_UP:
 		nav_input = GF_NAV_INPUT_UP;
-		dev_dbg(gf_dev->dev, "nav up\n");
+		dev_info(gf_dev->dev, "nav up\n");
 		break;
 
 	case GF_NAV_LEFT:
 		nav_input = GF_NAV_INPUT_LEFT;
-		dev_dbg(gf_dev->dev, "nav left\n");
+		dev_info(gf_dev->dev, "nav left\n");
 		break;
 
 	case GF_NAV_RIGHT:
 		nav_input = GF_NAV_INPUT_RIGHT;
-		dev_dbg(gf_dev->dev, "nav right\n");
+		dev_info(gf_dev->dev, "nav right\n");
 		break;
 
 	case GF_NAV_CLICK:
 		nav_input = GF_NAV_INPUT_CLICK;
-		dev_dbg(gf_dev->dev, "nav click\n");
+		dev_info(gf_dev->dev, "nav click\n");
 		break;
 
 	case GF_NAV_HEAVY:
 		nav_input = GF_NAV_INPUT_HEAVY;
-		dev_dbg(gf_dev->dev, "nav heavy\n");
+		dev_info(gf_dev->dev, "nav heavy\n");
 		break;
 
 	case GF_NAV_LONG_PRESS:
 		nav_input = GF_NAV_INPUT_LONG_PRESS;
-		dev_dbg(gf_dev->dev, "nav long press\n");
+		dev_info(gf_dev->dev, "nav long press\n");
 		break;
 
 	case GF_NAV_DOUBLE_CLICK:
 		nav_input = GF_NAV_INPUT_DOUBLE_CLICK;
-		dev_dbg(gf_dev->dev, "nav double click\n");
+		dev_info(gf_dev->dev, "nav double click\n");
 		break;
 
 	default:
@@ -330,7 +330,7 @@ static void gf_kernel_key_input(struct gf_dev *gf_dev, struct gf_key *gf_key)
 		key_input = gf_key->key;
 	}
 
-	dev_dbg(gf_dev->dev, "received key event[%d], key=%d, value=%d\n",
+	dev_info(gf_dev->dev, "received key event[%d], key=%d, value=%d\n",
 		key_input, gf_key->key, gf_key->value);
 
 	if ((GF_KEY_POWER == gf_key->key || GF_KEY_CAMERA == gf_key->key)
@@ -366,7 +366,7 @@ static int gf_set_power(struct gf_dev *gf_dev, bool enable)
 
 	/* No change? */
 	if (!(gf_dev->avail ^ enable)) {
-		dev_dbg(gf_dev->dev, "sensor has already powered-%s\n",
+		dev_info(gf_dev->dev, "sensor has already powered-%s\n",
 			enable ? "on" : "off");
 
 		return 0;
@@ -410,10 +410,10 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		switch (cmd) {
 		case GF_IOC_ENABLE_POWER:
 		case GF_IOC_DISABLE_POWER:
-			dev_dbg(gf_dev->dev, "power cmd\n");
+			dev_info(gf_dev->dev, "power cmd\n");
 			break;
 		default:
-			dev_dbg(gf_dev->dev, "get cmd %d but sensor is powered off\n",
+			dev_info(gf_dev->dev, "get cmd %d but sensor is powered off\n",
 				 _IOC_NR(cmd));
 			return -ENODEV;
 		}
@@ -421,23 +421,23 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case GF_IOC_INIT:
-		dev_dbg(gf_dev->dev, "GF_IOC_INIT\n");
+		dev_info(gf_dev->dev, "GF_IOC_INIT\n");
 		if (copy_to_user(uptr, &netlink_route, sizeof(u8)))
 			return -EFAULT;
 		break;
 	case GF_IOC_EXIT:
-		dev_dbg(gf_dev->dev, "GF_IOC_EXIT\n");
+		dev_info(gf_dev->dev, "GF_IOC_EXIT\n");
 		break;
 	case GF_IOC_DISABLE_IRQ:
-		dev_dbg(gf_dev->dev, "GF_IOC_DISABEL_IRQ\n");
+		dev_info(gf_dev->dev, "GF_IOC_DISABEL_IRQ\n");
 		gf_disable_irq(gf_dev);
 		break;
 	case GF_IOC_ENABLE_IRQ:
-		dev_dbg(gf_dev->dev, "GF_IOC_ENABLE_IRQ\n");
+		dev_info(gf_dev->dev, "GF_IOC_ENABLE_IRQ\n");
 		gf_enable_irq(gf_dev);
 		break;
 	case GF_IOC_RESET:
-		dev_dbg(gf_dev->dev, "GF_IOC_RESET.\n");
+		dev_info(gf_dev->dev, "GF_IOC_RESET.\n");
 		gf_hw_reset(gf_dev, 3);
 		break;
 	case GF_IOC_INPUT_KEY_EVENT:
@@ -447,7 +447,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case GF_IOC_NAV_EVENT:
 #if defined(CONFIG_GOODIX_FP_NAV_EVENT)
-		dev_dbg(gf_dev->dev, "GF_IOC_NAV_EVENT\n");
+		dev_info(gf_dev->dev, "GF_IOC_NAV_EVENT\n");
 		if (copy_from_user(&nav_event, uptr, sizeof(nav_event)))
 			return -EFAULT;
 		nav_event_input(gf_dev, nav_event);
@@ -462,29 +462,29 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		gf_clk_disable(gf_dev);
 		break;
 	case GF_IOC_ENABLE_POWER:
-		dev_dbg(gf_dev->dev, "GF_IOC_ENABLE_POWER\n");
+		dev_info(gf_dev->dev, "GF_IOC_ENABLE_POWER\n");
 		gf_set_power(gf_dev, true);
 		break;
 	case GF_IOC_DISABLE_POWER:
-		dev_dbg(gf_dev->dev, "GF_IOC_DISABLE_POWER\n");
+		dev_info(gf_dev->dev, "GF_IOC_DISABLE_POWER\n");
 		gf_set_power(gf_dev, false);
 		break;
 	case GF_IOC_ENTER_SLEEP_MODE:
-		dev_dbg(gf_dev->dev, "GF_IOC_ENTER_SLEEP_MODE\n");
+		dev_info(gf_dev->dev, "GF_IOC_ENTER_SLEEP_MODE\n");
 		break;
 	case GF_IOC_GET_FW_INFO:
-		dev_dbg(gf_dev->dev, "GF_IOC_GET_FW_INFO\n");
+		dev_info(gf_dev->dev, "GF_IOC_GET_FW_INFO\n");
 		break;
 	case GF_IOC_REMOVE:
-		dev_dbg(gf_dev->dev, "GF_IOC_REMOVE\n");
+		dev_info(gf_dev->dev, "GF_IOC_REMOVE\n");
 		break;
 	case GF_IOC_CHIP_INFO:
-		dev_dbg(gf_dev->dev, "GF_IOC_CHIP_INFO\n");
+		dev_info(gf_dev->dev, "GF_IOC_CHIP_INFO\n");
 		if (copy_from_user(&info, uptr, sizeof(info)))
 			return -EFAULT;
-		dev_dbg(gf_dev->dev, "vendor_id : 0x%x\n", info.vendor_id);
-		dev_dbg(gf_dev->dev, "mode : 0x%x\n", info.mode);
-		dev_dbg(gf_dev->dev, "operation: 0x%x\n", info.operation);
+		dev_info(gf_dev->dev, "vendor_id : 0x%x\n", info.vendor_id);
+		dev_info(gf_dev->dev, "mode : 0x%x\n", info.mode);
+		dev_info(gf_dev->dev, "operation: 0x%x\n", info.operation);
 		break;
 	default:
 		dev_warn(gf_dev->dev, "unsupported ioctl: 0x%x\n", cmd);
@@ -658,7 +658,7 @@ static int gf_drm_notify(struct notifier_block *nb, unsigned long val,
 
 	gf_dev = container_of(nb, struct gf_dev, notifier);
 
-	dev_dbg(gf_dev->dev, "DRM notification with value: %lu\n", val);
+	dev_info(gf_dev->dev, "DRM notification with value: %lu\n", val);
 
 	if (evdata && evdata->data) {
 		blank = *(unsigned int *)(evdata->data);
@@ -694,7 +694,7 @@ static int gf_drm_notify(struct notifier_block *nb, unsigned long val,
 			}
 			break;
 		default:
-			dev_dbg(gf_dev->dev, "received blank: %u\n", blank);
+			dev_info(gf_dev->dev, "received blank: %u\n", blank);
 			break;
 		}
 	}
@@ -954,7 +954,7 @@ int gf_probe_common(struct device *dev)
 
 	wakeup_source_init(&fp_wakelock, "fp_wakelock");
 
-	dev_dbg(gf_dev->dev, "version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR,
+	dev_info(gf_dev->dev, "version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR,
 		PATCH_LEVEL);
 
 	return rc;
