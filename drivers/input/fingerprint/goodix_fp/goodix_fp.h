@@ -105,7 +105,7 @@ struct gf_dev {
 
 	struct input_dev *input;
 	/* buffer is NULL unless this device is open (users > 0) */
-	unsigned users;
+	atomic_t users;
 	signed irq_gpio;
 	signed reset_gpio;
 	signed pwr_gpio;

@@ -535,6 +535,10 @@ static int gf_open(struct inode *inode, struct file *filp)
 
 	gf_dev = container_of(inode->i_cdev, struct gf_dev, cdev);
 
+	/* Skip resource allocation except for first user */
+	if (atomic_inc_return(&gf_dev->users) > 1)
+		goto skip_init;
+
 	/* request reset GPIO */
 	rc = devm_gpio_request(gf_dev->dev, gf_dev->reset_gpio, "goodix_reset");
 	if (rc < 0) {
@@ -567,7 +571,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 	/* enable the interrupt to wake-up system */
 	enable_irq_wake(gf_dev->irq);
 
-	gf_dev->users++;
+skip_init:
 	filp->private_data = gf_dev;
 	nonseekable_open(inode, filp);
 
@@ -597,9 +601,8 @@ static int gf_release(struct inode *inode, struct file *filp)
 
 	filp->private_data = NULL;
 
-	/* last close?? */
-	gf_dev->users--;
-	if (!gf_dev->users) {
+	/* De-init for last user */
+	if (atomic_dec_return(&gf_dev->users) == 0) {
 		/* Disable IRQ and release resources */
 		gf_disable_irq(gf_dev);
 		disable_irq_wake(gf_dev->irq);
@@ -854,6 +857,7 @@ int gf_probe_common(struct device *dev)
 	gf_dev->irq_gpio = -EINVAL;
 	gf_dev->reset_gpio = -EINVAL;
 	gf_dev->pwr_gpio = -EINVAL;
+	atomic_set(&gf_dev->users, 0);
 
 #ifndef GOODIX_DRM_INTERFACE_WA
 	INIT_WORK(&gf_dev->work, notification_work);
