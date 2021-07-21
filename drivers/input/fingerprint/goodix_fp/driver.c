@@ -535,35 +535,50 @@ static int gf_open(struct inode *inode, struct file *filp)
 
 	gf_dev = container_of(inode->i_cdev, struct gf_dev, cdev);
 
-	rc = gpio_request(gf_dev->reset_gpio, "goodix_reset");
-	if (rc) {
-		dev_err(gf_dev->dev, "failed to request RESET GPIO. rc = %d\n",
-			rc);
-		return -EPERM;
+	/* request reset GPIO */
+	rc = devm_gpio_request(gf_dev->dev, gf_dev->reset_gpio, "goodix_reset");
+	if (rc < 0) {
+		dev_err(gf_dev->dev, "failed to request RESET GPIO\n");
+		return rc;
 	}
 	gpio_direction_output(gf_dev->reset_gpio, 0);
 
-	rc = gpio_request(gf_dev->irq_gpio, "goodix_irq");
-	if (rc) {
-		dev_err(gf_dev->dev, "failed to request IRQ GPIO. rc = %d\n",
-			rc);
-		return -EPERM;
+	/* request IRQ GPIO */
+	rc = devm_gpio_request(gf_dev->dev, gf_dev->irq_gpio, "goodix_irq");
+	if (rc < 0) {
+		dev_err(gf_dev->dev, "failed to request IRQ GPIO\n");
+		goto err_gpio_irq;
 	}
 	gpio_direction_input(gf_dev->irq_gpio);
 
-	rc = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
-				  IRQF_TRIGGER_RISING | IRQF_ONESHOT, "gf",
-				  gf_dev);
-	if (!rc) {
-		enable_irq_wake(gf_dev->irq);
-		gf_dev->irq_enabled = 1;
-		gf_disable_irq(gf_dev);
+	/* request IRQ */
+	gf_dev->irq = gpio_to_irq(gf_dev->irq_gpio);
+	rc = devm_request_threaded_irq(gf_dev->dev, gf_dev->irq, NULL, gf_irq,
+				       IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+				       "gf", gf_dev);
+	if (rc < 0) {
+		dev_err(gf_dev->dev, "failed to register interrupt handler\n");
+		goto err_irq;
 	}
+
+	/* disable IRQ that is enabled after request */
+	disable_irq(gf_dev->irq);
+
+	/* enable the interrupt to wake-up system */
+	enable_irq_wake(gf_dev->irq);
 
 	gf_dev->users++;
 	filp->private_data = gf_dev;
 	nonseekable_open(inode, filp);
-	dev_dbg(gf_dev->dev, "Succeed to open device. irq = %d\n", gf_dev->irq);
+
+	dev_info(gf_dev->dev, "Succeed to open device\n");
+
+	return 0;
+
+err_irq:
+	devm_gpio_free(gf_dev->dev, gf_dev->irq_gpio);
+err_gpio_irq:
+	devm_gpio_free(gf_dev->dev, gf_dev->reset_gpio);
 
 	return rc;
 }
@@ -585,12 +600,14 @@ static int gf_release(struct inode *inode, struct file *filp)
 	/* last close?? */
 	gf_dev->users--;
 	if (!gf_dev->users) {
-		dev_dbg(gf_dev->dev, "disable_irq. irq = %d\n", gf_dev->irq);
+		/* Disable IRQ and release resources */
 		gf_disable_irq(gf_dev);
-		/* power off the sensor */
-		free_irq(gf_dev->irq, gf_dev);
-		gpio_free(gf_dev->irq_gpio);
-		gpio_free(gf_dev->reset_gpio);
+		disable_irq_wake(gf_dev->irq);
+		devm_free_irq(gf_dev->dev, gf_dev->irq, gf_dev);
+		devm_gpio_free(gf_dev->dev, gf_dev->irq_gpio);
+		devm_gpio_free(gf_dev->dev, gf_dev->reset_gpio);
+
+		/* Power off the sensor */
 		gf_set_power(gf_dev, false);
 	}
 
@@ -817,19 +834,6 @@ static int gf_parse_dts(struct gf_dev *gf_dev)
 	return 0;
 }
 
-static void gf_cleanup(struct gf_dev *gf_dev)
-{
-	if (gpio_is_valid(gf_dev->irq_gpio)) {
-		gpio_free(gf_dev->irq_gpio);
-		dev_info(gf_dev->dev, "remove irq_gpio success\n");
-	}
-
-	if (gpio_is_valid(gf_dev->reset_gpio)) {
-		gpio_free(gf_dev->reset_gpio);
-		dev_info(gf_dev->dev, "remove reset_gpio success\n");
-	}
-}
-
 int gf_probe_common(struct device *dev)
 {
 	struct gf_dev *gf_dev;
@@ -882,8 +886,6 @@ int gf_probe_common(struct device *dev)
 	}
 #endif
 
-	gf_dev->irq = gpio_to_irq(gf_dev->irq_gpio);
-
 	wakeup_source_init(&fp_wakelock, "fp_wakelock");
 
 	dev_dbg(gf_dev->dev, "version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR,
@@ -909,18 +911,15 @@ int gf_remove_common(struct device *dev)
 
 	wakeup_source_trash(&fp_wakelock);
 
-	/* make sure ops on existing fds can abort cleanly */
-	if (gf_dev->irq)
-		free_irq(gf_dev->irq, gf_dev);
+	/* Disable interrupt and wake-up ability */
+	gf_disable_irq(gf_dev);
+	disable_irq_wake(gf_dev->irq);
 
 	/* Unregister and delete associated input device */
 	gf_del_input(gf_dev);
 
 	/* Unregister and delete associated char device */
 	gf_del_cdev(gf_dev);
-
-	if (gf_dev->users == 0)
-		gf_cleanup(gf_dev);
 
 #ifndef GOODIX_DRM_INTERFACE_WA
 	drm_unregister_client(&gf_dev->notifier);
