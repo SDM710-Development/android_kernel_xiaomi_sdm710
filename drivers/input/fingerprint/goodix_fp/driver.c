@@ -584,6 +584,9 @@ static int gf_open(struct inode *inode, struct file *filp)
 	/* enable the interrupt to wake-up system */
 	enable_irq_wake(gf_dev->irq);
 
+	/* perform HW reset */
+	gf_hw_reset(gf_dev, 3);
+
 skip_init:
 	filp->private_data = gf_dev;
 	nonseekable_open(inode, filp);
