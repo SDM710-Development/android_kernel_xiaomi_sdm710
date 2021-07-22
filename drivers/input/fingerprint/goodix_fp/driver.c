@@ -587,6 +587,11 @@ static int gf_open(struct inode *inode, struct file *filp)
 	/* perform HW reset */
 	gf_hw_reset(gf_dev, 3);
 
+#ifndef CONFIG_GOODIX_FP_POWER_CTRL
+	/* mark device available when power control is not enabled */
+	gf_dev->avail = true;
+#endif
+
 skip_init:
 	filp->private_data = gf_dev;
 	nonseekable_open(inode, filp);
