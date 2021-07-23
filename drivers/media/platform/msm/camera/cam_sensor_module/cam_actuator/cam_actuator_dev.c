@@ -97,6 +97,30 @@ static int cam_actuator_subdev_close(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static int32_t cam_actuator_update_i2c_info(struct cam_actuator_ctrl_t *a_ctrl,
+	struct cam_actuator_i2c_info_t *i2c_info)
+{
+#ifdef CONFIG_USE_BU64748
+	struct cam_sensor_cci_client *cci_client = NULL;
+
+	if (a_ctrl->io_master_info.master_type == CCI_MASTER) {
+		cci_client = a_ctrl->io_master_info.cci_client;
+		if (!cci_client) {
+			CAM_ERR(CAM_ACTUATOR, "failed: cci_client %pK",
+				cci_client);
+			return -EINVAL;
+		}
+
+		cci_client->cci_i2c_master = a_ctrl->cci_i2c_master;
+		cci_client->sid = (i2c_info->slave_addr) >> 1;
+		cci_client->retries = 3;
+		cci_client->id_map = 0;
+		cci_client->i2c_freq_mode = i2c_info->i2c_freq_mode;
+	}
+#endif
+	return 0;
+}
+
 static struct v4l2_subdev_core_ops cam_actuator_subdev_core_ops = {
 	.ioctl = cam_actuator_subdev_ioctl,
 #ifdef CONFIG_COMPAT
@@ -362,6 +386,12 @@ static int32_t cam_actuator_driver_platform_probe(
 	if (rc)
 		goto free_mem;
 
+	rc = cam_actuator_update_i2c_info(a_ctrl, &soc_private->i2c_info);
+	if (rc) {
+		CAM_ERR(CAM_ACTUATOR, "failed: to update i2c info rc %d", rc);
+		goto unreg_subdev;
+	}
+
 	a_ctrl->bridge_intf.device_hdl = -1;
 	a_ctrl->bridge_intf.ops.get_dev_info =
 		cam_actuator_publish_dev_info;
@@ -378,6 +408,8 @@ static int32_t cam_actuator_driver_platform_probe(
 
 	return rc;
 
+unreg_subdev:
+	cam_unregister_subdev(&(a_ctrl->v4l2_dev_str));
 free_mem:
 	kfree(a_ctrl->i2c_data.per_frame);
 free_soc:
