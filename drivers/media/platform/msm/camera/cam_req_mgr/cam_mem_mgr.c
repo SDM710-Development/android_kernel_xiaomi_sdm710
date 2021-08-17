@@ -814,6 +814,7 @@ static int cam_mem_mgr_cleanup_table(void)
 		tbl.bufq[i].num_hdl = 0;
 		tbl.bufq[i].i_hdl = NULL;
 		tbl.bufq[i].active = false;
+		tbl.bufq[i].kmdvaddr = 0;
 		mutex_unlock(&tbl.bufq[i].q_lock);
 		mutex_destroy(&tbl.bufq[i].q_lock);
 	}
@@ -903,6 +904,7 @@ static int cam_mem_util_unmap(int32_t idx,
 	tbl.bufq[idx].len = 0;
 	tbl.bufq[idx].num_hdl = 0;
 	tbl.bufq[idx].active = false;
+	tbl.bufq[idx].kmdvaddr = 0;
 	mutex_unlock(&tbl.bufq[idx].q_lock);
 	mutex_destroy(&tbl.bufq[idx].q_lock);
 	clear_bit(idx, tbl.bitmap);
