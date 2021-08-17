@@ -69,11 +69,56 @@ void cam_node_put_ctxt_to_free_list(struct kref *ref)
 		container_of(ref, struct cam_context, refcount);
 	struct cam_node *node = ctx->node;
 
-	ctx->ctx_released = true;
-
 	mutex_lock(&node->list_mutex);
 	list_move_tail(&ctx->list, &node->free_ctx_list);
 	mutex_unlock(&node->list_mutex);
+}
+
+static void cam_node_recycle_ctxt_from_acquired_list(
+	struct cam_node *node)
+{
+	struct cam_context *ctx = NULL;
+	int rc;
+
+	mutex_lock(&node->list_mutex);
+	if (!list_empty(&node->acquired_ctx_list)) {
+		/* get oldest acquired context */
+		ctx = list_first_entry(&node->acquired_ctx_list,
+				       struct cam_context, list);
+
+		/* move it to free list */
+		list_move_tail(&ctx->list, &node->free_ctx_list);
+	}
+	mutex_unlock(&node->list_mutex);
+
+	if (!ctx)
+		return;
+
+	/* if not released do it now */
+	if (!ctx->ctx_released) {
+		struct cam_release_dev_cmd release;
+
+		release.dev_handle = ctx->dev_hdl;
+		release.session_handle = ctx->session_hdl;
+
+		rc = cam_context_handle_release_dev(ctx, &release);
+		if (rc)
+			CAM_ERR(CAM_CORE, "context release failed node %s",
+				node->name);
+
+		rc = cam_destroy_device_hdl(release.dev_handle);
+		if (rc)
+			CAM_ERR(CAM_CORE,
+				"destroy device handle is failed node %s",
+				node->name);
+	}
+
+	/* initialize rest of fields */
+	ctx->dev_hdl = -1;
+	ctx->link_hdl = -1;
+	ctx->session_hdl = -1;
+	ctx->state = CAM_CTX_AVAILABLE;
+	ctx->ctx_released = true;
 }
 
 static int __cam_node_handle_query_cap(struct cam_node *node,
