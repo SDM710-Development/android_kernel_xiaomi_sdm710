@@ -471,8 +471,12 @@ static int32_t cam_cci_calc_cmd_len(struct cci_device *cci_dev,
 		for (i = 0; i < pack_max_len;) {
 			if (cmd->delay || ((cmd - i2c_cmd) >= (cmd_size - 1)))
 				break;
-			if (cmd->reg_addr + 1 ==
-				(cmd+1)->reg_addr) {
+			if ((cmd->reg_addr + 1 == (cmd+1)->reg_addr)
+#ifdef CONFIG_MACH_XIAOMI_F3B
+			    /* for s5kgd1 cci timeout problem on Pyxis */
+			    && (c_ctrl->cci_info->sid != 0x2d)
+#endif
+			   ) {
 				len += data_len;
 				if (len > cci_dev->payload_size) {
 					len = len - data_len;
