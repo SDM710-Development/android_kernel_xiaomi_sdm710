@@ -261,6 +261,7 @@ void cam_req_mgr_workq_destroy(struct cam_req_mgr_core_workq **crm_workq)
 			job = (*crm_workq)->job;
 			(*crm_workq)->job = NULL;
 			WORKQ_RELEASE_LOCK(*crm_workq, flags);
+			cancel_work_sync(&(*crm_workq)->work);
 			destroy_workqueue(job);
 		} else
 			WORKQ_RELEASE_LOCK(*crm_workq, flags);
