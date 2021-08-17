@@ -55,7 +55,7 @@ static struct cam_context *cam_node_get_ctxt_from_free_list(
 	if (!list_empty(&node->free_ctx_list)) {
 		ctx = list_first_entry(&node->free_ctx_list,
 			struct cam_context, list);
-		list_del_init(&ctx->list);
+		list_move_tail(&ctx->list, &node->acquired_ctx_list);
 	}
 	mutex_unlock(&node->list_mutex);
 	if (ctx)
@@ -72,7 +72,7 @@ void cam_node_put_ctxt_to_free_list(struct kref *ref)
 	ctx->ctx_released = true;
 
 	mutex_lock(&node->list_mutex);
-	list_add_tail(&ctx->list, &node->free_ctx_list);
+	list_move_tail(&ctx->list, &node->free_ctx_list);
 	mutex_unlock(&node->list_mutex);
 }
 
@@ -507,6 +507,7 @@ int cam_node_init(struct cam_node *node, struct cam_hw_mgr_intf *hw_mgr_intf,
 
 	mutex_init(&node->list_mutex);
 	INIT_LIST_HEAD(&node->free_ctx_list);
+	INIT_LIST_HEAD(&node->acquired_ctx_list);
 	node->ctx_list = ctx_list;
 	node->ctx_size = ctx_size;
 	for (i = 0; i < ctx_size; i++) {
