@@ -154,8 +154,15 @@ static int __cam_node_handle_acquire_dev(struct cam_node *node,
 			node->name);
 		cam_node_print_ctx_state(node);
 
-		rc = -ENOMEM;
-		goto err;
+		/* recycle oldest context from acquired list */
+		cam_node_recycle_ctxt_from_acquired_list(node);
+
+		/* try again to get a context from free list */
+		ctx = cam_node_get_ctxt_from_free_list(node);
+		if (!ctx) {
+			rc = -ENOMEM;
+			goto err;
+		}
 	}
 
 	rc = cam_context_handle_acquire_dev(ctx, acquire);
