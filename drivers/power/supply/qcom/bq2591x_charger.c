@@ -523,10 +523,10 @@ static int bq2591x_get_prop_charge_type(struct bq2591x *bq)
 		return POWER_SUPPLY_CHARGE_TYPE_NONE;
 	else if (val == BQ2591X_CHRG_STAT_FCHG)
 		return POWER_SUPPLY_CHARGE_TYPE_FAST;
-
-
+	else if (val == BQ2591X_CHRG_STAT_TCHG)
+		return POWER_SUPPLY_CHARGE_TYPE_TAPER;
 	else
-		return  POWER_SUPPLY_CHARGE_TYPE_NONE;
+		return POWER_SUPPLY_CHARGE_TYPE_NONE;
 
 }
 
