@@ -49,7 +49,9 @@ int cam_cci_init(struct v4l2_subdev *sd,
 		CAM_DBG(CAM_CCI, "ref_count %d", cci_dev->ref_count);
 		master = c_ctrl->cci_info->cci_i2c_master;
 		CAM_DBG(CAM_CCI, "master %d", master);
-		if (master < MASTER_MAX && master >= 0) {
+		cci_dev->cci_state = CCI_STATE_ENABLED;
+		if (master < MASTER_MAX && master >= 0 &&
+		    !cci_dev->cci_master_info[master].ref_count++) {
 			mutex_lock(&cci_dev->
 				cci_master_info[master].mutex_q[QUEUE_0]);
 			mutex_lock(&cci_dev->
@@ -174,6 +176,7 @@ int cam_cci_init(struct v4l2_subdev *sd,
 	cam_io_w_mb(CCI_I2C_RD_THRESHOLD_VALUE,
 		base + CCI_I2C_M1_RD_THRESHOLD_ADDR);
 
+	cci_dev->cci_master_info[MASTER_0].ref_count = 1;
 	cci_dev->cci_state = CCI_STATE_ENABLED;
 
 	return 0;
@@ -201,6 +204,7 @@ static void cam_cci_init_cci_params(struct cci_device *new_cci_dev)
 	uint8_t i = 0, j = 0;
 
 	for (i = 0; i < NUM_MASTERS; i++) {
+		new_cci_dev->cci_master_info[i].ref_count = 0;
 		new_cci_dev->cci_master_info[i].status = 0;
 		init_completion(
 			&new_cci_dev->cci_master_info[i].reset_complete);
@@ -377,17 +381,22 @@ int cam_cci_parse_dt_info(struct platform_device *pdev,
 	return 0;
 }
 
-int cam_cci_soc_release(struct cci_device *cci_dev)
+int cam_cci_soc_release(struct cci_device *cci_dev, struct cam_cci_ctrl *c_ctrl)
 {
+	struct cam_hw_soc_info *soc_info = &cci_dev->soc_info;
+	enum cci_i2c_master_t master;
 	uint8_t i = 0, rc = 0;
-	struct cam_hw_soc_info *soc_info =
-		&cci_dev->soc_info;
 
 	if (!cci_dev->ref_count || cci_dev->cci_state != CCI_STATE_ENABLED) {
 		CAM_ERR(CAM_CCI, "invalid ref count %d / cci state %d",
 			cci_dev->ref_count, cci_dev->cci_state);
 		return -EINVAL;
 	}
+
+	master = c_ctrl->cci_info->cci_i2c_master;
+	if (master < MASTER_MAX && master >= 0)
+		cci_dev->cci_master_info[master].ref_count--;
+
 	if (--cci_dev->ref_count) {
 		CAM_DBG(CAM_CCI, "ref_count Exit %d", cci_dev->ref_count);
 		return 0;

@@ -136,6 +136,7 @@ struct cam_cci_master_info {
 	atomic_t q_free[NUM_QUEUES];
 	uint8_t q_lock[NUM_QUEUES];
 	uint8_t reset_pending;
+	uint8_t ref_count;
 	struct completion reset_complete;
 	struct completion th_complete;
 	struct mutex mutex_q[NUM_QUEUES];
