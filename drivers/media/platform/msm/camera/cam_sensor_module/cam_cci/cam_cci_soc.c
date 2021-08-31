@@ -50,7 +50,6 @@ int cam_cci_init(struct v4l2_subdev *sd,
 		master = c_ctrl->cci_info->cci_i2c_master;
 		CAM_DBG(CAM_CCI, "master %d", master);
 		if (master < MASTER_MAX && master >= 0) {
-			mutex_lock(&cci_dev->cci_master_info[master].mutex);
 			mutex_lock(&cci_dev->
 				cci_master_info[master].mutex_q[QUEUE_0]);
 			mutex_lock(&cci_dev->
@@ -81,7 +80,6 @@ int cam_cci_init(struct v4l2_subdev *sd,
 				cci_master_info[master].mutex_q[QUEUE_1]);
 			mutex_unlock(&cci_dev->
 				cci_master_info[master].mutex_q[QUEUE_0]);
-			mutex_unlock(&cci_dev->cci_master_info[master].mutex);
 		}
 		return 0;
 	}
@@ -204,7 +202,6 @@ static void cam_cci_init_cci_params(struct cci_device *new_cci_dev)
 
 	for (i = 0; i < NUM_MASTERS; i++) {
 		new_cci_dev->cci_master_info[i].status = 0;
-		mutex_init(&new_cci_dev->cci_master_info[i].mutex);
 		init_completion(
 			&new_cci_dev->cci_master_info[i].reset_complete);
 		init_completion(
