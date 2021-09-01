@@ -28,7 +28,6 @@
 #include "goodix_cfg_bin.h"
 #include <linux/input/mt.h>
 #include <linux/input.h>
-#include "../xiaomi/xiaomi_touch.h"
 
 #define TS_DT_COMPATIBLE "goodix,gt9889"
 #define TS_DRIVER_NAME "goodix_i2c"
@@ -1967,15 +1966,6 @@ static int goodix_event_handler(struct goodix_ts_device *dev,
 	core_data->event_status = pre_buf[0];
 	event_sta = pre_buf[0];
 	ispalm = pre_buf[1] & 0x20;
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-	if (core_data->palm_sensor_switch) {
-		if (ispalm)
-			update_palm_sensor_value(1);
-		else
-			update_palm_sensor_value(0);
-		ts_info("palm event:%d", !!ispalm);
-	}
-#endif
 	if (likely((event_sta & GOODIX_TOUCH_EVENT) == GOODIX_TOUCH_EVENT)) {
 		/*handle touch event*/
 		goodix_touch_handler(dev,
