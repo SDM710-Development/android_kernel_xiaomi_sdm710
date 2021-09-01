@@ -320,9 +320,4 @@ extern int input_unregister_notifier_client(struct notifier_block *nb);
 extern int fts_proc_init(void);
 extern int fts_proc_remove(void);
 
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-int fts_palm_sensor_cmd(int input);
-int fts_p_sensor_cmd(int input);
-bool fts_touchmode_edgefilter(unsigned int touch_id, int x, int y);
-#endif
 #endif
