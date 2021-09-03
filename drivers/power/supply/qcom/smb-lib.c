@@ -805,7 +805,7 @@ int smblib_rerun_apsd_if_required(struct smb_charger *chg)
 		return rc;
 	}
 
-	if (!val.intval)
+	if (!val.intval || chg->fake_usb_insertion)
 		return 0;
 
 	rc = smblib_request_dpdm(chg, true);
