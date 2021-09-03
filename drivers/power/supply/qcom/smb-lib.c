@@ -3856,12 +3856,15 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 						false, 0);
 				vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
 
-				cancel_delayed_work_sync(&chg->charger_type_recheck);
 #ifdef CONFIG_CHARGER_BQ25910_SLAVE
 				cancel_delayed_work_sync(&chg->dp_dm_pulse_work);
 #endif
 			}
 		}
+
+		cancel_delayed_work_sync(&chg->charger_type_recheck);
+		chg->recheck_charger = false;
+		chg->precheck_charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
 	}
 
 	power_supply_changed(chg->usb_psy);
@@ -3924,7 +3927,8 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 		schedule_delayed_work(&chg->cc_float_charge_work,
 				      msecs_to_jiffies(CC_FLOAT_WORK_START_DELAY_MS));
 
-		schedule_delayed_work(&chg->charger_type_recheck, msecs_to_jiffies(20000));
+		schedule_delayed_work(&chg->charger_type_recheck,
+				      msecs_to_jiffies(CHARGER_RECHECK_DELAY_MS));
 
 		/* vbus rising when APSD was disabled and PD_ACTIVE = 0 */
 		if (get_effective_result(chg->apsd_disable_votable) &&
@@ -5585,56 +5589,52 @@ unlock:
 	mutex_unlock(&chg->lock);
 }
 
-#define TYPE_RECHECK_TIME_20S	20000
-#define TYPE_RECHECK_TIME_5S	5000
-#define TYPE_RECHECK_COUNT	3
 static void smblib_charger_type_recheck(struct work_struct *work)
 {
 	struct smb_charger *chg = container_of(work, struct smb_charger, charger_type_recheck.work);
-	int rc, hvdcp;
-	u8 stat;
 	int recheck_time = TYPE_RECHECK_TIME_5S;
 	static int last_charger_type, check_count;
+	int rc;
+
+	smblib_update_usb_type(chg);
 
 	if (last_charger_type != chg->real_charger_type)
 		check_count--;
 	last_charger_type = chg->real_charger_type;
 
-	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP_3 ||
+	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP ||
+	    chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP_3)
+		power_supply_changed(chg->usb_psy);
+
+	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP ||
+	    chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP_3 ||
 #ifdef CONFIG_CHARGER_BQ25910_SLAVE
 	    chg->check_vbus_once ||
 #endif
+	    chg->pd_active || check_count >= TYPE_RECHECK_COUNT ||
 	    (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_FLOAT &&
-	     chg->typec_mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER) ||
-	    chg->pd_active || check_count >= TYPE_RECHECK_COUNT) {
+	     chg->typec_mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER)) {
 		check_count = 0;
 		return;
 	}
 
-	if (chg->typec_mode == POWER_SUPPLY_TYPEC_NONE)
+	if (smblib_get_prop_dfp_mode(chg) != POWER_SUPPLY_TYPEC_NONE)
 		goto check_next;
 
 	if (!chg->recheck_charger)
 		chg->precheck_charger_type = chg->real_charger_type;
 	chg->recheck_charger = true;
 
-	/* disable APSD CC trigger since CC is attached */
-	rc = smblib_masked_write(chg, TYPE_C_CFG_REG, APSD_START_ON_CC_BIT, 0);
-	if (rc < 0)
-		smblib_err(chg, "Couldn't disable APSD_START_ON_CC rc=%d\n", rc);
+	/* need request hsusb phy dpdm to false then true for float charger */
+	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_FLOAT) {
+		rc = smblib_request_dpdm(chg, false);
+		if (rc < 0)
+			smblib_err(chg, "Couldn't disable DPDM rc=%d\n", rc);
 
-	rc = smblib_read(chg, APSD_STATUS_REG, &stat);
-	if (rc < 0) {
-		smblib_err(chg, "Couldn't read APSD status rc=%d\n", rc);
-		return;
+		msleep(500);
 	}
 
-	hvdcp = stat & QC_CHARGER_BIT;
-	if (hvdcp && !chg->legacy) {
-		recheck_time = TYPE_RECHECK_TIME_20S;
-		__smblib_set_prop_pd_active(chg, 0);
-	} else
-		smblib_rerun_apsd_if_required(chg);
+	smblib_rerun_apsd_if_required(chg);
 
 check_next:
 	check_count++;

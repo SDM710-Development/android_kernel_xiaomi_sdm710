@@ -90,6 +90,11 @@ enum print_reason {
 #define CHECK_VBUS_WORK_DELAY_MS	10
 #define UNSTANDARD_HVDCP2_UA		1800000
 
+/* defined for charger type recheck */
+#define CHARGER_RECHECK_DELAY_MS	30000
+#define TYPE_RECHECK_TIME_5S    	5000
+#define TYPE_RECHECK_COUNT      	3
+
 enum smb_mode {
 	PARALLEL_MASTER = 0,
 	PARALLEL_SLAVE,
