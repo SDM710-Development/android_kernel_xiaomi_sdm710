@@ -798,7 +798,6 @@ int smblib_rerun_apsd_if_required(struct smb_charger *chg)
 {
 	union power_supply_propval val;
 	int rc;
-	const struct apsd_result *apsd_result;
 
 	rc = smblib_get_prop_usb_present(chg, &val);
 	if (rc < 0) {
@@ -809,16 +808,12 @@ int smblib_rerun_apsd_if_required(struct smb_charger *chg)
 	if (!val.intval)
 		return 0;
 
-	apsd_result = smblib_update_usb_type(chg);
-	/* if apsd result is SDP and off-charge mode, no need rerun apsd */
-	if (!(apsd_result->bit & SDP_CHARGER_BIT)) {
-		rc = smblib_request_dpdm(chg, true);
-		if (rc < 0)
-			smblib_err(chg, "Couldn't to enable DPDM rc=%d\n", rc);
-		smblib_rerun_apsd(chg);
-	}
+	rc = smblib_request_dpdm(chg, true);
+	if (rc < 0)
+		smblib_err(chg, "Couldn't to enable DPDM rc=%d\n", rc);
 
 	chg->uusb_apsd_rerun_done = true;
+	smblib_rerun_apsd(chg);
 
 	return 0;
 }
