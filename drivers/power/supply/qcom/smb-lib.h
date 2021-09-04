@@ -90,6 +90,17 @@ enum print_reason {
 #define CHECK_VBUS_WORK_DELAY_MS	10
 #define UNSTANDARD_HVDCP2_UA		1800000
 
+/* defined for HVDCP2/3 */
+#define HVDCP2_CURRENT_UA	1500000
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+#define HVDCP3_CURRENT_UA	2500000
+#else
+#define HVDCP3_CURRENT_UA	2700000
+#endif
+
+/* defined for float charger */
+#define FLOAT_CHARGER_UA	1000000
+
 /* defined for charger type recheck */
 #define CHARGER_RECHECK_DELAY_MS	30000
 #define TYPE_RECHECK_TIME_5S    	5000

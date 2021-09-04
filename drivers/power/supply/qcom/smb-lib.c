@@ -2923,12 +2923,7 @@ int smblib_get_prop_die_health(struct smb_charger *chg,
 #define SDP_CURRENT_UA			500000
 #define CDP_CURRENT_UA			1500000
 #define DCP_CURRENT_UA			1800000
-#define HVDCP2_CURRENT_UA		1500000
-#ifdef CONFIG_CHARGER_BQ25910_SLAVE
-#define HVDCP3_CURRENT_UA		2500000
-#else
-#define HVDCP3_CURRENT_UA		2700000
-#endif
+#define HVDCP_CURRENT_UA		3000000
 #define TYPEC_DEFAULT_CURRENT_UA	900000
 #define TYPEC_MEDIUM_CURRENT_UA		1500000
 #define TYPEC_HIGH_CURRENT_UA		3000000
@@ -2983,7 +2978,6 @@ int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 	return rc;
 }
 
-#define FLOAT_CHARGER_UA	1000000
 static int smblib_handle_usb_current(struct smb_charger *chg,
 					int usb_current)
 {
@@ -4297,15 +4291,15 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 		 * if this is a SDP and appropriately set the current
 		 */
 		if (chg->recheck_charger)
-			vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 1000000);
+			vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, FLOAT_CHARGER_UA);
 		else
 			vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 100000);
 		break;
 	case POWER_SUPPLY_TYPE_USB_HVDCP:
-		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 1500000);
+		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, HVDCP2_CURRENT_UA);
 		break;
 	case POWER_SUPPLY_TYPE_USB_HVDCP_3:
-		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 3000000);
+		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, HVDCP3_CURRENT_UA);
 		break;
 	default:
 		smblib_err(chg, "Unknown APSD %d; forcing 500mA\n", pst);
@@ -4379,7 +4373,7 @@ static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 	case FLOAT_CHARGER_BIT:
 		/* if floated charger is detected, set icl to 1A */
 		if (apsd_result->bit & FLOAT_CHARGER_BIT)
-			vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 1000000);
+			vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, FLOAT_CHARGER_UA);
 
 		/* if not DCP then no hvdcp timeout happens, Enable pd here. */
 		vote(chg->pd_disallowed_votable_indirect, HVDCP_TIMEOUT_VOTER,
