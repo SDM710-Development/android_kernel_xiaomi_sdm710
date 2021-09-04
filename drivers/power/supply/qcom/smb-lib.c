@@ -3827,6 +3827,7 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 	vbus_rising = (bool)(stat & USBIN_PLUGIN_RT_STS_BIT);
 
 	if (vbus_rising) {
+		vote(chg->awake_votable, CHG_AWAKE_VOTER, true, 0);
 		/* Remove FCC_STEPPER 1.5A init vote to allow FCC ramp up */
 		if (chg->fcc_stepper_enable)
 			vote(chg->fcc_votable, FCC_STEPPER_VOTER, false, 0);
@@ -3847,16 +3848,17 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 						WEAK_CHG_STORM_COUNT);
 				vote(chg->usb_icl_votable, BOOST_BACK_VOTER,
 						false, 0);
-				if (chg->cc_float_detected) {
-					chg->cc_float_detected = false;
-					chg->real_charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
-				}
-				vote(chg->usb_icl_votable, CC_FLOAT_VOTER, false, 0);
 				vote(chg->usb_icl_votable, WEAK_CHARGER_VOTER,
 						false, 0);
-				vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
 			}
 		}
+
+		if (chg->cc_float_detected) {
+			chg->cc_float_detected = false;
+			chg->real_charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
+			vote(chg->usb_icl_votable, CC_FLOAT_VOTER, false, 0);
+		}
+		vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
 
 		cancel_delayed_work_sync(&chg->charger_type_recheck);
 #ifdef CONFIG_CHARGER_BQ25910_SLAVE
@@ -3966,10 +3968,10 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 		if (rc < 0)
 			smblib_err(chg, "Couldn't disable DPDM rc=%d\n", rc);
 
-		vote(chg->usb_icl_votable, CC_FLOAT_VOTER, false, 0);
 		if (chg->cc_float_detected) {
 			chg->cc_float_detected = false;
 			chg->real_charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
+			vote(chg->usb_icl_votable, CC_FLOAT_VOTER, false, 0);
 		}
 		chg->legacy = false;
 		chg->recheck_charger = false;
