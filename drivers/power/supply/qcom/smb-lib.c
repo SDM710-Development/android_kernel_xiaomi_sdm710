@@ -3855,14 +3855,13 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 				vote(chg->usb_icl_votable, WEAK_CHARGER_VOTER,
 						false, 0);
 				vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
-
-#ifdef CONFIG_CHARGER_BQ25910_SLAVE
-				cancel_delayed_work_sync(&chg->dp_dm_pulse_work);
-#endif
 			}
 		}
 
 		cancel_delayed_work_sync(&chg->charger_type_recheck);
+#ifdef CONFIG_CHARGER_BQ25910_SLAVE
+		cancel_delayed_work_sync(&chg->dp_dm_pulse_work);
+#endif
 		chg->recheck_charger = false;
 		chg->precheck_charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
 	}
