@@ -254,12 +254,13 @@ void incfs_free_dir_file(struct dir_file *dir)
 
 static ssize_t decompress(struct mem_range src, struct mem_range dst)
 {
-	int result = LZ4_decompress_safe(src.data, dst.data, src.len, dst.len);
+	ssize_t dst_len = dst.len;
+	int result = lz4_decompress_unknownoutputsize(src.data, src.len, dst.data, &dst_len);
 
-	if (result < 0)
+	if (result)
 		return -EBADMSG;
 
-	return result;
+	return dst_len;
 }
 
 static void log_read_one_record(struct read_log *rl, struct read_log_state *rs)
