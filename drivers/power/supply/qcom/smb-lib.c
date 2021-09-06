@@ -4405,7 +4405,7 @@ static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 		if (!usb_present)
 			return;
 
-		if (apsd_result->bit & QC_2P0_BIT) {
+		if (apsd_result->bit & QC_2P0_BIT || apsd_result->bit & QC_3P0_BIT) {
 			pval.intval = 0;
 			smblib_set_prop_pd_active(chg, &pval);
 			chg->float_rerun_apsd = false;
@@ -5590,6 +5590,7 @@ static void smblib_charger_type_recheck(struct work_struct *work)
 	int recheck_time = TYPE_RECHECK_TIME_5S;
 	static int last_charger_type, check_count;
 	int rc;
+	u8 stat;
 
 	smblib_update_usb_type(chg);
 
@@ -5629,6 +5630,8 @@ static void smblib_charger_type_recheck(struct work_struct *work)
 		msleep(500);
 	}
 
+	if ((stat & QC_CHARGER_BIT) && !chg->legacy)
+		__smblib_set_prop_pd_active(chg, 0);
 	smblib_rerun_apsd_if_required(chg);
 
 check_next:
