@@ -1,7 +1,9 @@
 /**
 * Copyright Elliptic Labs
+* Copyright (C) 2019 XiaoMi, Inc.
 *
 */
+/* #define DEBUG */
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/version.h>
@@ -58,6 +60,46 @@ static dev_t elliptic_major;
 
 static struct wakeup_source *wake_source;
 
+static int usbc_headset_connected;
+
+void elliptic_notify_usbc_headset(int connected)
+{
+	struct elliptic_device *device;
+	struct elliptic_data *elliptic_data;
+	int i = 0;
+
+	if (!(&elliptic_devices[0])) {
+		EL_PRINT_E("device not found");
+		return;
+	}
+
+	EL_PRINT_I("usb-c headset connection status: %d", connected);
+	usbc_headset_connected = connected;
+	if (usbc_headset_connected) {
+		for (i; i < ELLIPTIC_NUM_DEVICES; ++i) {
+			device = &elliptic_devices[i];
+			if (!device->opened) {
+				EL_PRINT_I("device%d already closed", i);
+				continue;
+			}
+
+			elliptic_close_port(ULTRASOUND_TX_PORT_ID);
+			elliptic_close_port(ULTRASOUND_RX_PORT_ID);
+
+			elliptic_data = &device->el_data;
+
+			device->opened = 0;
+			elliptic_data_update_debug_counters(elliptic_data);
+			elliptic_data_print_debug_counters(elliptic_data);
+			elliptic_data_cancel(elliptic_data);
+			up(&device->sem);
+		}
+	}
+}
+
+int is_usbc_headset_connected() {
+	return usbc_headset_connected;
+}
 
 void elliptic_data_cancel(struct elliptic_data *elliptic_data)
 {
@@ -137,6 +179,11 @@ static int device_open(struct inode *inode, struct file *filp)
 	unsigned int minor;
 	struct elliptic_device *dev;
 	struct elliptic_data *elliptic_data;
+
+	if (is_usbc_headset_connected()) {
+		EL_PRINT_I("Denying device open because a usb-c headset is connected");
+		return -ENODEV;
+	}
 
 	major = imajor(inode);
 	minor = iminor(inode);
@@ -393,6 +440,11 @@ int elliptic_data_push(int deviceid,
 
 int elliptic_open_port(int portid)
 {
+	if (is_usbc_headset_connected()) {
+		EL_PRINT_I("Denying port open because a usb-c headset is connected");
+		return 0;
+	}
+
 	return elliptic_io_open_port(portid);
 }
 
@@ -401,31 +453,21 @@ int elliptic_close_port(int portid)
 	return elliptic_io_close_port(portid);
 }
 
-
 int32_t elliptic_data_write(uint32_t message_id,
 	const char *data, size_t data_size)
 {
 	int32_t err_dsp;
 	/* int32_t err_us; */
 
+	if (is_usbc_headset_connected())
+		return 0;
+
 	err_dsp = 0;
 	err_dsp = elliptic_data_io_write(message_id, data, data_size);
 	if (err_dsp)
 		EL_PRINT_E("Failed write to DSP");
 	return err_dsp;
-
-	/*
-	* err_us = 0;
-	* err_us = elliptic_userspace_ctrl_write(message_id, data, data_size);
-	* if(err_us){
-	*	EL_PRINT_E("Failed write to user space");
-	*}
-	*
-	*return (err_dsp | err_us);
-	*/
 }
-
-
 
 /**
 *
@@ -455,6 +497,9 @@ static ssize_t device_write(struct file *fp, const char *buff,
 {
 	ssize_t ret_val;
 
+	if (is_usbc_headset_connected())
+		return 0;
+
 	ret_val = 0;
 	if ((buff != NULL) && (length != 0))
 		ret_val = elliptic_data_io_write(ELLIPTIC_ULTRASOUND_SET_PARAMS,
@@ -472,6 +517,9 @@ static long device_ioctl(struct file *fp, unsigned int number,
 	int err;
 	unsigned int mirror_tag, mirror_payload_size;
 	unsigned char *data_ptr;
+
+	if (is_usbc_headset_connected())
+		return 0;
 
 	device = (struct elliptic_device *)(fp->private_data);
 	elliptic_data = &device->el_data;
