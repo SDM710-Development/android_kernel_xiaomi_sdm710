@@ -1743,7 +1743,7 @@ int goodix_ts_suspend(struct goodix_ts_core *core_data)
 out:
 	/* release all the touch IDs */
 	release_all_touches(core_data);
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_PALMSENSOR
 	if (core_data->palm_sensor_switch)
 		update_palm_sensor_value(0);
 #endif
@@ -2236,9 +2236,6 @@ static int gtp_power_supply_event(struct notifier_block *nb, unsigned long event
 	return 0;
 }
 
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-static struct xiaomi_touch_interface xiaomi_touch_interfaces;
-
 static void gtp_aod_set_work(struct work_struct *work)
 {
 	goodix_check_gesture_stat(!!goodix_core_data->aod_status);
@@ -2249,6 +2246,9 @@ static void gtp_fod_set_work(struct work_struct *work)
 	goodix_check_gesture_stat(!!goodix_core_data->fod_status);
 }
 
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+static struct xiaomi_touch_interface xiaomi_touch_interfaces;
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_GAMEMODE
 static void gtp_set_cur_value_work(struct work_struct *work)
 {
 	u8 state_data[3] = {0};
@@ -2466,21 +2466,21 @@ static void gtp_init_touchmode_data(void)
 	xiaomi_touch_interfaces.touch_mode[Touch_UP_THRESHOLD][SET_CUR_VALUE] = 0;
 	xiaomi_touch_interfaces.touch_mode[Touch_UP_THRESHOLD][GET_CUR_VALUE] = 0;
 
-	/*  Tolerance */
+	/* Tolerance */
 	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][GET_MAX_VALUE] = 3;
 	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][GET_MIN_VALUE] = 0;
 	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][GET_DEF_VALUE] = 0;
 	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][SET_CUR_VALUE] = 0;
 	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][GET_CUR_VALUE] = 0;
 
-	/*	edge filter */
+	/* edge filter */
 	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][GET_MAX_VALUE] = 3;
 	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][GET_MIN_VALUE] = 1;
 	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][GET_DEF_VALUE] = 1;
 	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][SET_CUR_VALUE] = 1;
 	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][GET_CUR_VALUE] = 1;
 
-	/*	Orientation */
+	/* Orientation */
 	xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][GET_MAX_VALUE] = 3;
 	xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][GET_MIN_VALUE] = 0;
 	xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][GET_DEF_VALUE] = 0;
@@ -2499,7 +2499,9 @@ static void gtp_init_touchmode_data(void)
 
 	return;
 }
+#endif
 
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_PALMSENSOR
 int goodix_palm_sensor_write(int value)
 {
 	int ret = 0;
@@ -2507,7 +2509,7 @@ int goodix_palm_sensor_write(int value)
 
 	return ret;
 }
-
+#endif
 #endif
 
 /**
@@ -2677,26 +2679,30 @@ static int goodix_ts_probe(struct platform_device *pdev)
 				    &tpdbg_operations);
 	}
 #endif
+	INIT_WORK(&core_data->aod_set_work, gtp_aod_set_work);
+	INIT_WORK(&core_data->fod_set_work, gtp_fod_set_work);
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-		core_data->touch_feature_wq =
-			alloc_workqueue("gtp-touch-feature",
-					WQ_UNBOUND | WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
-		if (!core_data->touch_feature_wq) {
-			ts_info("Cannot create touch feature work thread");
-			r = -ENOMEM;
-			goto out;
-		}
-		INIT_WORK(&core_data->cmd_update_work, gtp_set_cur_value_work);
-		INIT_WORK(&core_data->aod_set_work, gtp_aod_set_work);
-		INIT_WORK(&core_data->fod_set_work, gtp_fod_set_work);
-		memset(&xiaomi_touch_interfaces, 0x00, sizeof(struct xiaomi_touch_interface));
-		xiaomi_touch_interfaces.getModeValue = gtp_get_mode_value;
-		xiaomi_touch_interfaces.setModeValue = gtp_set_cur_value;
-		xiaomi_touch_interfaces.resetMode = gtp_reset_mode;
-		xiaomi_touch_interfaces.getModeAll = gtp_get_mode_all;
-		xiaomi_touch_interfaces.palm_sensor_write = goodix_palm_sensor_write;
-		xiaomitouch_register_modedata(&xiaomi_touch_interfaces);
-		gtp_init_touchmode_data();
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_GAMEMODE
+	core_data->touch_feature_wq =
+		alloc_workqueue("gtp-touch-feature",
+				WQ_UNBOUND | WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
+	if (!core_data->touch_feature_wq) {
+		ts_info("Cannot create touch feature work thread");
+		r = -ENOMEM;
+		goto out;
+	}
+	INIT_WORK(&core_data->cmd_update_work, gtp_set_cur_value_work);
+	memset(&xiaomi_touch_interfaces, 0x00, sizeof(struct xiaomi_touch_interface));
+	xiaomi_touch_interfaces.getModeValue = gtp_get_mode_value;
+	xiaomi_touch_interfaces.setModeValue = gtp_set_cur_value;
+	xiaomi_touch_interfaces.resetMode = gtp_reset_mode;
+	xiaomi_touch_interfaces.getModeAll = gtp_get_mode_all;
+	gtp_init_touchmode_data();
+#endif
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_PALMSENSOR
+	xiaomi_touch_interfaces.palm_sensor_write = goodix_palm_sensor_write;
+#endif
+	xiaomitouch_register_modedata(&xiaomi_touch_interfaces);
 #endif
 out:
 	backlight_unregister_notifier(&core_data->bl_notifier);
@@ -2711,7 +2717,7 @@ static int goodix_ts_remove(struct platform_device *pdev)
 #ifdef CONFIG_DRM
 	msm_drm_unregister_client(&core_data->fb_notifier);
 #endif
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_GAMEMODE
 	destroy_workqueue(core_data->touch_feature_wq);
 #endif
 	wakeup_source_trash(&core_data->tp_wakelock);

@@ -1959,7 +1959,10 @@ static int goodix_event_handler(struct goodix_ts_device *dev,
 	unsigned char event_sta;
 	struct i2c_client *client = to_i2c_client(dev->dev);
 	struct goodix_ts_core *core_data = i2c_get_clientdata(client);
-	int r, ispalm = 0;
+	int r;
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_PALMSENSOR
+	int ispalm = 0;
+#endif
 
 	memset(pre_buf, 0, sizeof(pre_buf));
 
@@ -1971,9 +1974,9 @@ static int goodix_event_handler(struct goodix_ts_device *dev,
 	/* buffer[0]: event state */
 	core_data->event_status = pre_buf[0];
 	event_sta = pre_buf[0];
-	ispalm = pre_buf[1] & 0x20;
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_PALMSENSOR
 	if (core_data->palm_sensor_switch) {
+		ispalm = pre_buf[1] & 0x20;
 		if (ispalm)
 			update_palm_sensor_value(1);
 		else

@@ -491,7 +491,9 @@ struct goodix_ts_core {
 	struct mutex work_stat;
 	struct work_struct sleep_work;
 	bool tp_already_suspend;
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_PALMSENSOR
 	bool palm_sensor_switch;
+#endif
 	struct wakeup_source tp_wakelock;
 	struct completion pm_resume_completion;
 #ifdef CONFIG_TOUCHSCREEN_GOODIX_DEBUG_FS
