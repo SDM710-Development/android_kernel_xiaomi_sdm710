@@ -88,6 +88,10 @@
 #define GTP_RESULT_PASS 2
 #define GTP_RESULT_FAIL 1
 
+#define GTP_GAME_CMD_ADD  0x6F68
+#define GTP_GAME_CMD      0x0E
+#define GTP_EXIT_GAME_CMD 0x0F
+
 
 /*
  * struct goodix_module - external modules container
@@ -487,6 +491,7 @@ struct goodix_ts_core {
 	struct mutex work_stat;
 	struct work_struct sleep_work;
 	bool tp_already_suspend;
+	bool palm_sensor_switch;
 	struct wakeup_source tp_wakelock;
 	struct completion pm_resume_completion;
 #ifdef CONFIG_TOUCHSCREEN_GOODIX_DEBUG_FS
