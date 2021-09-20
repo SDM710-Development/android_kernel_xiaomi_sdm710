@@ -14,6 +14,7 @@
 #define _MSM_DRM_NOTIFY_H_
 
 #include <linux/notifier.h>
+#include <uapi/drm/sde_drm.h>
 
 /* A hardware display blank change occurred */
 #define MSM_DRM_EVENT_BLANK			0x01
@@ -22,9 +23,17 @@
 
 enum {
 	/* panel: power on */
-	MSM_DRM_BLANK_UNBLANK,
+	MSM_DRM_BLANK_UNBLANK	= SDE_MODE_DPMS_ON,
+	/* panel: low-power 1 */
+	MSM_DRM_BLANK_LP1	= SDE_MODE_DPMS_LP1,
+	/* panel: low-power 2 */
+	MSM_DRM_BLANK_LP2	= SDE_MODE_DPMS_LP2,
+	/* panel: standby */
+	MSM_DRM_DPMS_STANDBY	= SDE_MODE_DPMS_STANDBY,
+	/* panel: suspend */
+	MSM_DRM_BLANK_SUSPEND	= SDE_MODE_DPMS_SUSPEND,
 	/* panel: power off */
-	MSM_DRM_BLANK_POWERDOWN,
+	MSM_DRM_BLANK_POWERDOWN	= SDE_MODE_DPMS_OFF,
 };
 
 enum msm_drm_display_id {
