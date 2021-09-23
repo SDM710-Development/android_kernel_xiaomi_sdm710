@@ -24,6 +24,7 @@
 #include "msm_gem.h"
 #include "msm_fence.h"
 #include "sde_trace.h"
+#include "sde/sde_connector.h"
 
 #define MULTIPLE_CONN_DETECTED(x) (x > 1)
 
@@ -259,7 +260,7 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 
 		if (connector->state->crtc &&
 			connector->state->crtc->state->active_changed) {
-			blank = MSM_DRM_BLANK_POWERDOWN;
+			blank = sde_connector_get_lp(connector);
 			notifier_data.data = &blank;
 			notifier_data.id = crtc_idx;
 			msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,
@@ -488,7 +489,7 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 
 		if (splash || (connector->state->crtc &&
 			connector->state->crtc->state->active_changed)) {
-			blank = MSM_DRM_BLANK_UNBLANK;
+			blank = sde_connector_get_lp(connector);
 			notifier_data.data = &blank;
 			notifier_data.id =
 				connector->state->crtc->index;
