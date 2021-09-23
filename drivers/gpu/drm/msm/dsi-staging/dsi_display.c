@@ -19,6 +19,7 @@
 #include <linux/of_graph.h>
 #include <linux/of_gpio.h>
 #include <linux/err.h>
+#include <linux/msm_drm_notify.h>
 
 #include "msm_drv.h"
 #include "sde_connector.h"
@@ -975,11 +976,24 @@ int dsi_display_set_power(struct drm_connector *connector,
 		int power_mode, void *disp)
 {
 	struct dsi_display *display = disp;
-	int rc = 0;
+	struct msm_drm_notifier evdata;
+	int rc = 0, event = -1;
 
 	if (!display || !display->panel) {
 		pr_err("invalid display/panel\n");
 		return -EINVAL;
+	}
+
+	/* If we are going from or to power-off then a notification is sent
+	 * from msm_atomic_helper_commit_modeset_enables() and
+	 * msm_disable_outputs() so we should not send it from here.
+	 */
+	if (display->panel->power_mode != SDE_MODE_DPMS_OFF &&
+	    power_mode != SDE_MODE_DPMS_OFF) {
+		event = power_mode;
+		evdata.data = &event;
+		evdata.id = drm_crtc_index(connector->encoder->crtc);
+		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &evdata);
 	}
 
 	switch (power_mode) {
@@ -1004,6 +1018,9 @@ int dsi_display_set_power(struct drm_connector *connector,
 		 rc ? "failed" : "successful");
 	if (!rc)
 		display->panel->power_mode = power_mode;
+
+	if (event != -1)
+		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &evdata);
 
 	return rc;
 }
