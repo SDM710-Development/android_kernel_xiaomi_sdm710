@@ -4620,8 +4620,9 @@ static int dsi_display_force_update_dsi_clk(struct dsi_display *display)
 	return rc;
 }
 
-static ssize_t sysfs_dynamic_dsi_clk_read(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t dynamic_dsi_clock_show(struct device *dev,
+				      struct device_attribute *attr,
+				      char *buf)
 {
 	int rc = 0;
 	struct dsi_display *display;
@@ -4651,8 +4652,9 @@ static ssize_t sysfs_dynamic_dsi_clk_read(struct device *dev,
 	return rc;
 }
 
-static ssize_t sysfs_dynamic_dsi_clk_write(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t dynamic_dsi_clock_store(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t count)
 {
 	int rc = 0;
 	int clk_rate;
@@ -4716,9 +4718,7 @@ static ssize_t sysfs_dynamic_dsi_clk_write(struct device *dev,
 
 }
 
-static DEVICE_ATTR(dynamic_dsi_clock, 0644,
-			sysfs_dynamic_dsi_clk_read,
-			sysfs_dynamic_dsi_clk_write);
+static DEVICE_ATTR_RW(dynamic_dsi_clock);
 
 static struct attribute *dynamic_dsi_clock_fs_attrs[] = {
 	&dev_attr_dynamic_dsi_clock.attr,
