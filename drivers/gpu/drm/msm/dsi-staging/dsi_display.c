@@ -4749,19 +4749,22 @@ static int dsi_display_sysfs_init(struct dsi_display *display)
 			kernfs_create_link(dev->parent->kobj.sd,
 					   "soc:qcom,dsi-display-primary",
 					   dsi_node);
-		if (IS_ERR(primary_link))
+
+		kernfs_put(dsi_node);
+
+		if (IS_ERR(primary_link)) {
 			pr_err("[%s] unable to create dsi-display symlink\n",
 			       display->name);
 
-		kernfs_put(dsi_node);
+			return PTR_ERR(primary_link);
+		}
 	}
 
 	rc = sysfs_create_group(&dev->kobj, &display_fs_attrs_group);
 	if (rc) {
 		pr_err("[%s] failed to create display device attributes\n",
 		       display->name);
-
-		return rc;
+		goto err_display_attr;
 	}
 
 	if (display->panel->panel_mode == DSI_OP_CMD_MODE)
@@ -4781,6 +4784,10 @@ static int dsi_display_sysfs_init(struct dsi_display *display)
 
 err_dyn_dsi_attr:
 	sysfs_remove_group(&dev->kobj, &display_fs_attrs_group);
+err_display_attr:
+	if (!IS_ERR_OR_NULL(primary_link))
+		kernfs_remove_by_name(primary_link->parent,
+				      primary_link->name);
 
 	return rc;
 }
