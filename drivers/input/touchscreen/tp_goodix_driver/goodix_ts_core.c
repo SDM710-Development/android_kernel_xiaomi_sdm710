@@ -1243,6 +1243,32 @@ static int goodix_ts_gpio_setup(struct goodix_ts_core *core_data)
 	return 0;
 }
 
+static ssize_t fod_status_show(struct device *dev,
+			       struct device_attribute *attr,
+			       char *buf)
+{
+	struct goodix_ts_core *core_data = dev_get_drvdata(dev);
+
+	if (!core_data)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", core_data->fod_status);
+}
+
+static ssize_t fod_status_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct goodix_ts_core *core_data = dev_get_drvdata(dev);
+
+	if (!core_data)
+		return -EINVAL;
+
+	sscanf(buf, "%d", &core_data->fod_status);
+
+	return count;
+}
+
 static ssize_t fod_test_store(struct device *dev, struct device_attribute *attr,
 			      const char *buf, size_t count)
 {
@@ -1279,7 +1305,18 @@ static ssize_t fod_test_store(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 
+static DEVICE_ATTR_RW(fod_status);
 static DEVICE_ATTR_WO(fod_test);
+
+static struct attribute *gtd_attrs[] = {
+	&dev_attr_fod_status.attr,
+	&dev_attr_fod_test.attr,
+	NULL,
+};
+
+static const struct attribute_group gtd_attr_group = {
+	.attrs = gtd_attrs,
+};
 
 static void goodix_switch_mode_work(struct work_struct *work)
 {
@@ -2358,11 +2395,9 @@ static int goodix_ts_probe(struct platform_device *pdev)
 	}
 	dev_set_drvdata(core_data->gtp_touch_dev, core_data);
 
-	if (sysfs_create_file(&core_data->gtp_touch_dev->kobj,
-				  &dev_attr_fod_test.attr)) {
-		ts_err("Failed to create fod_test sysfs group!");
-		goto out;
-	}
+	r = sysfs_create_group(&client->dev.kobj, &gtd_attr_group);
+	if (r)
+		ts_err("ERROR: Cannot create touch dev sysfs structure!");
 
 	core_data->fod_status = 0;
 	wake_lock_init(&core_data->tp_wakelock, WAKE_LOCK_SUSPEND, "touch_locker");
