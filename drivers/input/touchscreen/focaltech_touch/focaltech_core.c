@@ -1629,10 +1629,37 @@ static ssize_t panel_display_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%c\n", ts_data->lockdown_info[1]);
 }
 
+static ssize_t fod_status_show(struct device *dev,
+			       struct device_attribute *attr,
+			       char *buf)
+{
+	struct fts_ts_data *ts_data = dev_get_drvdata(dev);
+
+	if (!ts_data)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", ts_data->fod_status);
+}
+
+static ssize_t fod_status_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct fts_ts_data *ts_data = dev_get_drvdata(dev);
+
+	if (!ts_data)
+		return -EINVAL;
+
+	sscanf(buf, "%d", &ts_data->fod_status);
+
+	return count;
+}
+
 static DEVICE_ATTR_RO(panel_vendor);
 static DEVICE_ATTR_RO(panel_color);
 static DEVICE_ATTR_RO(panel_display);
 static DEVICE_ATTR_RO(lockdown_info);
+static DEVICE_ATTR_RW(fod_status);
 
 static struct attribute *fts_attrs[] = {
 	&dev_attr_lockdown_info.attr,
@@ -1644,6 +1671,15 @@ static struct attribute *fts_attrs[] = {
 
 static const struct attribute_group fts_attr_group = {
 	.attrs = fts_attrs
+};
+
+static struct attribute *fts_touch_attrs[] = {
+	&dev_attr_fod_status.attr,
+	NULL
+};
+
+static const struct attribute_group fts_touch_attr_group = {
+	.attrs = fts_touch_attrs
 };
 
 #define TP_INFO_MAX_LENGTH 50
@@ -2190,6 +2226,13 @@ static int fts_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 				goto err_class_create;
 			}
 			dev_set_drvdata(ts_data->fts_touch_dev, ts_data);
+
+			ret = sysfs_create_group(&ts_data->fts_touch_dev->kobj,
+						 &fts_touch_attr_group);
+			if (ret) {
+				FTS_ERROR("Failed to create touch dev sysfs group\n");
+				goto err_touch_sysfs_group;
+			}
 		}
 	}
 #if FTS_AUTO_UPGRADE_EN
@@ -2201,6 +2244,8 @@ static int fts_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	FTS_FUNC_EXIT();
 	return 0;
+err_touch_sysfs_group:
+	device_destroy(ts_data->fts_tp_class, 0x38);
 err_class_create:
 	class_destroy(ts_data->fts_tp_class);
 	ts_data->fts_tp_class = NULL;
@@ -2256,6 +2301,8 @@ static int fts_ts_remove(struct i2c_client *client)
 	struct fts_ts_data *ts_data = i2c_get_clientdata(client);
 
 	FTS_FUNC_ENTER();
+	sysfs_remove_file(&ts_data->fts_touch_dev->kobj,
+			  &dev_attr_fod_status.attr);
 	device_destroy(ts_data->fts_tp_class, 0x38);
 	class_destroy(ts_data->fts_tp_class);
 	ts_data->fts_tp_class = NULL;
