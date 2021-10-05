@@ -4661,6 +4661,29 @@ static uint64_t sde_plane_fix_property_value(struct sde_plane *psde,
 					     struct drm_property *property,
 					     uint64_t value)
 {
+	uint64_t fod_value = 0;
+	int idx;
+
+	idx = msm_property_index(&psde->property_info, property);
+	if (idx != PLANE_PROP_ZPOS)
+		return value;
+
+	/* Userspace uses a special value in zpos property
+	 * to identify plane as FoD dimming layer.
+	 */
+	if (value & FOD_PRESSED_LAYER_ZORDER) {
+		value &= ~FOD_PRESSED_LAYER_ZORDER;
+		fod_value = 1;
+	}
+
+	/* Set FoD property */
+	property = msm_property_index_to_drm_property(&psde->property_info,
+						      PLANE_PROP_FOD);
+	if (msm_property_atomic_set(&psde->property_info,
+				    &pstate->property_state, property,
+				    fod_value))
+		SDE_ERROR_PLANE(psde, "Failed to set FOD property\n");
+
 	return value;
 }
 
