@@ -4664,6 +4664,14 @@ static void _sde_plane_set_excl_rect_v1(struct sde_plane *psde,
 			pstate->excl_rect.w, pstate->excl_rect.h);
 }
 
+static uint64_t sde_plane_fix_property_value(struct sde_plane *psde,
+					     struct sde_plane_state *pstate,
+					     struct drm_property *property,
+					     uint64_t value)
+{
+	return value;
+}
+
 static int sde_plane_atomic_set_property(struct drm_plane *plane,
 		struct drm_plane_state *state, struct drm_property *property,
 		uint64_t val)
@@ -4680,6 +4688,10 @@ static int sde_plane_atomic_set_property(struct drm_plane *plane,
 		SDE_ERROR_PLANE(psde, "invalid state\n");
 	} else {
 		pstate = to_sde_plane_state(state);
+
+		/* Handle special values that can some properties carry */
+		val = sde_plane_fix_property_value(psde, pstate, property, val);
+
 		ret = msm_property_atomic_set(&psde->property_info,
 				&pstate->property_state, property, val);
 		if (!ret) {
