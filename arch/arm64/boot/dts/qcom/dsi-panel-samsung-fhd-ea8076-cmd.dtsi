@@ -40,7 +40,7 @@
 		qcom,mdss-brightness-max-level = <2047>;
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
-		qcom,mdss-dsi-bl-dcs-type-ss;
+		qcom,mdss-dsi-bl-inverted-dbv;
 		qcom,mdss-dsi-reset-sequence = <0 1>, <1 10>;
 		qcom,mdss-pan-physical-width-dimension = <63>;
 		qcom,mdss-pan-physical-height-dimension = <138>;
