@@ -339,7 +339,7 @@ static ssize_t nfc_read(struct file *filp, char __user *buf,
 			__func__, tmp[0], tmp[1], tmp[2]);
 #endif
 	if (copy_to_user(buf, tmp, ret)) {
-		dev_warn(&nqx_dev->client->dev,
+		dev_err(&nqx_dev->client->dev,
 			"%s : failed to copy to user space\n", __func__);
 		ret = -EFAULT;
 		goto err;
@@ -685,8 +685,8 @@ static int nfc_ldo_config(struct i2c_client *client, struct nqx_dev *nqx_dev)
 		}
 	} else {
 		nqx_dev->reg = NULL;
-		dev_err(&client->dev,
-			"%s: regulator entry not present\n", __func__);
+		dev_warn(&client->dev,
+			 "%s: regulator entry not present\n", __func__);
 		// return success as it's optional to configure LDO
 		return 0;
 	}
@@ -1085,9 +1085,9 @@ static int get_nfcc_hw_info(struct i2c_client *client,
 		ret = nqx_standby_write(nqx_dev, nci_init_cmd,
 					NCI_INIT_CMD_LEN);
 		if (ret < 0) {
-			dev_dbg(&client->dev,
-			"%s: - i2c_master_send failed for Core INIT\n",
-					__func__);
+			dev_err(&client->dev,
+				"%s: - i2c_master_send failed for Core INIT\n",
+				__func__);
 
 			return ret;
 		}
@@ -1102,9 +1102,9 @@ static int get_nfcc_hw_info(struct i2c_client *client,
 		/* Read Response of INIT command */
 		ret = i2c_master_recv(client, nci_init_rsp, NCI_INIT_RSP_LEN);
 		if (ret < 0) {
-			dev_dbg(&client->dev,
-			"%s: - i2c_master_recv get INIT rsp Error\n",
-					__func__);
+			dev_err(&client->dev,
+				"%s: - i2c_master_recv get INIT rsp Error\n",
+				__func__);
 
 			return ret;
 		}
@@ -1124,9 +1124,9 @@ static int get_nfcc_hw_info(struct i2c_client *client,
 		/* Read Notification of RESET command */
 		ret = i2c_master_recv(client, nci_reset_ntf, NCI_RESET_NTF_LEN);
 		if (ret < 0) {
-			dev_dbg(&client->dev,
-			"%s: - i2c_master_recv get RESET ntf Error\n",
-					__func__);
+			dev_err(&client->dev,
+				"%s: - i2c_master_recv get RESET ntf Error\n",
+				__func__);
 
 			return ret;
 		}
@@ -1252,15 +1252,17 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 	/* Read Header of RESET command */
 	ret = i2c_master_recv(client, nci_reset_rsp, NCI_HEADER_LEN);
 	if (ret != NCI_HEADER_LEN) {
-		dev_dbg(&client->dev,
-		"%s: - i2c_master_recv get RESET rsp header Error\n", __func__);
+		dev_err(&client->dev,
+			"%s: - i2c_master_recv get RESET rsp header Error\n",
+			__func__);
 		goto err_nfcc_hw_check;
 	}
 	ret = i2c_master_recv(client, &nci_reset_rsp[NCI_PAYLOAD_START_INDEX],
 				nci_reset_rsp[NCI_PAYLOAD_LENGTH_INDEX]);
 	if (ret != nci_reset_rsp[NCI_PAYLOAD_LENGTH_INDEX]) {
-		dev_dbg(&client->dev,
-		"%s: - i2c_master_recv get RESET rsp data Error\n", __func__);
+		dev_err(&client->dev,
+			"%s: - i2c_master_recv get RESET rsp data Error\n",
+			__func__);
 		goto err_nfcc_hw_check;
 	}
 
@@ -1268,8 +1270,8 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 	ret = get_nfcc_hw_info(client, nqx_dev,
 			nci_reset_rsp[NCI_PAYLOAD_LENGTH_INDEX]);
 	if (ret < 0) {
-		dev_dbg(&client->dev,
-			"%s: - Error in getting NFCC HW info\n", __func__);
+		dev_err(&client->dev, "%s: - Error in getting NFCC HW info\n",
+			__func__);
 		goto err_nfcc_hw_check;
 	}
 
@@ -1568,9 +1570,9 @@ static int nqx_probe(struct i2c_client *client,
 				"nfc-ese_pwr");
 		if (r) {
 			nqx_dev->ese_gpio = -EINVAL;
-			dev_err(&client->dev,
-				"%s: unable to request nfc ese gpio [%d]\n",
-					__func__, platform_data->ese_gpio);
+			dev_warn(&client->dev,
+				 "%s: unable to request nfc ese gpio [%d]\n",
+				 __func__, platform_data->ese_gpio);
 			/* ese gpio optional so we should continue */
 		} else {
 			nqx_dev->ese_gpio = platform_data->ese_gpio;
@@ -1698,8 +1700,7 @@ static int nqx_probe(struct i2c_client *client,
 	nqx_dev->nfc_enabled = false;
 	nqx_dev->is_ese_session_active = false;
 
-	dev_err(&client->dev,
-	"%s: probing NFCC NQxxx exited successfully\n",
+	dev_info(&client->dev, "%s: probing NFCC NQxxx exited successfully\n",
 		 __func__);
 	return 0;
 
