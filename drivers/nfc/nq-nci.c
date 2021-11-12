@@ -439,7 +439,6 @@ static int nqx_ese_pwr(struct nqx_dev *nqx_dev, unsigned long int arg)
 
 static int nfc_open(struct inode *inode, struct file *filp)
 {
-	int ret = 0;
 	struct nqx_dev *nqx_dev = container_of(filp->private_data,
 				struct nqx_dev, nqx_device);
 
@@ -448,7 +447,7 @@ static int nfc_open(struct inode *inode, struct file *filp)
 
 	dev_dbg(&nqx_dev->client->dev,
 			"%s: %d,%d\n", __func__, imajor(inode), iminor(inode));
-	return ret;
+	return 0;
 }
 
 /*
