@@ -50,6 +50,12 @@ MODULE_DEVICE_TABLE(of, msm_match_table);
 #define MAX_BUFFER_SIZE			(320)
 #define WAKEUP_SRC_TIMEOUT		(2000)
 #define MAX_RETRY_COUNT			3
+#define NCI_RESET_CMD_LEN		4
+#define NCI_INIT_CMD_LEN		3
+#define NCI_RESET_RSP_LEN		6
+#define NCI_INIT_RSP_LEN		28
+#define NCI_GET_VERSION_CMD_LEN		8
+#define NCI_GET_VERSION_RSP_LEN		12
 
 struct nqx_dev {
 	wait_queue_head_t	read_wq;
@@ -688,15 +694,14 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 {
 	int ret = 0;
 
-	unsigned char raw_nci_reset_cmd[] =  {0x20, 0x00, 0x01, 0x00};
-	unsigned char raw_nci_init_cmd[] =   {0x20, 0x01, 0x00};
-	unsigned char nci_get_version_cmd[] = {0x00, 0x04, 0xF1,
-					 0x00, 0x00, 0x00, 0x6E, 0xEF};
-	unsigned char nci_init_rsp[28];
-	unsigned char nci_reset_rsp[6];
-	unsigned char nci_get_version_rsp[12];
 	unsigned char init_rsp_len = 0;
 	unsigned int enable_gpio = nqx_dev->en_gpio;
+	char nci_reset_cmd[NCI_RESET_CMD_LEN];
+	char nci_init_cmd[NCI_INIT_CMD_LEN];
+	char nci_init_rsp[NCI_INIT_RSP_LEN];
+	char nci_reset_rsp[NCI_RESET_RSP_LEN];
+	char nci_get_version_cmd[NCI_GET_VERSION_CMD_LEN];
+	char nci_get_version_rsp[NCI_GET_VERSION_RSP_LEN];
 
 	/* making sure that the NFCC starts in a clean state. */
 	gpio_set_value(enable_gpio, 0);/* ULPM: Disable */
@@ -706,9 +711,12 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 	/* hardware dependent delay */
 	usleep_range(10000, 10100);
 
+	nci_reset_cmd[0] = 0x20;
+	nci_reset_cmd[1] = 0x00;
+	nci_reset_cmd[2] = 0x01;
+	nci_reset_cmd[3] = 0x00;
 	/* send NCI CORE RESET CMD with Keep Config parameters */
-	ret = i2c_master_send(client, raw_nci_reset_cmd,
-						sizeof(raw_nci_reset_cmd));
+	ret = i2c_master_send(client, nci_reset_cmd, NCI_RESET_CMD_LEN);
 	if (ret < 0) {
 		dev_err(&client->dev,
 		"%s: - i2c_master_send core reset Error\n", __func__);
@@ -722,8 +730,16 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 		gpio_set_value(nqx_dev->en_gpio, 1);
 		usleep_range(10000, 10100);
 
+		nci_get_version_cmd[0] = 0x00;
+		nci_get_version_cmd[1] = 0x04;
+		nci_get_version_cmd[2] = 0xF1;
+		nci_get_version_cmd[3] = 0x00;
+		nci_get_version_cmd[4] = 0x00;
+		nci_get_version_cmd[5] = 0x00;
+		nci_get_version_cmd[6] = 0x6E;
+		nci_get_version_cmd[7] = 0xEF;
 		ret = i2c_master_send(client, nci_get_version_cmd,
-						sizeof(nci_get_version_cmd));
+						NCI_GET_VERSION_CMD_LEN);
 
 		if (ret < 0) {
 			dev_err(&client->dev,
@@ -735,7 +751,7 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 		usleep_range(10000, 10100);
 
 		ret = i2c_master_recv(client, nci_get_version_rsp,
-						sizeof(nci_get_version_rsp));
+						NCI_GET_VERSION_RSP_LEN);
 		if (ret < 0) {
 			dev_err(&client->dev,
 				"%s: - i2c_master_recv get version rsp Error\n",
@@ -768,8 +784,7 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 	}
 
 	/* Read Response of RESET command */
-	ret = i2c_master_recv(client, nci_reset_rsp,
-		sizeof(nci_reset_rsp));
+	ret = i2c_master_recv(client, nci_reset_rsp, NCI_RESET_RSP_LEN);
 	if (ret < 0) {
 		dev_err(&client->dev,
 		"%s: - i2c_master_recv Error\n", __func__);
@@ -777,8 +792,10 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 	}
 
 	/* send NCI CORE INIT CMD */
-	ret = nqx_standby_write(nqx_dev, raw_nci_init_cmd,
-				sizeof(raw_nci_init_cmd));
+	nci_init_cmd[0] = 0x20;
+	nci_init_cmd[1] = 0x01;
+	nci_init_cmd[2] = 0x00;
+	ret = nqx_standby_write(nqx_dev, nci_init_cmd, NCI_INIT_CMD_LEN);
 	if (ret < 0) {
 		dev_err(&client->dev,
 		"%s: - i2c_master_send failed for Core INIT\n", __func__);
@@ -791,8 +808,7 @@ static int nfcc_hw_check(struct i2c_client *client, struct nqx_dev *nqx_dev)
 	}
 
 	/* Read Response of INIT command */
-	ret = i2c_master_recv(client, nci_init_rsp,
-		sizeof(nci_init_rsp));
+	ret = i2c_master_recv(client, nci_init_rsp, NCI_INIT_RSP_LEN);
 	if (ret < 0) {
 		dev_err(&client->dev,
 		"%s: - i2c_master_recv Error\n", __func__);
@@ -856,8 +872,8 @@ err_nfcc_reset_failed:
 
 	/*Disable NFC by default to save power on boot*/
 	gpio_set_value(enable_gpio, 0);/* ULPM: Disable */
-	ret = 0;
-	goto done;
+
+	return 0;
 
 err_nfcc_core_init_fail:
 	dev_err(&client->dev,
@@ -866,11 +882,10 @@ err_nfcc_core_init_fail:
 	nci_reset_rsp[1], nci_reset_rsp[2]);
 
 err_nfcc_hw_check:
-	ret = -ENXIO;
 	dev_err(&client->dev,
 		"%s: - NFCC HW not available\n", __func__);
-done:
-	return ret;
+
+	return -ENXIO;
 }
 
 /*
