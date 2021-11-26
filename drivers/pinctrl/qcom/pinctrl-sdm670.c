@@ -124,10 +124,17 @@
 		.intr_detection_width = -1,		\
 	}
 static const struct pinctrl_pin_desc sdm670_pins[] = {
+#if defined(CONFIG_MACH_XIAOMI_SDM710) && !defined(CONFIG_MACH_XIAOMI_E2)
+	PINCTRL_PIN_NR(0, "GPIO_0"),
+	PINCTRL_PIN_NR(1, "GPIO_1"),
+	PINCTRL_PIN_NR(2, "GPIO_2"),
+	PINCTRL_PIN_NR(3, "GPIO_3"),
+#else
 	PINCTRL_PIN(0, "GPIO_0"),
 	PINCTRL_PIN(1, "GPIO_1"),
 	PINCTRL_PIN(2, "GPIO_2"),
 	PINCTRL_PIN(3, "GPIO_3"),
+#endif
 	PINCTRL_PIN(4, "GPIO_4"),
 	PINCTRL_PIN(5, "GPIO_5"),
 	PINCTRL_PIN(6, "GPIO_6"),
@@ -192,10 +199,17 @@ static const struct pinctrl_pin_desc sdm670_pins[] = {
 	PINCTRL_PIN(78, "GPIO_78"),
 	PINCTRL_PIN(79, "GPIO_79"),
 	PINCTRL_PIN(80, "GPIO_80"),
+#ifdef CONFIG_MACH_XIAOMI_SDM710
+	PINCTRL_PIN_NR(81, "GPIO_81"),
+	PINCTRL_PIN_NR(82, "GPIO_82"),
+	PINCTRL_PIN_NR(83, "GPIO_83"),
+	PINCTRL_PIN_NR(84, "GPIO_84"),
+#else
 	PINCTRL_PIN(81, "GPIO_81"),
 	PINCTRL_PIN(82, "GPIO_82"),
 	PINCTRL_PIN(83, "GPIO_83"),
 	PINCTRL_PIN(84, "GPIO_84"),
+#endif
 	PINCTRL_PIN(85, "GPIO_85"),
 	PINCTRL_PIN(86, "GPIO_86"),
 	PINCTRL_PIN(87, "GPIO_87"),
@@ -231,7 +245,11 @@ static const struct pinctrl_pin_desc sdm670_pins[] = {
 	PINCTRL_PIN(118, "GPIO_118"),
 	PINCTRL_PIN(119, "GPIO_119"),
 	PINCTRL_PIN(120, "GPIO_120"),
+#ifdef CONFIG_MACH_XIAOMI_SDM710
+	PINCTRL_PIN_NR(121, "GPIO_121"),
+#else
 	PINCTRL_PIN(121, "GPIO_121"),
+#endif
 	PINCTRL_PIN(122, "GPIO_122"),
 	PINCTRL_PIN(123, "GPIO_123"),
 	PINCTRL_PIN(124, "GPIO_124"),
