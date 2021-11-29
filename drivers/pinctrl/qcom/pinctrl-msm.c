@@ -35,6 +35,7 @@
 #include <linux/pm.h>
 #include <linux/log2.h>
 #include <linux/irq.h>
+#include <linux/bsearch.h>
 #include <soc/qcom/scm.h>
 #include "../core.h"
 #include "../pinconf.h"
@@ -482,6 +483,14 @@ static void msm_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 #ifdef CONFIG_DEBUG_FS
 #include <linux/seq_file.h>
 
+static int pin_desc_cmp(const void *key, const void *elt)
+{
+	const struct pinctrl_pin_desc *desc = elt;
+	int num = *(int *)key;
+
+	return num - desc->number;
+}
+
 static void msm_gpio_dbg_show_one(struct seq_file *s,
 				  struct pinctrl_dev *pctldev,
 				  struct gpio_chip *chip,
@@ -490,6 +499,7 @@ static void msm_gpio_dbg_show_one(struct seq_file *s,
 {
 	const struct msm_pingroup *g;
 	struct msm_pinctrl *pctrl = gpiochip_get_data(chip);
+	const struct pinctrl_pin_desc *desc;
 	unsigned func;
 	int is_out;
 	int drive;
@@ -505,7 +515,10 @@ static void msm_gpio_dbg_show_one(struct seq_file *s,
 
 	g = &pctrl->soc->groups[offset];
 
-	if (pctrl->pctrl->desc->pins[offset].no_read) {
+	desc = bsearch(&offset, pctrl->pctrl->desc->pins,
+		       pctrl->pctrl->desc->npins, sizeof(*desc),
+		       pin_desc_cmp);
+	if (desc && desc->no_read) {
 		seq_printf(s, "%s not readable", g->name);
 		return;
 	}
