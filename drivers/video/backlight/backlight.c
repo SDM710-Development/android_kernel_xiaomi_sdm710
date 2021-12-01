@@ -173,18 +173,29 @@ static ssize_t brightness_show(struct device *dev,
 int backlight_device_set_brightness(struct backlight_device *bd,
 				    unsigned long brightness)
 {
-	int rc = -ENXIO;
+	int bl_event, rc = -ENXIO;
 
 	mutex_lock(&bd->ops_lock);
-	if (bd->ops) {
-		if (brightness > bd->props.max_brightness)
-			rc = -EINVAL;
-		else {
-			pr_debug("set brightness to %lu\n", brightness);
-			bd->props.brightness = brightness;
-			rc = backlight_update_status(bd);
-		}
+
+	if (!bd->ops)
+		goto skip;
+
+	if (brightness > bd->props.max_brightness) {
+		rc = -EINVAL;
+		goto skip;
 	}
+
+	pr_debug("set brightness to %lu\n", brightness);
+
+	if (brightness != bd->props.brightness) {
+		bl_event = brightness ? BACKLIGHT_ON : BACKLIGHT_OFF;
+		blocking_notifier_call_chain(&backlight_notifier,
+					     BACKLIGHT_UPDATED, &bl_event);
+		bd->props.brightness = brightness;
+	}
+
+	rc = backlight_update_status(bd);
+skip:
 	mutex_unlock(&bd->ops_lock);
 
 	backlight_generate_event(bd, BACKLIGHT_UPDATE_SYSFS);
