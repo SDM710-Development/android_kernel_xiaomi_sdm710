@@ -352,8 +352,9 @@ static void goodix_debugfs_exit(void)
 }
 
 /* show external module infomation */
-static ssize_t goodix_ts_extmod_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+static ssize_t extmod_info_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
 {
 	struct goodix_ext_module *module;
 	size_t offset = 0;
@@ -378,16 +379,18 @@ static ssize_t goodix_ts_extmod_show(struct device *dev,
 }
 
 /* show driver infomation */
-static ssize_t goodix_ts_driver_info_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+static ssize_t driver_info_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "DriverVersion:%s\n",
 			GOODIX_DRIVER_VERSION);
 }
 
 /* show chip infoamtion */
-static ssize_t goodix_ts_chip_info_show(struct device  *dev,
-		struct device_attribute *attr, char *buf)
+static ssize_t chip_info_show(struct device  *dev,
+			      struct device_attribute *attr,
+			      char *buf)
 {
 	struct goodix_ts_core *core_data =
 		dev_get_drvdata(dev);
@@ -412,8 +415,9 @@ static ssize_t goodix_ts_chip_info_show(struct device  *dev,
 }
 
 /* show chip configuration data */
-static ssize_t goodix_ts_config_data_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+static ssize_t config_data_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
 {
 	struct goodix_ts_core *core_data =
 		dev_get_drvdata(dev);
@@ -450,10 +454,8 @@ static ssize_t goodix_ts_config_data_show(struct device *dev,
 }
 
 /* reset chip */
-static ssize_t goodix_ts_reset_store(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf,
-		size_t count)
+static ssize_t reset_store(struct device *dev, struct device_attribute *attr,
+			   const char *buf, size_t count)
 {
 	struct goodix_ts_core *core_data =
 		dev_get_drvdata(dev);
@@ -472,9 +474,8 @@ static ssize_t goodix_ts_reset_store(struct device *dev,
 
 }
 
-static ssize_t goodix_ts_read_cfg_show(struct device *dev,
-				struct device_attribute *attr,
-						char *buf)
+static ssize_t read_cfg_show(struct device *dev, struct device_attribute *attr,
+			     char *buf)
 {
 	struct goodix_ts_core *core_data =
 				dev_get_drvdata(dev);
@@ -553,10 +554,8 @@ static int goodix_ts_convert_0x_data(const u8 *buf,
 
 
 
-static ssize_t goodix_ts_send_cfg_store(struct device *dev,
-				struct device_attribute *attr,
-				const char *buf,
-				size_t count)
+static ssize_t send_cfg_store(struct device *dev, struct device_attribute *attr,
+			      const char *buf, size_t count)
 {
 	struct goodix_ts_core *core_data =
 				dev_get_drvdata(dev);
@@ -623,9 +622,8 @@ exit:
 }
 
 /* show irq infomation */
-static ssize_t goodix_ts_irq_info_show(struct device *dev,
-		struct device_attribute *attr,
-		char *buf)
+static ssize_t irq_info_show(struct device *dev, struct device_attribute *attr,
+			     char *buf)
 {
 	struct goodix_ts_core *core_data =
 		dev_get_drvdata(dev);
@@ -669,10 +667,8 @@ static ssize_t goodix_ts_irq_info_show(struct device *dev,
 }
 
 /* enable/disable irq */
-static ssize_t goodix_ts_irq_info_store(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf,
-		size_t count)
+static ssize_t irq_info_store(struct device *dev, struct device_attribute *attr,
+			      const char *buf, size_t count)
 {
 	struct goodix_ts_core *core_data =
 		dev_get_drvdata(dev);
@@ -685,15 +681,14 @@ static ssize_t goodix_ts_irq_info_store(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(extmod_info, S_IRUGO, goodix_ts_extmod_show, NULL);
-static DEVICE_ATTR(driver_info, S_IRUGO, goodix_ts_driver_info_show, NULL);
-static DEVICE_ATTR(chip_info, S_IRUGO, goodix_ts_chip_info_show, NULL);
-static DEVICE_ATTR(config_data, S_IRUGO, goodix_ts_config_data_show, NULL);
-static DEVICE_ATTR(reset, S_IWUSR | S_IWGRP, NULL, goodix_ts_reset_store);
-static DEVICE_ATTR(send_cfg, S_IWUSR | S_IWGRP, NULL, goodix_ts_send_cfg_store);
-static DEVICE_ATTR(read_cfg, S_IRUGO, goodix_ts_read_cfg_show, NULL);
-static DEVICE_ATTR(irq_info, S_IRUGO | S_IWUSR | S_IWGRP,
-		goodix_ts_irq_info_show, goodix_ts_irq_info_store);
+static DEVICE_ATTR_RO(extmod_info);
+static DEVICE_ATTR_RO(driver_info);
+static DEVICE_ATTR_RO(chip_info);
+static DEVICE_ATTR_RO(config_data);
+static DEVICE_ATTR_WO(reset);
+static DEVICE_ATTR_WO(send_cfg);
+static DEVICE_ATTR_RO(read_cfg);
+static DEVICE_ATTR_RW(irq_info);
 
 static struct attribute *sysfs_attrs[] = {
 	&dev_attr_extmod_info.attr,
@@ -1248,9 +1243,8 @@ static int goodix_ts_gpio_setup(struct goodix_ts_core *core_data)
 	return 0;
 }
 
-static ssize_t gtp_fod_test_store(struct device *dev,
-				struct device_attribute *attr,
-				const char *buf, size_t count)
+static ssize_t fod_test_store(struct device *dev, struct device_attribute *attr,
+			      const char *buf, size_t count)
 {
 	int value = 0;
 	struct goodix_ts_core *core_data = dev_get_drvdata(dev);
@@ -1285,8 +1279,7 @@ static ssize_t gtp_fod_test_store(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(fod_test, (S_IRUGO | S_IWUSR | S_IWGRP),
-		NULL, gtp_fod_test_store);
+static DEVICE_ATTR_WO(fod_test);
 
 static void goodix_switch_mode_work(struct work_struct *work)
 {
@@ -2126,8 +2119,9 @@ static const struct file_operations goodix_lockdown_info_ops = {
 	.read = goodix_lockdown_info_read,
 };
 
-static ssize_t gtp_panel_color_show(struct device *dev,
-				    struct device_attribute *attr, char *buf)
+static ssize_t panel_color_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
 {
 	if (!goodix_core_data)
 		return 0;
@@ -2135,8 +2129,9 @@ static ssize_t gtp_panel_color_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%c\n", goodix_core_data->lockdown_info[2]);
 }
 
-static ssize_t gtp_panel_vendor_show(struct device *dev,
-				     struct device_attribute *attr, char *buf)
+static ssize_t panel_vendor_show(struct device *dev,
+				 struct device_attribute *attr,
+				 char *buf)
 {
 	if (!goodix_core_data)
 		return 0;
@@ -2144,8 +2139,9 @@ static ssize_t gtp_panel_vendor_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%c\n", goodix_core_data->lockdown_info[6]);
 }
 
-static ssize_t gtp_panel_display_show(struct device *dev,
-				     struct device_attribute *attr, char *buf)
+static ssize_t panel_display_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
 {
 	if (!goodix_core_data)
 		return 0;
@@ -2153,8 +2149,9 @@ static ssize_t gtp_panel_display_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%c\n", goodix_core_data->lockdown_info[1]);
 }
 
-static ssize_t gtp_lockdown_info_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
+static ssize_t lockdown_info_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
 {
 	if (!goodix_core_data)
 		return 0;
@@ -2167,10 +2164,10 @@ static ssize_t gtp_lockdown_info_show(struct device *dev,
 			goodix_core_data->lockdown_info[6], goodix_core_data->lockdown_info[7]);
 }
 
-static DEVICE_ATTR(lockdown_info, (S_IRUGO), gtp_lockdown_info_show, NULL);
-static DEVICE_ATTR(panel_vendor, (S_IRUGO), gtp_panel_vendor_show, NULL);
-static DEVICE_ATTR(panel_color, (S_IRUGO), gtp_panel_color_show, NULL);
-static DEVICE_ATTR(panel_display, (S_IRUGO), gtp_panel_display_show, NULL);
+static DEVICE_ATTR_RO(lockdown_info);
+static DEVICE_ATTR_RO(panel_vendor);
+static DEVICE_ATTR_RO(panel_color);
+static DEVICE_ATTR_RO(panel_display);
 
 static struct attribute *gtp_attr_group[] = {
 	&dev_attr_panel_vendor.attr,
