@@ -292,6 +292,18 @@ struct sde_connector_ops {
 	 * Returns: v_front_porch on success error-code on failure
 	 */
 	int (*get_panel_vfp)(void *display, int h_active, int v_active);
+
+	/**
+	 * get_dim_layer_alpha - returns alpha value for global dimming layer
+	 * @display: Pointer to private display handle
+	 * @type: Type of dimming layer
+	 * @alpha: Out parameter. Alpha value for dimming layer
+	 * Returns: 0 - disable global dimming
+	 *          1 - enable global dimming
+	 *          error-code - failure
+	 */
+	int (*get_dim_layer_alpha)(void *display, enum msm_dim_layer_type type,
+				   u32 *alpha);
 };
 
 /**
@@ -840,5 +852,17 @@ int sde_connector_get_panel_vfp(struct drm_connector *connector,
  * @connector: Pointer to DRM connector object
  */
 int sde_connector_esd_status(struct drm_connector *connector);
+
+/**
+ * sde_connector_get_dim_layer_alpha - helper to get global dimming layer alpha
+ * @connector: pointer to drm connector
+ * @type: type of dimming layer
+ * @alpha: out alpha value for dimming layer
+ * Returns: 0 - disable global dimming
+ *          1 - enable global dimming
+ *          error-code - failure
+ */
+int sde_connector_get_dim_layer_alpha(struct drm_connector *connector,
+				      enum msm_dim_layer_type type, u32 *alpha);
 
 #endif /* _SDE_CONNECTOR_H_ */
