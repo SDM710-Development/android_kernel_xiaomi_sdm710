@@ -902,6 +902,45 @@ static u32 dsi_panel_get_backlight(struct dsi_panel *panel)
 	return bl_level;
 }
 
+static inline int interpolate(int x, int xa, int xb, int ya, int yb)
+{
+	return ya + mult_frac(x - xa, yb - ya, xb - xa);
+}
+
+static u32 brightness_to_alpha(struct brightness_alpha *lut, u32 lut_count,
+			       u32 brightness)
+{
+	int i;
+
+	if (!lut)
+		return 0;
+
+	for (i = 0; i < lut_count; i++)
+		if (lut[i].brightness >= brightness)
+			break;
+
+	if (!i)
+		return lut[i].alpha;
+	else if (i == lut_count)
+		return lut[i - 1].alpha;
+
+	return interpolate(brightness,
+			   lut[i - 1].brightness, lut[i].brightness,
+			   lut[i - 1].alpha, lut[i].alpha);
+}
+
+u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel)
+{
+	/* No dimming required if HBM mode is enabled by user and
+	 * device is not in doze mode.
+	 */
+	if (panel->hbm_enabled && !panel->doze_enabled)
+		return 0;
+
+	return brightness_to_alpha(panel->fod_dim_lut, panel->fod_dim_lut_count,
+				   dsi_panel_get_backlight(panel));
+}
+
 static int __dsi_panel_send(struct dsi_panel *panel, enum dsi_cmd_set_type type,
 			    const char *name)
 {
