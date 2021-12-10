@@ -241,6 +241,9 @@ struct dsi_panel {
 	struct brightness_alpha *fod_dim_lut;
 	bool fod_pressed;
 
+	u32 dc_dim_lut_count;
+	struct brightness_alpha *dc_dim_lut;
+
 	struct dsi_panel_exd_config exd_config;
 };
 
