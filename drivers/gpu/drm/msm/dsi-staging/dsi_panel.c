@@ -941,6 +941,20 @@ u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel)
 				   dsi_panel_get_backlight(panel));
 }
 
+u32 dsi_panel_get_dc_dim_alpha(struct dsi_panel *panel)
+{
+	u32 bl_lvl = dsi_panel_get_backlight(panel);
+
+	/* No dimming required if HBM mode is enabled by user or
+	 * device is in doze mode or backlight value is zero.
+	 */
+	if (panel->hbm_enabled || panel->doze_enabled || !bl_lvl)
+		return 0;
+
+	return brightness_to_alpha(panel->dc_dim_lut, panel->dc_dim_lut_count,
+				   bl_lvl);
+}
+
 static int __dsi_panel_send(struct dsi_panel *panel, enum dsi_cmd_set_type type,
 			    const char *name)
 {

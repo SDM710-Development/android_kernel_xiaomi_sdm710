@@ -351,6 +351,8 @@ int dsi_panel_parse_esd_reg_read_configs(struct dsi_panel *panel,
 
 void dsi_panel_ext_bridge_put(struct dsi_panel *panel);
 
+u32 dsi_panel_get_dc_dim_alpha(struct dsi_panel *panel);
+
 u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel);
 
 static inline bool __dsi_panel_is_fod_pressed(struct dsi_panel *panel)
