@@ -93,6 +93,30 @@
 			1821	0x2D
 			2047	0x22
 		>;
+		qcom,disp-dc-dim-lut = <
+			/* brightness, alpha */
+			0	0xFF
+			1	0xF2
+			4	0xE6
+			9	0xD9
+			18	0xCC
+			29	0xBF
+			43	0xB3
+			60	0xA6
+			81	0x99
+			106	0x8C
+			132	0x80
+			163	0x73
+			198	0x66
+			237	0x59
+			277	0x4D
+			323	0x40
+			373	0x33
+			428	0x26
+			481	0x1A
+			544	0xD
+			610	0x0
+		>;
 
 		qcom,elvss_dimming_check_enable;
 		qcom,mdss-dsi-panel-elvss-dimming-read-length = <1>;
