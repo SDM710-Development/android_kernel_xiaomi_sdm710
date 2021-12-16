@@ -5905,6 +5905,33 @@ int dsi_display_get_panel_vfp(void *dsi_display,
 	return rc;
 }
 
+int dsi_display_get_dim_layer_alpha(void *dsi_display,
+				    enum msm_dim_layer_type type, u32 *alpha)
+{
+	struct dsi_display *display = dsi_display;
+	int rc = -ENOTSUPP;
+
+	dsi_panel_acquire_panel_lock(display->panel);
+
+	switch (type) {
+	case MSM_DIM_LAYER_FOD:
+		/* Enable dimming layer only if FOD is pressed */
+		rc = __dsi_panel_is_fod_pressed(display->panel) ? 1 : 0;
+
+		/* Retrieve alpha from panel if pressed */
+		if (rc)
+			*alpha = dsi_panel_get_fod_dim_alpha(display->panel);
+
+		break;
+	default:
+		pr_warn("Unknown dimming layer type\n");
+	}
+
+	dsi_panel_release_panel_lock(display->panel);
+
+	return rc;
+}
+
 int dsi_display_find_mode(struct dsi_display *display,
 		const struct dsi_display_mode *cmp,
 		struct dsi_display_mode **out_mode)

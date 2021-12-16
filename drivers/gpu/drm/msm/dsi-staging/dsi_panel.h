@@ -347,12 +347,17 @@ void dsi_panel_ext_bridge_put(struct dsi_panel *panel);
 
 u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel);
 
+static inline bool __dsi_panel_is_fod_pressed(struct dsi_panel *panel)
+{
+	return panel->fod_pressed;
+}
+
 static inline bool dsi_panel_is_fod_pressed(struct dsi_panel *panel)
 {
 	bool status;
 
 	dsi_panel_acquire_panel_lock(panel);
-	status = panel->fod_pressed;
+	status = __dsi_panel_is_fod_pressed(panel);
 	dsi_panel_release_panel_lock(panel);
 
 	return status;
