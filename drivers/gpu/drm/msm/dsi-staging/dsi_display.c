@@ -4728,7 +4728,51 @@ static struct attribute_group dynamic_dsi_clock_fs_attrs_group = {
 	.attrs = dynamic_dsi_clock_fs_attrs,
 };
 
+static ssize_t hbm_show(struct device *dev, struct device_attribute *attr,
+			char *buf)
+{
+	struct dsi_display *display = dev_get_drvdata(dev);
+
+	if (!display->panel) {
+		pr_err("Invalid display\n");
+		return -EINVAL;
+	}
+
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
+			 dsi_panel_is_hbm_enabled(display->panel));
+}
+
+static ssize_t hbm_store(struct device *dev, struct device_attribute *attr,
+			 const char *buf, size_t count)
+{
+	struct dsi_display *display = dev_get_drvdata(dev);
+	bool status;
+	int rc;
+
+	display = dev_get_drvdata(dev);
+	if (!display) {
+		pr_err("Invalid display\n");
+		return -EINVAL;
+	}
+
+	rc = kstrtobool(buf, &status);
+	if (rc) {
+		pr_err("Failed to parse value, rc=%d\n", rc);
+		return rc;
+	}
+
+	rc = dsi_panel_set_hbm_enabled(display->panel, status);
+	if (rc)
+		pr_err("Failed to %s HBM mode, rc=%d\n",
+		       status ? "enable" : "disable", rc);
+
+	return !rc ? count : rc;
+}
+
+static DEVICE_ATTR_RW(hbm);
+
 static struct attribute *display_fs_attrs[] = {
+	&dev_attr_hbm.attr,
 	NULL,
 };
 static struct attribute_group display_fs_attrs_group = {
