@@ -957,9 +957,9 @@ static int __dsi_panel_send(struct dsi_panel *panel, enum dsi_cmd_set_type type,
 	__dsi_panel_send(PANEL, __PASTE(DSI_CMD_SET_,CMDSET),		\
 			 __stringify(CMDSET))
 
-static int dsi_panel_apply_hbm(struct dsi_panel *panel)
+static int dsi_panel_apply_hbm(struct dsi_panel *panel, bool enable)
 {
-	return panel->hbm_enabled ?
+	return enable ?
 		DSI_PANEL_SEND(panel, DISP_HBM_ON) :
 		DSI_PANEL_SEND(panel, DISP_HBM_OFF);
 }
@@ -979,7 +979,8 @@ static int dsi_panel_update_doze(struct dsi_panel *panel)
 		}
 	} else {
 		/* Restore HBM mode when enabled by user */
-		rc = dsi_panel_apply_hbm(panel);
+		if (panel->hbm_enabled)
+			rc = dsi_panel_apply_hbm(panel, true);
 	}
 
 	return rc;
@@ -1032,7 +1033,7 @@ int dsi_panel_set_hbm_enabled(struct dsi_panel *panel, bool status)
 		panel->hbm_enabled = status;
 
 		if (dsi_panel_initialized(panel))
-			rc = dsi_panel_apply_hbm(panel);
+			rc = dsi_panel_apply_hbm(panel, status);
 	}
 
 	dsi_panel_release_panel_lock(panel);
@@ -4345,7 +4346,7 @@ int dsi_panel_enable(struct dsi_panel *panel)
 
 	/* Restore HBM mode if enabled by user */
 	if (panel->hbm_enabled)
-		dsi_panel_apply_hbm(panel);
+		dsi_panel_apply_hbm(panel, panel->hbm_enabled);
 
 	mutex_unlock(&panel->panel_lock);
 
