@@ -2408,6 +2408,22 @@ static int dsi_panel_parse_bl_config(struct dsi_panel *panel,
 	panel->bl_config.bl_inverted_dbv =
 		of_property_read_bool(of_node, "qcom,mdss-dsi-bl-inverted-dbv");
 
+	panel->bl_config.bl_doze_lbm = 0;
+	rc = of_property_read_u32(of_node, "qcom,disp-doze-lbm-backlight",
+				  &val);
+	if (!rc)
+		panel->bl_config.bl_doze_lbm = val;
+	else
+		pr_debug("set doze lbm backlight to 0\n");
+
+	panel->bl_config.bl_doze_hbm = 0;
+	rc = of_property_read_u32(of_node, "qcom,disp-doze-hbm-backlight",
+				  &val);
+	if (!rc)
+		panel->bl_config.bl_doze_hbm = val;
+	else
+		pr_debug("set doze hbm backlight to 0\n");
+
 	if (panel->bl_config.type == DSI_BACKLIGHT_PWM) {
 		rc = dsi_panel_parse_bl_pwm_config(&panel->bl_config, of_node);
 		if (rc) {
