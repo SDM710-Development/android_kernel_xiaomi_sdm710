@@ -4728,6 +4728,47 @@ static struct attribute_group dynamic_dsi_clock_fs_attrs_group = {
 	.attrs = dynamic_dsi_clock_fs_attrs,
 };
 
+static ssize_t dc_dimming_show(struct device *dev,
+			       struct device_attribute *attr,
+			       char *buf)
+{
+	struct dsi_display *display;
+
+	display = dev_get_drvdata(dev);
+	if (!display) {
+		pr_err("Invalid display\n");
+		return -EINVAL;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%d\n",
+			dsi_panel_get_dc_dimming(display->panel));
+}
+
+static ssize_t dc_dimming_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct dsi_display *display;
+	bool status;
+	int rc;
+
+	display = dev_get_drvdata(dev);
+	if (!display) {
+		pr_err("Invalid display\n");
+		return -EINVAL;
+	}
+
+	rc = kstrtobool(buf, &status);
+	if (rc) {
+		pr_err("%s: kstrtobool failed. rc=%d\n", __func__, rc);
+		return rc;
+	}
+
+	dsi_panel_set_dc_dimming(display->panel, status);
+
+	return count;
+}
+
 static ssize_t fod_pressed_show(struct device *dev,
 				struct device_attribute *attr,
 				char *buf)
@@ -4821,11 +4862,13 @@ static ssize_t hbm_store(struct device *dev, struct device_attribute *attr,
 	return !rc ? count : rc;
 }
 
+static DEVICE_ATTR_RW(dc_dimming);
 static DEVICE_ATTR_RW(fod_pressed);
 static DEVICE_ATTR_RO(fod_ui);
 static DEVICE_ATTR_RW(hbm);
 
 static struct attribute *display_fs_attrs[] = {
+	&dev_attr_dc_dimming.attr,
 	&dev_attr_fod_pressed.attr,
 	&dev_attr_fod_ui.attr,
 	&dev_attr_hbm.attr,
