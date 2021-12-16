@@ -356,6 +356,11 @@ u32 dsi_panel_get_dc_dim_alpha(struct dsi_panel *panel);
 
 u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel);
 
+static inline bool __dsi_panel_is_dc_dimming(struct dsi_panel *panel)
+{
+	return panel->dc_dimming;
+}
+
 static inline bool __dsi_panel_is_fod_pressed(struct dsi_panel *panel)
 {
 	return panel->fod_pressed;
@@ -366,7 +371,7 @@ static inline bool dsi_panel_get_dc_dimming(struct dsi_panel *panel)
 	bool status;
 
 	dsi_panel_acquire_panel_lock(panel);
-	status = panel->dc_dimming;
+	status = __dsi_panel_is_dc_dimming(panel);
 	dsi_panel_release_panel_lock(panel);
 
 	return status;
