@@ -957,6 +957,12 @@ static int __dsi_panel_send(struct dsi_panel *panel, enum dsi_cmd_set_type type,
 	__dsi_panel_send(PANEL, __PASTE(DSI_CMD_SET_,CMDSET),		\
 			 __stringify(CMDSET))
 
+/* Use FOD variants of HBM commands for devices with FOD */
+#ifndef CONFIG_MACH_XIAOMI_E2 /* Sirius */
+#define DISP_HBM_ON	DISP_HBM_FOD_ON
+#define DISP_HBM_OFF	DISP_HBM_FOD_OFF
+#endif
+
 static int dsi_panel_apply_hbm(struct dsi_panel *panel, bool enable)
 {
 	return enable ?
