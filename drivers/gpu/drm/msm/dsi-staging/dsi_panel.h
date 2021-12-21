@@ -234,6 +234,8 @@ struct dsi_panel {
 	int power_mode;
 	enum dsi_panel_physical_type panel_type;
 
+	enum msm_dim_layer_type dimlayer_type;
+
 	u32 fod_dim_lut_count;
 	struct brightness_alpha *fod_dim_lut;
 	bool fod_pressed;
@@ -383,5 +385,8 @@ static inline void dsi_panel_set_fod_pressed(struct dsi_panel *panel,
 }
 
 int dsi_panel_set_hbm_enabled(struct dsi_panel *panel, bool status);
+
+enum msm_dim_layer_type dsi_panel_update_dimlayer(struct dsi_panel *panel,
+						  enum msm_dim_layer_type type);
 
 #endif /* _DSI_PANEL_H_ */
