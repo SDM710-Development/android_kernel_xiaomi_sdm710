@@ -151,10 +151,10 @@
 				qcom,mdss-dsi-dispparam-acl-l2-command-state = "dsi_lp_mode";
 				qcom,mdss-dsi-dispparam-acl-l3-command = [39 01 00 00 00 00 02 55 03];//30%
 				qcom,mdss-dsi-dispparam-acl-l3-command-state = "dsi_lp_mode";
-				qcom,mdss-dsi-dispparam-hbm-off-command = [39 01 00 00 00 00 02 53 28];
-				qcom,mdss-dsi-dispparam-hbm-off-command-state = "dsi_lp_mode";
-				qcom,mdss-dsi-dispparam-hbm-on-command = [39 01 00 00 00 00 02 53 e8];
-				qcom,mdss-dsi-dispparam-hbm-on-command-state = "dsi_lp_mode";
+				qcom,mdss-dsi-dispparam-hbm-off-command = [15 01 00 00 10 00 02 53 28];
+				qcom,mdss-dsi-dispparam-hbm-off-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-hbm-on-command = [15 01 00 00 10 00 02 53 e8];
+				qcom,mdss-dsi-dispparam-hbm-on-command-state = "dsi_hs_mode";
 				qcom,mdss-dsi-dispparam-crc-srgb-on-command = [
 					39 00 00 00 00 00 03 F0 5A 5A
 					39 00 00 00 00 00 03 E2 00 05
