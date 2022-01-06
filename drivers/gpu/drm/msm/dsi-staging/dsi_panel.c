@@ -875,6 +875,7 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 		return -EINVAL;
 	}
 
+	panel->hw_bl_lvl = bl_lvl;
 	dsi = &panel->mipi_device;
 
 	if (panel->bl_config.bl_inverted_dbv)

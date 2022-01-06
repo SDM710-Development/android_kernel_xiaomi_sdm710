@@ -245,6 +245,7 @@ struct dsi_panel {
 	struct brightness_alpha *dc_dim_lut;
 	bool dc_dimming;
 	u32 dc_dim_alpha;
+	u32 hw_bl_lvl;
 
 	struct dsi_panel_exd_config exd_config;
 };
