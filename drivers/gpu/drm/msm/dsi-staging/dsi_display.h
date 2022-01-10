@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2015-2018, The Linux Foundation.All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -178,8 +177,6 @@ struct dsi_display {
 	struct list_head list;
 	bool is_active;
 	bool is_cont_splash_enabled;
-	bool is_prim_display;
-	bool is_first_boot;
 	struct mutex display_lock;
 	int disp_te_gpio;
 	bool is_te_irq_enabled;
@@ -240,6 +237,8 @@ struct dsi_display {
 	struct work_struct fifo_underflow_work;
 	struct work_struct fifo_overflow_work;
 	struct work_struct lp_rx_timeout_work;
+
+	bool fod_ui;
 };
 
 /**
@@ -589,10 +588,6 @@ void dsi_display_enable_event(struct dsi_display *display,
 
 int dsi_display_set_backlight(void *display, u32 bl_lvl);
 
-int dsi_panel_set_doze_backlight(struct dsi_display *display);
-
-ssize_t dsi_panel_get_doze_backlight(struct dsi_display *display, char *buf);
-
 /**
  * dsi_display_check_status() - check if panel is dead or alive
  * @display:            Handle to display.
@@ -673,6 +668,16 @@ int dsi_display_cont_splash_config(void *display);
 int dsi_display_get_panel_vfp(void *display,
 	int h_active, int v_active);
 
-struct dsi_display *get_primary_display(void);
+/**
+ * dsi_display_get_dim_layer_alpha - get global dimming layer alpha value
+ * @display: Pointer to private display structure
+ * @type: Type of dimming layer
+ * @alpha: Out alpha value for dimming layer
+ * Returns: 0 - Disable global dimming layer
+ *	    1 - Enable global dimming layer using returned alpha value
+ *	    error-code - Failure
+ */
+int dsi_display_get_dim_layer_alpha(void *display, enum msm_dim_layer_type type,
+				    u32 *alpha);
 
 #endif /* _DSI_DISPLAY_H_ */

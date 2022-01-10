@@ -4087,18 +4087,6 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
 	return 0;
 }
 
-int sde_plane_check_fod_layer(const struct drm_plane_state *drm_state)
-{
-	struct sde_plane_state *pstate;
-
-	if (!drm_state)
-		return 0;
-
-	pstate = to_sde_plane_state(drm_state);
-
-	return sde_plane_get_property(pstate, PLANE_PROP_FOD);
-}
-
 static void _sde_plane_atomic_disable(struct drm_plane *plane,
 				struct drm_plane_state *old_state)
 {
@@ -4130,6 +4118,18 @@ static void _sde_plane_atomic_disable(struct drm_plane *plane,
 			psde->pipe_hw && psde->pipe_hw->ops.setup_multirect)
 		psde->pipe_hw->ops.setup_multirect(psde->pipe_hw,
 				SDE_SSPP_RECT_SOLO, SDE_SSPP_MULTIRECT_NONE);
+}
+
+int sde_plane_is_fod_layer(const struct drm_plane_state *drm_state)
+{
+	struct sde_plane_state *pstate;
+
+	if (!drm_state)
+		return 0;
+
+	pstate = to_sde_plane_state(drm_state);
+
+	return sde_plane_get_property(pstate, PLANE_PROP_FOD);
 }
 
 static void sde_plane_atomic_update(struct drm_plane *plane,
@@ -4271,7 +4271,6 @@ static void _sde_plane_install_properties(struct drm_plane *plane,
 	const struct sde_format_extended *format_list;
 	struct sde_kms_info *info;
 	struct sde_plane *psde = to_sde_plane(plane);
-	int zpos_max = 255;
 	int zpos_def = 0;
 	char feature_name[256];
 
@@ -4289,20 +4288,13 @@ static void _sde_plane_install_properties(struct drm_plane *plane,
 
 	psde->catalog = catalog;
 
-	if (sde_is_custom_client()) {
-		if (catalog->mixer_count &&
-				catalog->mixer[0].sblk->maxblendstages) {
-			zpos_max = catalog->mixer[0].sblk->maxblendstages - 1;
-			if (zpos_max > SDE_STAGE_MAX - SDE_STAGE_0 - 1)
-				zpos_max = SDE_STAGE_MAX - SDE_STAGE_0 - 1;
-		}
-	} else if (plane->type != DRM_PLANE_TYPE_PRIMARY) {
+	if (!sde_is_custom_client() && plane->type != DRM_PLANE_TYPE_PRIMARY) {
 		/* reserve zpos == 0 for primary planes */
 		zpos_def = drm_plane_index(plane) + 1;
 	}
 
 	msm_property_install_range(&psde->property_info, "zpos",
-		0x0, 0, zpos_max, zpos_def, PLANE_PROP_ZPOS);
+		0x0, 0, INT_MAX, zpos_def, PLANE_PROP_ZPOS);
 
 	msm_property_install_range(&psde->property_info, "fod",
 		0x0, 0, INT_MAX, 0, PLANE_PROP_FOD);
@@ -4676,6 +4668,37 @@ static void _sde_plane_set_excl_rect_v1(struct sde_plane *psde,
 			pstate->excl_rect.w, pstate->excl_rect.h);
 }
 
+static uint64_t sde_plane_fix_property_value(struct sde_plane *psde,
+					     struct sde_plane_state *pstate,
+					     struct drm_property *property,
+					     uint64_t value)
+{
+	uint64_t fod_value = 0;
+	int idx;
+
+	idx = msm_property_index(&psde->property_info, property);
+	if (idx != PLANE_PROP_ZPOS)
+		return value;
+
+	/* Userspace uses a special value in zpos property
+	 * to identify plane as FoD dimming layer.
+	 */
+	if (value & FOD_PRESSED_LAYER_ZORDER) {
+		value &= ~FOD_PRESSED_LAYER_ZORDER;
+		fod_value = 1;
+	}
+
+	/* Set FoD property */
+	property = msm_property_index_to_drm_property(&psde->property_info,
+						      PLANE_PROP_FOD);
+	if (msm_property_atomic_set(&psde->property_info,
+				    &pstate->property_state, property,
+				    fod_value))
+		SDE_ERROR_PLANE(psde, "Failed to set FOD property\n");
+
+	return value;
+}
+
 static int sde_plane_atomic_set_property(struct drm_plane *plane,
 		struct drm_plane_state *state, struct drm_property *property,
 		uint64_t val)
@@ -4692,6 +4715,10 @@ static int sde_plane_atomic_set_property(struct drm_plane *plane,
 		SDE_ERROR_PLANE(psde, "invalid state\n");
 	} else {
 		pstate = to_sde_plane_state(state);
+
+		/* Handle special values that can some properties carry */
+		val = sde_plane_fix_property_value(psde, pstate, property, val);
+
 		ret = msm_property_atomic_set(&psde->property_info,
 				&pstate->property_state, property, val);
 		if (!ret) {

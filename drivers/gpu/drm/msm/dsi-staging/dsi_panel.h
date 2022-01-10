@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -37,9 +36,6 @@
 
 #define DSI_MODE_MAX 5
 
-#define HIST_BL_OFFSET_LIMIT 48
-#define DEFAULT_FOD_OFF_DIMMING_DELAY  170
-
 enum dsi_panel_rotation {
 	DSI_PANEL_ROTATE_NONE = 0,
 	DSI_PANEL_ROTATE_HV_FLIP,
@@ -71,6 +67,12 @@ enum {
 enum dsi_dms_mode {
 	DSI_DMS_MODE_DISABLED = 0,
 	DSI_DMS_MODE_RES_SWITCH_IMMEDIATE,
+};
+
+enum dsi_panel_physical_type {
+	DSI_DISPLAY_PANEL_TYPE_LCD = 0,
+	DSI_DISPLAY_PANEL_TYPE_OLED,
+	DSI_DISPLAY_PANEL_TYPE_MAX,
 };
 
 struct dsi_dfps_capabilities {
@@ -110,9 +112,12 @@ struct dsi_backlight_config {
 	u32 bl_level;
 	u32 bl_scale;
 	u32 bl_scale_ad;
+	u32 bl_doze_lbm;
+	u32 bl_doze_hbm;
+	u32 bl_dc_thresh;
+	bool bl_inverted_dbv;
 
 	int en_gpio;
-	bool dcs_type_ss;
 	/* PWM params */
 	bool pwm_pmi_control;
 	u32 pwm_pmic_bank;
@@ -158,9 +163,6 @@ struct drm_panel_esd_config {
 	u8 *return_buf;
 	u8 *status_buf;
 	u32 groups;
-	int esd_err_irq_gpio;
-	int esd_err_irq;
-	int esd_interrupt_flags;
 };
 
 enum dsi_panel_type {
@@ -180,12 +182,9 @@ struct dsi_panel_exd_config {
 	int selab;
 };
 
-struct dsi_read_config {
-	bool enabled;
-	struct dsi_panel_cmd_set read_cmd;
-	u32 cmds_rlen;
-	u32 valid_bits;
-	u8 rbuf[64];
+struct brightness_alpha {
+	u32 brightness;
+	u32 alpha;
 };
 
 struct dsi_panel {
@@ -227,62 +226,28 @@ struct dsi_panel {
 	bool panel_initialized;
 	bool te_using_watchdog_timer;
 
-	bool dispparam_enabled;
-
-	u32 skip_dimmingon;
-
-	bool fod_hbm_enabled;/*prevent set DISPPARAM_DOZE_BRIGHTNESS_HBM/LBM in FOD HBM*/
-	bool fod_dimlayer_enabled;
- 	bool fod_dimlayer_hbm_enabled;
-	bool fod_ui_ready;
-	u32 fod_off_dimming_delay;
-	ktime_t fod_hbm_off_time;
-	bool panel_reset_skip;
-	ktime_t fod_backlight_off_time;
-
 	char dsc_pps_cmd[DSI_CMD_PPS_SIZE];
 	enum dsi_dms_mode dms_mode;
 
 	bool sync_broadcast_en;
+	bool doze_enabled;
+	bool hbm_enabled;
+	int power_mode;
+	enum dsi_panel_physical_type panel_type;
+
+	enum msm_dim_layer_type dimlayer_type;
+
+	u32 fod_dim_lut_count;
+	struct brightness_alpha *fod_dim_lut;
+	bool fod_pressed;
+
+	u32 dc_dim_lut_count;
+	struct brightness_alpha *dc_dim_lut;
+	bool dc_dimming;
+	u32 dc_dim_alpha;
+	u32 hw_bl_lvl;
 
 	struct dsi_panel_exd_config exd_config;
-
-	u32 last_bl_lvl;
-	s32 backlight_delta;
-	u32 doze_backlight_threshold;
-
-	u32 hist_bl_offset;
-	u32 panel_on_dimming_delay;
-	struct delayed_work cmds_work;
-
-	bool elvss_dimming_check_enable;
-	struct dsi_read_config elvss_dimming_cmds;
-	struct dsi_panel_cmd_set elvss_dimming_offset;
-	bool fod_backlight_flag;
-	bool fod_flag;
-	bool in_aod;
-	u32 fod_target_backlight;
-
-	bool fod_crc_p3_gamut_calibration;
-
-	/* Display count */
-	bool panel_active_count_enable;
-	u64 boottime;
-	u64 bootRTCtime;
-	u64 bootdays;
-	u64 panel_active;
-	u64 kickoff_count;
-	u64 bl_duration;
-	u64 bl_level_integral;
-	u64 bl_highlevel_duration;
-	u64 bl_lowlevel_duration;
-	u64 hbm_duration;
-	u64 hbm_times;
-	u32 dc_threshold;
-	bool dc_enable;
-	bool dim_layer_replace_dc;
-	bool fod_dimlayer_bl_block;
-	bool fodflag;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
@@ -303,6 +268,11 @@ static inline void dsi_panel_acquire_panel_lock(struct dsi_panel *panel)
 static inline void dsi_panel_release_panel_lock(struct dsi_panel *panel)
 {
 	mutex_unlock(&panel->panel_lock);
+}
+
+static inline bool dsi_panel_is_type_oled(struct dsi_panel *panel)
+{
+	return (panel->panel_type == DSI_DISPLAY_PANEL_TYPE_OLED);
 }
 
 struct dsi_panel *dsi_panel_get(struct device *parent,
@@ -383,5 +353,74 @@ int dsi_panel_parse_esd_reg_read_configs(struct dsi_panel *panel,
 				struct device_node *of_node);
 
 void dsi_panel_ext_bridge_put(struct dsi_panel *panel);
+
+u32 dsi_panel_get_dc_dim_alpha(struct dsi_panel *panel);
+
+u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel);
+
+static inline bool __dsi_panel_is_dc_dimming(struct dsi_panel *panel)
+{
+	return panel->dc_dimming;
+}
+
+static inline bool __dsi_panel_is_fod_pressed(struct dsi_panel *panel)
+{
+	return panel->fod_pressed;
+}
+
+static inline bool dsi_panel_get_dc_dimming(struct dsi_panel *panel)
+{
+	bool status;
+
+	dsi_panel_acquire_panel_lock(panel);
+	status = __dsi_panel_is_dc_dimming(panel);
+	dsi_panel_release_panel_lock(panel);
+
+	return status;
+}
+
+static inline bool dsi_panel_is_fod_pressed(struct dsi_panel *panel)
+{
+	bool status;
+
+	dsi_panel_acquire_panel_lock(panel);
+	status = __dsi_panel_is_fod_pressed(panel);
+	dsi_panel_release_panel_lock(panel);
+
+	return status;
+}
+
+static inline bool dsi_panel_is_hbm_enabled(struct dsi_panel *panel)
+{
+	bool status;
+
+	dsi_panel_acquire_panel_lock(panel);
+	status = panel->hbm_enabled;
+	dsi_panel_release_panel_lock(panel);
+
+	return status;
+}
+
+static inline void dsi_panel_set_dc_dimming(struct dsi_panel *panel,
+					    bool enabled)
+{
+	dsi_panel_acquire_panel_lock(panel);
+	panel->dc_dimming = enabled;
+	dsi_panel_release_panel_lock(panel);
+}
+
+static inline void dsi_panel_set_fod_pressed(struct dsi_panel *panel,
+					     bool pressed)
+{
+	dsi_panel_acquire_panel_lock(panel);
+	panel->fod_pressed = pressed;
+	dsi_panel_release_panel_lock(panel);
+}
+
+int dsi_panel_set_hbm_enabled(struct dsi_panel *panel, bool status);
+
+enum msm_dim_layer_type dsi_panel_update_dimlayer(struct dsi_panel *panel,
+						  enum msm_dim_layer_type type,
+						  u32 alpha);
 
 #endif /* _DSI_PANEL_H_ */

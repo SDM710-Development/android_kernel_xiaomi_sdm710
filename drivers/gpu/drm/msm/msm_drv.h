@@ -73,9 +73,6 @@ struct msm_gem_vma;
 
 #define TEARDOWN_DEADLOCK_RETRY_MAX 5
 
-extern atomic_t resume_pending;
-extern wait_queue_head_t resume_wait_q;
-
 struct msm_file_private {
 	/* currently we don't do anything useful with this.. but when
 	 * per-context address spaces are supported we'd keep track of
@@ -243,6 +240,18 @@ enum msm_event_wait {
 	MSM_ENC_TX_COMPLETE,
 	MSM_ENC_VBLANK,
 	MSM_ENC_ACTIVE_REGION,
+};
+
+/**
+ * enum msm_dim_layer_type - global dimming layer types
+ * @MSM_DIM_LAYER_NONE:	None (used to indicate there is no dimming active)
+ * @MSM_DIM_LAYER_TOP:	Top-most layer for global attentuation
+ * @MSM_DIM_LAYER_FOD:	Dimming layer to avoid FOD flickering
+ */
+enum msm_dim_layer_type {
+	MSM_DIM_LAYER_NONE,
+	MSM_DIM_LAYER_TOP,
+	MSM_DIM_LAYER_FOD,
 };
 
 /**
@@ -488,10 +497,13 @@ struct msm_roi_list {
 /**
  * struct - msm_display_kickoff_params - info for display features at kickoff
  * @rois: Regions of interest structure for mapping CRTC to Connector output
+ * @dim_layer_type: Indicates currently present type of global dimming layer
  */
 struct msm_display_kickoff_params {
 	struct msm_roi_list *rois;
 	struct drm_msm_ext_hdr_metadata *hdr_meta;
+	enum msm_dim_layer_type dim_layer_type;
+	u32 dim_layer_alpha;
 };
 
 /**

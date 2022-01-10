@@ -44,7 +44,7 @@
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-		qcom,mdss-dsi-bl-dcs-type-ss;
+		qcom,mdss-dsi-bl-inverted-dbv;
 		qcom,mdss-dsi-reset-sequence = <0 2>, <1 11>;
 		qcom,mdss-pan-physical-width-dimension = <65>;
 		qcom,mdss-pan-physical-height-dimension = <135>;
@@ -61,10 +61,37 @@
 			17000 15500 30000 8000 3000>;
 		qcom,mdss-dsi-panel-peak-brightness = <4300000>;
 		qcom,mdss-dsi-panel-blackness-level = <3230>;
+		qcom,mdss-dsi-panel-physical-type = "oled";
 		qcom,dispparam-enabled;
 		qcom,mdss-panel-on-dimming-delay = <120>;
 		qcom,mdss-dsi-panel-dc-threshold = <320>;
 		qcom,esd-err-irq-gpio = <&tlmm 122 0x2002>;
+		qcom,disp-doze-lbm-backlight = <10>;
+		qcom,disp-doze-hbm-backlight = <133>;
+		qcom,disp-dc-dim-lut = <
+			/* brightness, alpha */
+			0	0xFF
+			1	0xF0
+			3	0xE2
+			5	0xD9
+			9	0xCC
+			15	0xBF
+			22	0xB3
+			32	0xA6
+			43	0x99
+			56	0x8C
+			69	0x80
+			86	0x73
+			104	0x66
+			124	0x59
+			145	0x4D
+			169	0x40
+			196	0x33
+			224	0x26
+			253	0x1A
+			285	0xD
+			320	0x0
+		>;
 		qcom,bl-update-flag = "delay_until_first_frame";
 		qcom,mdss-dsi-display-timings {
 			timing@0{
@@ -148,10 +175,10 @@
 				qcom,mdss-dsi-dispparam-acl-l2-command-state = "dsi_lp_mode";
 				qcom,mdss-dsi-dispparam-acl-l3-command = [39 01 00 00 00 00 02 55 03];//30%
 				qcom,mdss-dsi-dispparam-acl-l3-command-state = "dsi_lp_mode";
-				qcom,mdss-dsi-dispparam-hbm-off-command = [39 01 00 00 00 00 02 53 28];
-				qcom,mdss-dsi-dispparam-hbm-off-command-state = "dsi_lp_mode";
-				qcom,mdss-dsi-dispparam-hbm-on-command = [39 01 00 00 00 00 02 53 e8];
-				qcom,mdss-dsi-dispparam-hbm-on-command-state = "dsi_lp_mode";
+				qcom,mdss-dsi-dispparam-hbm-off-command = [15 01 00 00 10 00 02 53 28];
+				qcom,mdss-dsi-dispparam-hbm-off-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-hbm-on-command = [15 01 00 00 10 00 02 53 e8];
+				qcom,mdss-dsi-dispparam-hbm-on-command-state = "dsi_hs_mode";
 				qcom,mdss-dsi-dispparam-crc-srgb-on-command = [
 					39 00 00 00 00 00 03 F0 5A 5A
 					39 00 00 00 00 00 03 E2 00 05

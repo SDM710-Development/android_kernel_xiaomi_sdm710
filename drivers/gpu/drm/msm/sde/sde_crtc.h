@@ -313,7 +313,6 @@ struct sde_crtc {
 
 	/* blob for histogram data */
 	struct drm_property_blob *hist_blob;
-	bool is_primary_sde_crtc;
 };
 
 #define to_sde_crtc(x) container_of(x, struct sde_crtc, base)
@@ -428,6 +427,9 @@ struct sde_crtc_state {
 	uint64_t input_fence_timeout_ns;
 	uint32_t num_dim_layers;
 	struct sde_hw_dim_layer dim_layer[SDE_MAX_DIM_LAYERS];
+	struct sde_hw_dim_layer *global_dim_layer;
+	enum msm_dim_layer_type global_dim_layer_type;
+	u32 global_dim_layer_alpha;
 	uint32_t num_ds;
 	uint32_t num_ds_enabled;
 	bool ds_dirty;
@@ -439,10 +441,6 @@ struct sde_crtc_state {
 	u32 sbuf_prefill_line;
 	u64 sbuf_clk_rate[2];
 	bool sbuf_clk_shifted;
-
-	bool finger_down;
-	bool dim_layer_status;
-	struct sde_hw_dim_layer *fingerprint_dim_layer;
 
 	struct sde_crtc_respool rp;
 };
@@ -582,13 +580,7 @@ struct drm_crtc *sde_crtc_init(struct drm_device *dev, struct drm_plane *plane);
  * @crtc: Pointer to drm crtc structure
  */
 int sde_crtc_post_init(struct drm_device *dev, struct drm_crtc *crtc);
-/**
- * sde_crtc_fod_ui_ready - callback to notify fod ui ready message
- * @crtc: Pointer to drm crtc object
- * @old_state: Pointer to drm crtc old state object
- */
-void sde_crtc_fod_ui_ready(struct drm_crtc *crtc,
-		struct drm_crtc_state *old_state);
+
 /**
  * sde_crtc_complete_flip - complete flip for clients
  * @crtc: Pointer to drm crtc object
