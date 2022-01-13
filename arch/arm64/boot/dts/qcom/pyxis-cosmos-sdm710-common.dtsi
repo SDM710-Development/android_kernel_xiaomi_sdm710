@@ -45,7 +45,7 @@
 	config {
 		pins = "gpio125";
 		drive-strength = <16>;
-		bias-diable;
+		bias-disable;
 		input-enable;
 	};
 
