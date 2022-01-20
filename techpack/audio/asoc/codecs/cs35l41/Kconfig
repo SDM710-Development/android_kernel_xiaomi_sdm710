@@ -1,6 +1,7 @@
 config SND_SOC_CS35L41
 	tristate "Cirrus Logic CS35L41 CODEC"
 	select SND_SOC_WM_ADSP
+	select MSM_CSPL
 
 config SND_SOC_CS35L41_SPI
 	tristate "Cirrus Logic CS35L41 CODEC (SPI)"
