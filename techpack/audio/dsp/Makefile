@@ -25,12 +25,6 @@ audio_q6_pdr-y := audio_pdr.o
 obj-$(CONFIG_MSM_ULTRASOUND) += audio_usf.o
 audio_usf-y := usf.o usfcdev.o q6usm.o
 
-ifeq ($(strip $(AUDIO_FEATURE_ENABLED_SPKR_PROTECTION)),true)
-	CDEFINES += -DCONFIG_SND_SOC_TAS2562_FOR_PYXIS
-endif
-
-KBUILD_CPPFLAGS += $(CDEFINES)
-
 obj-y += codecs/
 
 EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include/uapi	\

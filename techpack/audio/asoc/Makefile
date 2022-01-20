@@ -62,25 +62,4 @@ audio_platform-$(CONFIG_MACH_XIAOMI_F3M) += tas2562-algo.o tas2562-calib.o
 EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include/uapi	\
 		-I$(srctree)/techpack/audio/include
 
-ifeq ($(TARGET_PRODUCT), grus)
-	CDEFINES += -DCONFIG_SND_SOC_CS35L41_FOR_GRUS
-endif
-
-ifeq ($(TARGET_PRODUCT), grus)
-	CDEFINES += -DAUDIO_FEATURE_SUPPORT_24BIT
-endif
-
-ifeq ($(TARGET_PRODUCT), pyxis)
-	CDEFINES += -DAUDIO_FEATURE_SUPPORT_24BIT
-endif
-
-ifeq ($(TARGET_PRODUCT), vela)
-	CDEFINES += -DAUDIO_FEATURE_SUPPORT_24BIT
-endif
-
-ifeq ($(strip $(AUDIO_FEATURE_ENABLED_SPKR_PROTECTION)),true)
-	CDEFINES += -DCONFIG_SND_SOC_TAS2562_FOR_PYXIS
-endif
-KBUILD_CPPFLAGS += $(CDEFINES)
-
 obj-y += codecs/
