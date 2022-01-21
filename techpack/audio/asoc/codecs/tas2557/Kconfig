@@ -1,0 +1,15 @@
+menuconfig SND_SOC_TAS2557
+	tristate "Texas Instruments TAS2557 SmartAmp(R)"
+	select SPK_ID
+
+config TAS2557_REGMAP
+	depends on SND_SOC_TAS2557
+	bool "Use of RegMap API"
+
+config TAS2557_CODEC
+	depends on SND_SOC_TAS2557
+	bool "Codec Driver support"
+
+config TAS2557_MISC
+	depends on SND_SOC_TAS2557
+	bool "Misc Driver support"

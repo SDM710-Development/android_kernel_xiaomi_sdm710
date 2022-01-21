@@ -1,0 +1,8 @@
+config SND_SOC_ANALOG_CDC
+	bool
+
+config SND_SOC_DIGITAL_CDC
+	bool
+
+config SND_SOC_DIGITAL_CDC_LEGACY
+	bool

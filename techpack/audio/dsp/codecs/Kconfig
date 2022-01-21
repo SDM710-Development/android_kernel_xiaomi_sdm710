@@ -1,0 +1,2 @@
+config MSM_QDSP6V2_CODECS
+	bool

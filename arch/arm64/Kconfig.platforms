@@ -134,6 +134,43 @@ config ARCH_SDM845
 	select COMMON_CLK
 	select COMMON_CLK_QCOM
 	select QCOM_GDSC
+	select DOLBY_DS2
+	select DOLBY_LICENSE
+	select DTS_EAGLE
+	select DTS_SRS_TM
+	select MSM_ADSP_LOADER
+	select MSM_AVTIMER
+	select MSM_CDC_PINCTRL
+	select MSM_GLINK_SPI_XPRT
+	select MSM_QDSP6_APRV2_GLINK
+	select MSM_QDSP6_NOTIFIER
+	select MSM_QDSP6_PDR
+	select MSM_QDSP6_SSR
+	select MSM_QDSP6V2_CODECS
+	select MSM_ULTRASOUND
+	select PINCTRL_WCD
+	select QTI_PP
+	select REGMAP_SWR
+	select SND_HWDEP_ROUTING
+	select SND_SOC_MACHINE_SDM845
+	select SND_SOC_MSM_HDMI_CODEC_RX
+	select SND_SOC_MSM_HOSTLESS_PCM
+	select SND_SOC_MSM_QDSP6V2_INTF
+	select SND_SOC_MSM_STUB
+	select SND_SOC_QDSP6V2
+	select SND_SOC_SDM845
+	select SND_SOC_WCD_MBHC
+	select SND_SOC_WCD_MBHC_ADC
+	select SND_SOC_WCD_SPI
+	select SND_SOC_WCD9XXX_V2
+	select SND_SOC_WCD934X
+	select SND_SOC_WCD934X_DSD
+	select SND_SOC_WCD934X_MBHC
+	select SND_SOC_WSA881X
+	select SOUNDWIRE
+	select SOUNDWIRE_WCD_CTRL
+	select WCD_DSP_GLINK
+	select WCD9XXX_CODEC_CORE
 	help
 	  This enables support for the SDM845 chipset. If you do not
 	  wish to build a kernel that runs on this chipset, say 'N' here.
@@ -154,6 +191,58 @@ config ARCH_SDM670
 	select COMMON_CLK
 	select COMMON_CLK_QCOM
 	select QCOM_GDSC
+	select AUDIO_EXT_CLK
+	select DOLBY_DS2
+	select DOLBY_LICENSE
+	select DTS_EAGLE
+	select DTS_SRS_TM
+	select MSM_ADSP_LOADER
+	select MSM_AVTIMER
+	select MSM_CDC_PINCTRL
+	select MSM_GLINK_SPI_XPRT
+	select MSM_QDSP6_APRV2_GLINK
+	select MSM_QDSP6_NOTIFIER
+	select MSM_QDSP6_PDR
+	select MSM_QDSP6_SSR
+	select MSM_QDSP6V2_CODECS
+	select MSM_ULTRASOUND
+	select PINCTRL_LPI
+	select PINCTRL_WCD
+	select QTI_PP
+	select QTI_PP_AUDIOSPHERE
+	select REGMAP_SWR
+	select SND_HWDEP_ROUTING
+	select SND_SOC_ANALOG_CDC
+	select SND_SOC_CPE
+	select SND_SOC_DIGITAL_CDC
+	select SND_SOC_EXT_CODEC
+	select SND_SOC_INT_CODEC
+	select SND_SOC_MSM_HDMI_CODEC_RX
+	select SND_SOC_MSM_HOSTLESS_PCM
+	select SND_SOC_MSM_QDSP6V2_INTF
+	select SND_SOC_MSM_QDSP6V2_INTF
+	select SND_SOC_MSM_SDW
+	select SND_SOC_MSM_STUB
+	select SND_SOC_QDSP6V2
+	select SND_SOC_SDM660_CDC
+	select SND_SOC_SDM670
+	select SND_SOC_USB_HEADSET
+	select SND_SOC_WCD_CPE
+	select SND_SOC_WCD_DSP_MGR
+	select SND_SOC_WCD_MBHC
+	select SND_SOC_WCD_MBHC_ADC
+	select SND_SOC_WCD_MBHC_LEGACY
+	select SND_SOC_WCD_SPI
+	select SND_SOC_WCD9XXX_V2
+	select SND_SOC_WCD9335
+	select SND_SOC_WCD934X
+	select SND_SOC_WCD934X_DSD
+	select SND_SOC_WCD934X_MBHC
+	select SND_SOC_WSA881X
+	select SOUNDWIRE
+	select SOUNDWIRE_WCD_CTRL
+	select WCD_DSP_GLINK
+	select WCD9XXX_CODEC_CORE
 	help
 	  This enables support for the SDM670 chipset. If you do not
 	  wish to build a kernel that runs on this chipset, say 'N' here.

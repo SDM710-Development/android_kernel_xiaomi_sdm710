@@ -868,7 +868,7 @@ static DECLARE_TLV_DB_SCALE(tas2562_digital_tlv, 1100, 50, 0);
 
 static const struct snd_kcontrol_new tas2562_snd_controls[] = {
 	SOC_SINGLE_TLV("Amp Output Level", TAS2562_PlaybackConfigurationReg0,
-		0, 0x16, 0,
+		1, 0x1c, 0,
 		tas2562_digital_tlv),
 	SOC_SINGLE_EXT("SmartPA Mute", SND_SOC_NOPM, 0, 0x0001, 0,
 			tas2562_mute_ctrl_get, tas2562_mute_ctrl_put),

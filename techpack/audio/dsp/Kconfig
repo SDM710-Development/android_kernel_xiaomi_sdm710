@@ -1,0 +1,25 @@
+config DTS_SRS_TM
+	bool
+
+config MSM_CSPL
+	bool
+
+config MSM_ADSP_LOADER
+	bool
+
+config MSM_QDSP6_NOTIFIER
+	bool
+
+config MSM_QDSP6_PDR
+	bool
+
+config MSM_QDSP6_SSR
+	bool
+
+config MSM_ULTRASOUND
+	bool
+
+config SND_SOC_MSM_QDSP6V2_INTF
+	bool
+
+source "techpack/audio/dsp/codecs/Kconfig"

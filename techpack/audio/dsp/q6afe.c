@@ -31,7 +31,7 @@
 #ifdef CONFIG_MSM_CSPL
 #include <dsp/msm-cirrus-playback.h>
 #endif
-#ifdef CONFIG_SND_SOC_TAS2562_FOR_PYXIS
+#if defined(CONFIG_MACH_XIAOMI_F3B) || defined(CONFIG_MACH_XIAOMI_F3M)
 #include <dsp/smart_amp.h>
 #endif
 #define WAKELOCK_TIMEOUT	5000
@@ -130,7 +130,7 @@ struct afe_ctl {
 	int set_custom_topology;
 	int dev_acdb_id[AFE_MAX_PORTS];
 	routing_cb rt_cb;
-#ifdef CONFIG_SND_SOC_TAS2562_FOR_PYXIS
+#if defined(CONFIG_MACH_XIAOMI_F3B) || defined(CONFIG_MACH_XIAOMI_F3M)
 	struct afe_smartamp_calib_get_resp smart_amp_calib_data;
 #endif
 };
@@ -398,7 +398,7 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 			av_dev_drift_afe_cb_handler(data->payload,
 						    data->payload_size);
 		} else {
-#ifdef CONFIG_SND_SOC_TAS2562_FOR_PYXIS
+#if defined(CONFIG_MACH_XIAOMI_F3B) || defined(CONFIG_MACH_XIAOMI_F3M)
 			if ((payload[1] == AFE_SMARTAMP_MODULE_RX) ||
 				(payload[1] == AFE_SMARTAMP_MODULE_TX)) {
                 memcpy(&this_afe.smart_amp_calib_data, payload,
@@ -4466,7 +4466,7 @@ int afe_start_pseudo_port(u16 port_id)
 	return ret;
 }
 
-#ifdef CONFIG_SND_SOC_TAS2562_FOR_PYXIS
+#if defined(CONFIG_MACH_XIAOMI_F3B) || defined(CONFIG_MACH_XIAOMI_F3M)
 int afe_smartamp_set_calib_data(uint32_t param_id,
 		struct afe_smartamp_set_params_t *prot_config,
 	        uint8_t length, uint32_t module_id)

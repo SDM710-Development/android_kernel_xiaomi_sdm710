@@ -1049,7 +1049,7 @@ dolby_dap_send_param_return:
 }
 EXPORT_SYMBOL(adm_dolby_dap_send_params);
 
-#if CONFIG_MSM_CSPL
+#ifdef CONFIG_MSM_CSPL
 int crus_adm_set_params(int port_id, int copp_idx, uint32_t module_id,
 							uint32_t param_id, char *params,
 							uint32_t params_length)

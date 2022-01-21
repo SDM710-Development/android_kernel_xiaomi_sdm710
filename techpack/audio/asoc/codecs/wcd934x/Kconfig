@@ -1,0 +1,8 @@
+config SND_SOC_WCD934X
+	bool
+
+config SND_SOC_WCD934X_MBHC
+	bool
+
+config SND_SOC_WCD934X_DSD
+	bool

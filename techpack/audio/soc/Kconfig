@@ -1,0 +1,11 @@
+config PINCTRL_LPI
+	bool
+
+config PINCTRL_WCD
+	bool
+
+config SOUNDWIRE
+	bool
+
+config SOUNDWIRE_WCD_CTRL
+	bool
