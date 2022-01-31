@@ -17,3 +17,4 @@ ipat-y += ipa_dtsi_replacement.o
 endif
 
 obj-$(CONFIG_RMNET_IPA3) += rmnet_ipa.o ipa_qmi_service_v01.o ipa_qmi_service.o rmnet_ipa_fd_ioctl.o
+ccflags-y += -I$(src)
