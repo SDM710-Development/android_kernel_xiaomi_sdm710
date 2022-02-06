@@ -1255,11 +1255,18 @@ static ssize_t fod_status_store(struct device *dev,
 				const char *buf, size_t count)
 {
 	struct goodix_ts_core *core_data = dev_get_drvdata(dev);
+	int fod_status;
 
 	if (!core_data)
 		return -EINVAL;
 
-	sscanf(buf, "%d", &core_data->fod_status);
+	sscanf(buf, "%d", &fod_status);
+	if (core_data->fod_status == fod_status)
+		return count; /* No change */
+
+	core_data->fod_status = fod_status;
+	core_data->gesture_enabled = core_data->double_wakeup || fod_status;
+	goodix_check_gesture_stat(!!fod_status);
 
 	return count;
 }
