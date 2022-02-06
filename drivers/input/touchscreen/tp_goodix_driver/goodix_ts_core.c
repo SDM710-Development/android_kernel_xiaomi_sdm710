@@ -2401,7 +2401,7 @@ static int goodix_ts_probe(struct platform_device *pdev)
 	}
 	dev_set_drvdata(core_data->gtp_touch_dev, core_data);
 
-	r = sysfs_create_group(&client->dev.kobj, &gtd_attr_group);
+	r = sysfs_create_group(&core_data->gtp_touch_dev->kobj, &gtd_attr_group);
 	if (r)
 		ts_err("ERROR: Cannot create touch dev sysfs structure!");
 
