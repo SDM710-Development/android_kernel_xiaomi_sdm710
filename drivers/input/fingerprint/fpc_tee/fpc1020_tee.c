@@ -557,6 +557,30 @@ static ssize_t irq_enable_set(struct device *dev,
 }
 static DEVICE_ATTR(irq_enable, S_IWUSR | S_IRUSR | S_IRGRP | S_IWGRP , NULL, irq_enable_set);
 
+static ssize_t proximity_state_store(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+	struct fpc1020_data *fpc1020 = dev_get_drvdata(dev);
+	int rc, val;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc)
+		return -EINVAL;
+
+	mutex_lock(&fpc1020->lock);
+
+	if (val)
+		disable_irq(gpio_to_irq(fpc1020->irq_gpio));
+	else
+		enable_irq(gpio_to_irq(fpc1020->irq_gpio));
+
+	mutex_unlock(&fpc1020->lock);
+
+	return count;
+}
+static DEVICE_ATTR_WO(proximity_state);
+
 static struct attribute *attributes[] = {
 	&dev_attr_pinctl_set.attr,
 	&dev_attr_device_prepare.attr,
@@ -570,6 +594,7 @@ static struct attribute *attributes[] = {
 #ifdef FP_HWMON
 	&dev_attr_vendor.attr,
 #endif
+	&dev_attr_proximity_state.attr,
 	NULL
 };
 
